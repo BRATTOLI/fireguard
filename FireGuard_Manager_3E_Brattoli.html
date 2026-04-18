@@ -8439,13 +8439,26 @@ function caricaDaGoogle(){
     .then(function(j){
       if(j.ok && j.data){
         var d = j.data;
-        // Pulizia valori undefined/null prima di caricare
+        // Pulizia e normalizzazione valori
         function pulisci(arr){
           if(!Array.isArray(arr)) return [];
           return arr.map(function(obj){
             var o = {};
             Object.keys(obj).forEach(function(k){
-              o[k] = (obj[k] === null || obj[k] === undefined) ? '' : obj[k];
+              var v = obj[k];
+              if(v === null || v === undefined) { o[k] = ''; return; }
+              // Converti oggetti Date in stringa leggibile
+              if(typeof v === 'object' && v.constructor && v.constructor.name === 'Date'){
+                o[k] = v.toISOString ? v.toISOString().split('T')[0] : String(v);
+              } else {
+                var s = String(v).trim();
+                // Se è una stringa data lunga tipo "Thu Apr 16 2026...", estraiamo solo la data
+                if(s.match(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s/)){
+                  try { var dd = new Date(s); o[k] = dd.toISOString().split('T')[0]; } catch(e){ o[k] = s; }
+                } else {
+                  o[k] = s;
+                }
+              }
             });
             return o;
           });
@@ -8461,7 +8474,7 @@ function caricaDaGoogle(){
         }
         salvaLS();
         renderClienti(); renderPresidi(); renderRegistro(); buildDashboard();
-        notifica('✅ Dati aggiornati da Google!');
+        notifica('✅ Dati aggiornati da Google! ' + (d.clienti||[]).length + ' clienti caricati.');
       } else {
         notifica('⚠️ Nessun dato trovato su Google. Fai prima Sync Google dal PC.');
       }
