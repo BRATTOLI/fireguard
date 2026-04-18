@@ -8439,14 +8439,25 @@ function caricaDaGoogle(){
     .then(function(j){
       if(j.ok && j.data){
         var d = j.data;
+        // Pulizia valori undefined/null prima di caricare
+        function pulisci(arr){
+          if(!Array.isArray(arr)) return [];
+          return arr.map(function(obj){
+            var o = {};
+            Object.keys(obj).forEach(function(k){
+              o[k] = (obj[k] === null || obj[k] === undefined) ? '' : obj[k];
+            });
+            return o;
+          });
+        }
         if(d.clienti && d.clienti.length > 0){
-          CLIENTI.length = 0; d.clienti.forEach(function(c){ CLIENTI.push(c); });
+          CLIENTI.length = 0; pulisci(d.clienti).forEach(function(c){ CLIENTI.push(c); });
         }
         if(d.presidi && d.presidi.length > 0){
-          PRESIDI_DATA.length = 0; d.presidi.forEach(function(p){ PRESIDI_DATA.push(p); });
+          PRESIDI_DATA.length = 0; pulisci(d.presidi).forEach(function(p){ PRESIDI_DATA.push(p); });
         }
         if(d.registro && d.registro.length > 0){
-          REG_DATA.length = 0; d.registro.forEach(function(r){ REG_DATA.push(r); });
+          REG_DATA.length = 0; pulisci(d.registro).forEach(function(r){ REG_DATA.push(r); });
         }
         salvaLS();
         renderClienti(); renderPresidi(); renderRegistro(); buildDashboard();
@@ -8482,53 +8493,19 @@ setInterval(sincronizzaGoogle, 5 * 60 * 1000);
 // Salva prima di chiudere il tab/browser
 window.addEventListener('beforeunload', ()=>salvaLS());
 
-// AUTO-DOWNLOAD ALL'APERTURA: ad ogni apertura scarica una copia aggiornata con i dati incorporati
-(function autoDownloadAllaApertura(){
+// AUTO-CARICA DA GOOGLE ALL'APERTURA (solo se non ci sono dati locali o sono vecchi)
+(function autoCaricaDaGoogle(){
   try {
-    var tentativi = 0;
-    function prova(){
+    setTimeout(function(){
+      // Controlla se i dati locali sono presenti
       var raw = localStorage.getItem(LS_KEY);
-      if(!raw){ tentativi++; if(tentativi<20) setTimeout(prova,300); return; }
-      eseguiDownload(raw);
-    }
-    function eseguiDownload(raw){
-      try {
-      var stato = JSON.parse(raw);
-      var sorgente = document.documentElement.outerHTML;
-
-      var nuoviDati =
-        'const CLIENTI=' + JSON.stringify(stato.clienti||[]) + ';\n\n'
-        + '// Presidi — popolati da import Excel o inserimento manuale\n'
-        + 'const PRESIDI_DATA=' + JSON.stringify(stato.presidi||[]) + ';\n\n'
-        + '// Tabella ultimo import\nconst DEPALO=[];\n\n'
-        + 'let DITTA=' + JSON.stringify(stato.ditta||{}) + ';\n'
-        + 'let TECNICI=' + JSON.stringify(stato.tecnici||[]) + ';\n'
-        + 'window.TIMBRO_B64=' + JSON.stringify((window.TIMBRO_B64||localStorage.getItem('fireguard_timbro')||'')) + ';\n\n'
-        + 'const REG_DATA=' + JSON.stringify(stato.registro||[]) + ';';
-
-      var aggiornato = sorgente.replace(
-        /const CLIENTI=\[[\s\S]*?\];[\s\S]*?window\.TIMBRO_B64='[^']*';[\s\S]*?const REG_DATA=\[[\s\S]*?\];/,
-        nuoviDati
-      );
-
-      if(aggiornato === sorgente){
-        console.warn('Auto-download: pattern dati non trovato');
+      if(!raw || CLIENTI.length === 0){
+        // Nessun dato locale — carica da Google automaticamente
+        console.log('Nessun dato locale, carico da Google...');
+        caricaDaGoogle();
       }
-
-      var data = new Date();
-      var ds = data.getFullYear()+''+('0'+(data.getMonth()+1)).slice(-2)+('0'+data.getDate()).slice(-2)+'_'+('0'+data.getHours()).slice(-2)+('0'+data.getMinutes()).slice(-2);
-      var nomeFile = 'FireGuard_Manager_v9_Brattoli_'+ds+'.html';
-      var blob = new Blob([aggiornato], {type:'text/html;charset=utf-8'});
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url; a.download = nomeFile;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
-      console.log('Auto-backup scaricato: ' + nomeFile);
-      } catch(e2){ console.warn('Download fallito:', e2); }
-    }
-    setTimeout(prova, 1500);
-  } catch(e){ console.warn('Auto-download errore:', e); }
+    }, 2000);
+  } catch(e){ console.warn('Auto-carica errore:', e); }
 })();
 
 // ─── SEARCH PRESIDI ──────────────────────────────────────────────────────────
