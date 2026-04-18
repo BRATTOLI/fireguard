@@ -4085,8 +4085,8 @@ function renderClienti(){
   const ss={'ok':'s-ok','warn':'s-warn','exp':'s-exp'};
   const sl={'ok':'Attivo','warn':'CPI in scad.','exp':'Urgente'};
   tb.innerHTML=CLIENTI.map(c=>{
-    const nPres = PRESIDI_DATA.filter(p=>p.cli===c.rs||p.cli.trim()===c.rs.trim()).length || c.presidi || 0;
-    const interventi = REG_DATA.filter(r=> r.cliId===c.id || r.cli===c.rs || r.cli.trim()===c.rs.trim());
+    const nPres = PRESIDI_DATA.filter(p=>p.cli===c.rs||(p.cli||"").trim()===(c.rs||"").trim()).length || c.presidi || 0;
+    const interventi = REG_DATA.filter(r=> r.cliId===c.id || r.cli===c.rs || (r.cli||"").trim()===(c.rs||"").trim());
     const dateUniche = [...new Set(interventi.map(r=>r.d))];
     const nSchede = dateUniche.length;
     const ultD = interventi.length>0 ? interventi[0].d : null;
@@ -4130,7 +4130,7 @@ function renderStoricoCliente(){
   var rs     = cli ? cli.rs : cliId;
 
   var ints = REG_DATA.filter(function(r){
-    return r.cliId===cliId || r.cli===rs || r.cli.trim()===rs.trim();
+    return r.cliId===cliId || r.cli===rs || (r.cli||"").trim()===(rs||"").trim();
   });
   ints.sort(function(a,b){ return b.d.localeCompare(a.d); });
 
@@ -4257,7 +4257,7 @@ function eliminaScheda(data, sessId){
     var r = REG_DATA[i];
     var chiaveR = r.sessId || (r.cliId + '_' + r.d.replace(/\//g,''));
     var matchSess = sessId && chiaveR === sessId;
-    var matchFallback = !sessId && r.d === data && (r.cliId === window._storicoCliId || r.cli === nomeCliente || r.cli.trim() === nomeCliente.trim());
+    var matchFallback = !sessId && r.d === data && (r.cliId === window._storicoCliId || r.cli === nomeCliente || (r.cli||"").trim() === (nomeCliente||"").trim());
     if(matchSess || matchFallback){
       REG_DATA.splice(i, 1);
     }
@@ -6089,7 +6089,7 @@ function _apriQRModClienteImpl(cliId, cliNome){
   // Popola interventi dinamicamente
   var cli = CLIENTI.find(function(c){ return c.id===cliId; });
   var rs  = cli ? cli.rs : cliId;
-  var ints = REG_DATA.filter(function(r){ return r.cliId===cliId || r.cli===rs || r.cli.trim()===rs.trim(); });
+  var ints = REG_DATA.filter(function(r){ return r.cliId===cliId || r.cli===rs || (r.cli||"").trim()===(rs||"").trim(); });
   ints.sort(function(a,b){ return b.d.localeCompare(a.d); });
   var ultimi = ints.slice(0,5);
   var div = document.getElementById('mQR-interventi');
@@ -6515,14 +6515,14 @@ function salvaManutenzioneCompleta(){
     // Aggiungi al registro — cliId per matching affidabile
     // Controlla duplicato: stessa data + stesso presidio già presente
     var dataFmt = fromISO(dataInt);
-    var cliObjR = CLIENTI.find(function(c){return c.rs===cliN||c.rs.trim()===cliN.trim();});
+    var cliObjR = CLIENTI.find(function(c){return c.rs===cliN||(c.rs||"").trim()===(cliN||"").trim();});
     var giàPresente = REG_DATA.some(function(r){
-      return r.cod === cod && r.d === dataFmt && (r.cliId === cliId || r.cli === cliN || r.cli.trim() === cliN.trim());
+      return r.cod === cod && r.d === dataFmt && (r.cliId === cliId || r.cli === cliN || (r.cli||"").trim() === (cliN||"").trim());
     });
     if(giàPresente){
       // Aggiorna il record esistente invece di aggiungerne uno nuovo
       var idx = REG_DATA.findIndex(function(r){
-        return r.cod === cod && r.d === dataFmt && (r.cliId === cliId || r.cli === cliN || r.cli.trim() === cliN.trim());
+        return r.cod === cod && r.d === dataFmt && (r.cliId === cliId || r.cli === cliN || (r.cli||"").trim() === (cliN||"").trim());
       });
       if(idx >= 0){
         REG_DATA[idx].op    = tipoOpLbl;
@@ -7532,7 +7532,7 @@ function esportaWord(tipo, cliId){
 
   } else if(tipo==='registro'){
     // ── Registro interventi — una scheda per sessione, identica alla scheda manutenzione ──
-    var ints = cliNome ? REG_DATA.filter(function(r){return r.cliId===cliId||r.cli===cliNome||r.cli.trim()===cliNome.trim();}) : REG_DATA.slice();
+    var ints = cliNome ? REG_DATA.filter(function(r){return r.cliId===cliId||r.cli===cliNome||(r.cli||"").trim()===(cliNome||"").trim();}) : REG_DATA.slice();
     nomeFile = 'Registro_interventi'+(cliNome?'_'+cliNome.replace(/\s+/g,'_'):'_tutti')+'_'+new Date().getFullYear();
 
     // Stili identici alla scheda manutenzione
