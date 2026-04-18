@@ -6033,7 +6033,7 @@ function disegnaQR(imgId, testoDaGenerare, size){
 
 // ── Testo QR compatto (max ~150 chars per scansione affidabile) ───────────────
 // URL Google Apps Script — storico cliente in tempo reale
-var FIREGUARD_API = 'https://script.google.com/macros/s/AKfycbzIx2VWXJzwbgpZLcKXo4oy-m56igtD4f3FhCIfYKsf2HlixioUo58luBBOJYeUkqRX/exec';
+var FIREGUARD_API = 'https://script.google.com/macros/s/AKfycbx3MmC8INRZBWwIVw8dmrSZ9lHbCt9dggNAgcRHg9VNnjWdhPK51pOW03wsfJpH0y1q/exec';
 
 function testoQRCliente(cliId){
   // Il QR punta direttamente alla pagina Google con lo storico completo del cliente
@@ -8464,13 +8464,46 @@ function caricaDaGoogle(){
           });
         }
         if(d.clienti && d.clienti.length > 0){
-          CLIENTI.length = 0; pulisci(d.clienti).forEach(function(c){ CLIENTI.push(c); });
+          CLIENTI.length = 0; 
+          pulisci(d.clienti).forEach(function(c){ 
+            // Assicura che tutti i campi esistano con valori di default
+            if(!c.ref) c.ref = c.rs || '';
+            if(!c.cap) c.cap = '';
+            if(!c.paese) c.paese = '';
+            if(!c.piva) c.piva = '';
+            if(!c.cciaa) c.cciaa = '';
+            if(!c.cpi_num) c.cpi_num = '';
+            if(!c.cpi_scad) c.cpi_scad = '';
+            if(!c.contr) c.contr = '';
+            if(!c.note) c.note = '';
+            if(!c.presidi) c.presidi = 0;
+            if(c.stato === undefined) c.stato = 'ok';
+            CLIENTI.push(c); 
+          });
         }
         if(d.presidi && d.presidi.length > 0){
-          PRESIDI_DATA.length = 0; pulisci(d.presidi).forEach(function(p){ PRESIDI_DATA.push(p); });
+          PRESIDI_DATA.length = 0; 
+          pulisci(d.presidi).forEach(function(p){ 
+            if(!p.marca) p.marca = '';
+            if(!p.mat) p.mat = '';
+            if(!p.anno) p.anno = '';
+            if(!p.uv) p.uv = '';
+            if(!p.scad) p.scad = '';
+            if(p.stato === undefined) p.stato = 'ok';
+            PRESIDI_DATA.push(p); 
+          });
         }
         if(d.registro && d.registro.length > 0){
-          REG_DATA.length = 0; pulisci(d.registro).forEach(function(r){ REG_DATA.push(r); });
+          REG_DATA.length = 0; 
+          pulisci(d.registro).forEach(function(r){ 
+            if(!r.op) r.op = '';
+            if(!r.tec) r.tec = '';
+            if(!r.esito) r.esito = 'ok';
+            if(!r.note) r.note = '';
+            if(!r.prox) r.prox = '';
+            if(!r.norma) r.norma = '';
+            REG_DATA.push(r); 
+          });
         }
         salvaLS();
         renderClienti(); renderPresidi(); renderRegistro(); buildDashboard();
