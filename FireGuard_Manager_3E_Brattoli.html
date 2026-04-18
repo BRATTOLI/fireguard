@@ -1,7 +1,7 @@
 <html lang="it"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3E Antincendio — Gestione Presidi v9 — 3E di Brattoli Pasquale</title>
+<title>3E Antincendio — Gestione Presidi v10 — 3E di Brattoli Pasquale</title>
 <script>
 // QR Code generator - implementazione completa con supporto modalita byte (testo arbitrario)
 var QRCode=(function(){
@@ -2616,7 +2616,6 @@ tr:hover td{background:#fafafa}
               <th style="width:96px">Mann. eseguita</th>
               <th style="width:96px">Prox. mann.</th>
               <th style="width:52px">Rev. eff.</th>
-              <th style="width:52px;background:#e8f0fb;color:#1A4F8A">Prox. rev.</th>
               <th style="width:52px">Collaudo</th>
               <th style="width:50px">Fine vita</th>
               <th style="width:38px">⏰</th>
@@ -4204,7 +4203,6 @@ function renderStoricoCliente(){
         +'<td style="font-size:11px;text-align:center;font-weight:bold">'+(r.d||'—')+'</td>'
         +'<td style="font-size:11px;text-align:center">'+(r.prox||'—')+'</td>'
         +'<td style="font-size:11px;text-align:center">'+revEff+'</td>'
-        +'<td style="font-size:11px;text-align:center;color:#1A4F8A;font-weight:bold">'+revPross+'</td>'
         +'<td style="font-size:11px;text-align:center">'+collEff+'</td>'
         +'<td style="font-size:11px;text-align:center">'+vita+'</td>'
         +'<td style="font-size:11px;white-space:nowrap">'+(r.tec||'—')+'</td>'
@@ -4229,7 +4227,7 @@ function renderStoricoCliente(){
       +'</div>'
       // Tabella presidi — parte sempre CHIUSA, si apre solo al click
       +'<div id="'+idTab+'" style="display:none;overflow-x:auto">'
-      +'<table style="min-width:1100px;font-size:11px"><thead><tr>'+'<th style="white-space:nowrap">Presidio</th>'+'<th>Posizione</th>'+'<th>Tipo agente</th>'+'<th style="white-space:nowrap">Kg</th>'+'<th style="white-space:nowrap">Costruttore</th>'+'<th style="white-space:nowrap">Anno</th>'+'<th>Matricola</th>'+'<th>Tipo att.</th>'+'<th style="white-space:nowrap">Mann. eseguita</th>'+'<th style="white-space:nowrap">Prox. mann.</th>'+'<th style="white-space:nowrap">Rev. eff.</th>'+'<th style="white-space:nowrap">Prox. rev.</th>'+'<th>Collaudo</th>'+'<th style="white-space:nowrap">Fine vita</th>'+'<th>Tecnico</th>'+'<th>Esito</th>'+'<th>Note</th>'+'</tr></thead>'
+      +'<table style="min-width:1100px;font-size:11px"><thead><tr>'+'<th style="white-space:nowrap">Presidio</th>'+'<th>Posizione</th>'+'<th>Tipo agente</th>'+'<th style="white-space:nowrap">Kg</th>'+'<th style="white-space:nowrap">Costruttore</th>'+'<th style="white-space:nowrap">Anno</th>'+'<th>Matricola</th>'+'<th>Tipo att.</th>'+'<th style="white-space:nowrap">Mann. eseguita</th>'+'<th style="white-space:nowrap">Prox. mann.</th>'+'<th style="white-space:nowrap">Rev. eff.</th>'+'<th>Collaudo</th>'+'<th style="white-space:nowrap">Fine vita</th>'+'<th>Tecnico</th>'+'<th>Esito</th>'+'<th>Note</th>'+'</tr></thead>'
       +'<tbody>'+righeHtml+'</tbody></table>'
       +'</div>'
       +'</div>';
@@ -4441,7 +4439,8 @@ function eliminaCliente(cliId){
   const cli = CLIENTI.find(c=>c.id===cliId);
   if(!cli) return;
   const nPres = PRESIDI_DATA.filter(p=>p.cli===cli.rs).length;
-  if(!confirm('Eliminare il cliente "'+cli.rs+'" e tutti i suoi '+nPres+' presidi? Questa operazione non è reversibile.')) return;
+  if(!confirm('\u26a0\ufe0f ATTENZIONE!\n\nEliminare il cliente "'+cli.rs+'" e tutti i suoi '+nPres+' presidi?\n\nQuesta operazione NON è reversibile.')) return;
+  if(!confirm('\ud83d\udd34 SECONDA CONFERMA\n\nSei sicuro di voler eliminare il cliente "'+cli.rs+'" con '+nPres+' presidi?\n\nPremi OK per confermare definitivamente.')) return;
   // Rimuovi cliente
   const idx = CLIENTI.findIndex(c=>c.id===cliId);
   if(idx>=0) CLIENTI.splice(idx,1);
@@ -5299,7 +5298,8 @@ function salvaSchedaPresidio2(cod){
 function eliminaPresidio(cod){
   const p = PRESIDI_DATA.find(x=>x.cod===cod);
   if(!p) return;
-  if(!confirm('Eliminare il presidio "'+cod+'" ('+p.cli+' — '+p.ubi+')? Questa operazione non è reversibile.')) return;
+  if(!confirm('\u26a0\ufe0f ATTENZIONE!\n\nEliminare il presidio "'+cod+'" ('+p.cli+' — '+p.ubi+')?\n\nQuesta operazione NON è reversibile.')) return;
+  if(!confirm('\ud83d\udd34 SECONDA CONFERMA\n\nSei sicuro di voler eliminare il presidio "'+cod+'"?\n\nPremi OK per confermare definitivamente.')) return;
   const idx = PRESIDI_DATA.findIndex(x=>x.cod===cod);
   if(idx>=0) PRESIDI_DATA.splice(idx,1);
   // Aggiorna conteggio presidi sul cliente
@@ -6220,6 +6220,8 @@ function calcolaProssimaScadDaTipoAtt(dataStr, tipoAtt){
     if(tipoAtt==='4.6') d.setFullYear(d.getFullYear()+5);
     else if(tipoAtt==='4.7') d.setFullYear(d.getFullYear()+10);
     else d.setMonth(d.getMonth()+6); // 4.4, 4.5, 4.8 → semestrale
+    // Porta sempre all'ultimo giorno del mese per maggiore flessibilità gestionale
+    d = new Date(d.getFullYear(), d.getMonth()+1, 0);
     return d.toISOString().split('T')[0];
   } catch(e){ return ''; }
 }
@@ -6346,9 +6348,6 @@ function caricaPresidiManutenzione(){
 
       // Revisione effettuata (anno, modificabile)
       '<td style="width:52px"><input class="man-rev-eff" type="number" value="'+revEff+'" min="1980" max="2099" style="'+inpCss+';width:48px;text-align:center" onchange="ricalcolaRevPross('+idx+')"></td>' +
-
-      // Prossima revisione (calcolata auto, modificabile)
-      '<td style="width:52px"><input class="man-rev-pross" type="number" value="'+revPross+'" min="1980" max="2099" style="'+inpCss+';width:48px;text-align:center;background:#f0f7ff;color:var(--blue);font-weight:700"></td>' +
 
       // Collaudo effettuato (anno, modificabile) — unico collaudo previsto
       '<td style="width:52px"><input class="man-coll-eff" type="number" value="'+collEff+'" min="1980" max="2099" style="'+inpCss+';width:64px;text-align:center"></td>' +
@@ -6646,7 +6645,6 @@ function stampaManutenzioneWord(){
     '<th style="'+thS+'width:58px">Mann. eseguita</th>' +
     '<th style="'+thS+'width:58px">Prox. scad. mann.</th>' +
     '<th style="'+thS+'width:42px">Rev. eff.</th>' +
-    '<th style="'+thS+'width:42px;background:#1A4F8A">Prox. rev.</th>' +
     '<th style="'+thS+'width:42px">Collaudo</th>' +
     '<th style="'+thS+'width:40px">Fine vita</th>' +
     '<th style="'+thS+'width:78px">Esito</th>' +
@@ -6724,7 +6722,6 @@ function stampaManutenzioneWord(){
       '<td style="'+tdC+'"><b>'+dataV+'</b></td>' +
       '<td style="'+tdC+'">'+dataP+'</td>' +
       '<td style="'+tdC+'">'+revEff+'</td>' +
-      '<td style="'+tdC+'background:#ddeeff;font-weight:bold;color:#1A4F8A">'+revPross+'</td>' +
       '<td style="'+tdC+'">'+collEff+'</td>' +
       '<td style="'+tdC+(parseInt(vita)<=TODAY.getFullYear()?';background:#ffecec;color:#9b1c1c;font-weight:bold':'')+'">'+(vita||'—')+'</td>' +
       '<td style="'+tdC+'background:'+bgEsito+';color:'+colEsito+';font-weight:bold">'+esitoTxt+'</td>' +
@@ -7600,7 +7597,6 @@ function esportaWord(tipo, cliId){
         '<th style="'+thSR+'width:58px">Mann. eseguita</th>' +
         '<th style="'+thSR+'width:58px">Prox. scad. mann.</th>' +
         '<th style="'+thSR+'width:42px">Rev. eff.</th>' +
-        '<th style="'+thSR+'width:42px;background:#1A4F8A">Prox. rev.</th>' +
         '<th style="'+thSR+'width:42px">Collaudo</th>' +
         '<th style="'+thSR+'width:40px">Fine vita</th>' +
         '<th style="'+thSR+'width:78px">Esito</th>' +
@@ -7648,7 +7644,6 @@ function esportaWord(tipo, cliId){
           '<td style="'+tdCR+'"><b>'+r.d+'</b></td>' +
           '<td style="'+tdCR+'">'+(r.prox||'—')+'</td>' +
           '<td style="'+tdCR+'">'+revEff+'</td>' +
-          '<td style="'+tdCR+'background:#ddeeff;font-weight:bold;color:#1A4F8A">'+revPross+'</td>' +
           '<td style="'+tdCR+'">'+collEff+'</td>' +
           '<td style="'+tdCR+(parseInt(vita)<=new Date().getFullYear()?';background:#ffecec;color:#9b1c1c;font-weight:bold':'')+'">'+(vita||'—')+'</td>' +
           '<td style="'+tdCR+'background:'+bgEsito+';color:'+colEsito+';font-weight:bold">'+esitoTxt+'</td>' +
@@ -8174,7 +8169,8 @@ function scaricaSnapshotHtml(idx){
 }
 
 function svuotaCronologia(){
-  if(!confirm('Eliminare tutta la cronologia delle versioni? Non è reversibile.')){ return; }
+  if(!confirm('\u26a0\ufe0f ATTENZIONE!\n\nEliminare tutta la cronologia delle versioni? NON è reversibile.')){ return; }
+  if(!confirm('\ud83d\udd34 SECONDA CONFERMA\n\nSei sicuro di voler eliminare tutta la cronologia?\n\nPremi OK per confermare.')){ return; }
   localStorage.removeItem(VER_KEY);
   apriCronologiaVersioni();
   notifica('✅ Cronologia svuotata.');
@@ -8336,7 +8332,8 @@ function caricaLS(){
 }
 
 function cancellaLS(){
-  if(!confirm('Sei sicuro? Tutti i dati salvati (clienti, presidi, interventi) verranno cancellati e il software tornerà ai dati dimostrativi. Questa operazione non è reversibile.')) return;
+  if(!confirm('\u26a0\ufe0f ATTENZIONE!\n\nTutti i dati (clienti, presidi, interventi) verranno CANCELLATI.\n\nIl software tornerà ai dati dimostrativi. Questa operazione NON è reversibile.')) return;
+  if(!confirm('\ud83d\udd34 SECONDA CONFERMA\n\nSei assolutamente sicuro? Tutti i dati verranno eliminati definitivamente.\n\nPremi OK per confermare.')) return;
   localStorage.removeItem(LS_KEY);
   location.reload();
 }
