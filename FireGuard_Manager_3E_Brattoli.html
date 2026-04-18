@@ -363,11 +363,12 @@ tr:hover td{background:#fafafa}
     <span class="bdg" style="background:#FFF3CD;color:#664D00;border-color:#ffc107">15 presidi</span>
     <button class="btn sm" style="background:#1A4F8A;color:#fff;border-color:#1A4F8A;font-size:10px;padding:4px 10px" onclick="esportaBackup()" title="Scarica tutti i dati in un file JSON di backup">💾 Backup dati</button>
   <button class="btn grn" onclick="sincronizzaGoogle()" title="Sincronizza con Google Sheets">☁️ Sync Google</button>
+    <button class="btn sm" style="background:#0F6E56;color:#fff;border-color:#0F6E56;font-size:10px;padding:4px 10px" onclick="caricaDaGoogle()" title="Carica i dati aggiornati da Google Sheets — usa su tablet e telefono">⬇️ Carica da Google</button>
     <button class="btn sm" style="background:#1E7E34;color:#fff;border-color:#1E7E34;font-size:10px;padding:4px 10px" onclick="document.getElementById('inp-ripristino').click()" title="Carica un file di backup JSON">📂 Ripristina</button>
     <input type="file" id="inp-ripristino" accept=".json" style="display:none" onchange="ripristinaBackup(this)">
 
     <span id="data-oggi" style="font-size:11px;color:var(--gray);font-weight:600">sab 18 aprile 2026</span>
-    <span id="ls-badge" class="bdg" style="background:rgb(234,243,222);color:rgb(30,126,52);border-color:rgb(192,221,151);" title="Dati salvati automaticamente — 18/04/2026, 11:36:12">💾 Salvato 18/04/2026, 11:36:12</span>
+    <span id="ls-badge" class="bdg" style="background:rgb(234,243,222);color:rgb(30,126,52);border-color:rgb(192,221,151);">💾 Salvato —</span>
   </div>
 </div>
 
@@ -393,9 +394,9 @@ tr:hover td{background:#fafafa}
 <div id="dashboard" class="sec active">
   <div id="alerts-dash"><div class="alert-dash amb"><div class="alert-icon">⏰</div><div class="alert-body"><div class="alert-title">🧯 36 presidi in scadenza nei prossimi 12 mesi — pianifica subito gli interventi</div><div class="alert-sub">IMP001-001 AZIENDA DE PALO GROUP SRL (6m) | IMP001-002 AZIENDA DE PALO GROUP SRL (6m) | IMP001-003 AZIENDA DE PALO GROUP SRL (6m) | IMP001-004 AZIENDA DE PALO GROUP SRL (6m) | IMP001-005 AZIENDA DE PALO GROUP SRL (6m) ... e altri 31</div></div><button class="btn sm amb" onclick="S('scadenze')">Pianifica →</button></div></div>
   <div class="kpi-g" id="kpi-dash">
-    <div class="kpi blu"><div class="kpi-l">Clienti gestiti</div><div class="kpi-v" style="color:#1A4F8A">6</div><div class="kpi-s">contratti attivi</div></div>
-    <div class="kpi"><div class="kpi-l">Presidi totali</div><div class="kpi-v">66</div><div class="kpi-s">15 tipologie</div></div>
-    <div class="kpi grn"><div class="kpi-l">Conformi</div><div class="kpi-v" style="color:#1E7E34">36</div><div class="kpi-s">55%</div></div>
+    <div class="kpi blu"><div class="kpi-l">Clienti gestiti</div><div class="kpi-v" style="color:#1A4F8A">5</div><div class="kpi-s">contratti attivi</div></div>
+    <div class="kpi"><div class="kpi-l">Presidi totali</div><div class="kpi-v">97</div><div class="kpi-s">15 tipologie</div></div>
+    <div class="kpi grn"><div class="kpi-l">Conformi</div><div class="kpi-v" style="color:#1E7E34">67</div><div class="kpi-s">69%</div></div>
     <div class="kpi amb"><div class="kpi-l">In scadenza 30gg</div><div class="kpi-v" style="color:#8B5E00">0</div><div class="kpi-s">intervento urgente</div></div>
     <div class="kpi red"><div class="kpi-l">Scaduti</div><div class="kpi-v" style="color:#C0392B">0</div><div class="kpi-s">azione immediata</div></div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -407,7 +408,7 @@ tr:hover td{background:#fafafa}
       <div class="ch"><span class="ct">📋 Ultimi interventi registrati</span><button class="btn sm" onclick="S('registro')">Registro</button></div>
       <div class="tw">
       <table><thead><tr><th>Data</th><th>Cliente</th><th>Presidio</th><th>Tipo oper.</th><th>Esito</th></tr></thead>
-      <tbody id="dash-reg"><tr><td>16/04/2026</td><td>VECCHIO MUSEO DIOCESANO DI BITONTO</td><td>IMP005-004</td><td style="font-size:11px">Controllo periodico at...</td><td><span class="st s-ok">✅ Conforme</span></td></tr><tr><td>16/04/2026</td><td>VECCHIO MUSEO DIOCESANO DI BITONTO</td><td>IMP005-003</td><td style="font-size:11px">Controllo periodico at...</td><td><span class="st s-ok">✅ Conforme</span></td></tr><tr><td>16/04/2026</td><td>VECCHIO MUSEO DIOCESANO DI BITONTO</td><td>IMP005-002</td><td style="font-size:11px">Controllo periodico at...</td><td><span class="st s-ok">✅ Conforme</span></td></tr><tr><td>16/04/2026</td><td>VECCHIO MUSEO DIOCESANO DI BITONTO</td><td>IMP005-001</td><td style="font-size:11px">Controllo periodico at...</td><td><span class="st s-ok">✅ Conforme</span></td></tr><tr><td>16/04/2026</td><td>CONDOMINIO VIA PALOMBAIO,136 BITONTO</td><td>IMP002-004</td><td style="font-size:11px">Controllo periodico at...</td><td><span class="st s-ok">✅ Conforme</span></td></tr></tbody></table>
+      <tbody id="dash-reg"><tr><td>17/04/2026</td><td>VECCHIO MUSEO DIOCESANO DI BITONTO</td><td>IMP005-004</td><td style="font-size:11px">Controllo periodico at...</td><td><span class="st s-ok">✅ Conforme</span></td></tr><tr><td>17/04/2026</td><td>VECCHIO MUSEO DIOCESANO DI BITONTO</td><td>IMP005-003</td><td style="font-size:11px">Controllo periodico at...</td><td><span class="st s-ok">✅ Conforme</span></td></tr><tr><td>17/04/2026</td><td>VECCHIO MUSEO DIOCESANO DI BITONTO</td><td>IMP005-002</td><td style="font-size:11px">Controllo periodico at...</td><td><span class="st s-ok">✅ Conforme</span></td></tr><tr><td>17/04/2026</td><td>VECCHIO MUSEO DIOCESANO DI BITONTO</td><td>IMP005-001</td><td style="font-size:11px">Controllo periodico at...</td><td><span class="st s-ok">✅ Conforme</span></td></tr><tr><td>16/04/2026</td><td>VECCHIO MUSEO DIOCESANO DI BITONTO</td><td>IMP005-004</td><td style="font-size:11px">Controllo periodico at...</td><td><span class="st s-ok">✅ Conforme</span></td></tr></tbody></table>
       </div>
     </div>
   </div>
@@ -486,34 +487,19 @@ tr:hover td{background:#fafafa}
         <button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaCliente('CLI-005')">🗑️</button>
       </td>
     </tr><tr>
-      <td><strong>CLI-006</strong></td>
-      <td><strong style="cursor:pointer;color:var(--blue)" onclick="apriSchedaCliente('CLI-006')" title="Clicca per vedere i presidi">PISCINA PIAZZA EUROPA BARI</strong></td>
+      <td><strong>CLI-005</strong></td>
+      <td><strong style="cursor:pointer;color:var(--blue)" onclick="apriSchedaCliente('CLI-005')" title="Clicca per vedere i presidi">PISCINA PIAZZA EUROPA BARI</strong></td>
       <td style="font-size:11px">—</td>
       <td>—</td>
       <td>—</td>
       <td style="color:#2d6a12;font-weight:600">—</td>
-      <td><strong style="cursor:pointer;color:var(--blue)" onclick="apriSchedaCliente('CLI-006')" title="Vedi presidi">31 →</strong></td>
+      <td><strong style="cursor:pointer;color:var(--blue)" onclick="apriSchedaCliente('CLI-005')" title="Vedi presidi">31 →</strong></td>
       <td><span class="st s-ok">Attivo</span></td>
-      <td><button class="btn sm" onclick="apriQRModCliente('CLI-006','PISCINA PIAZZA EUROPA BARI')">📱 QR</button></td>
-      <td><button class="btn sm" style="background:#e8f0fe;border-color:#aac4f7;color:#1a3f8a;font-size:11px" onclick="apriStoricoCliente('CLI-006')" title="Storico completo interventi">📋 Storico</button></td>
+      <td><button class="btn sm" onclick="apriQRModCliente('CLI-005','PISCINA PIAZZA EUROPA BARI')">📱 QR</button></td>
+      <td><button class="btn sm" style="background:#e8f0fe;border-color:#aac4f7;color:#1a3f8a;font-size:11px" onclick="apriStoricoCliente('CLI-005')" title="Storico completo interventi">📋 Storico</button></td>
       <td style="display:flex;gap:4px">
-        <button class="btn sm pr" onclick="apriModificaCliente('CLI-006')">✏️ Modifica</button>
-        <button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaCliente('CLI-006')">🗑️</button>
-      </td>
-    </tr><tr>
-      <td><strong>CLI-007</strong></td>
-      <td><strong style="cursor:pointer;color:var(--blue)" onclick="apriSchedaCliente('CLI-007')" title="Clicca per vedere i presidi">fasfffasdadsfs</strong></td>
-      <td style="font-size:11px">—</td>
-      <td>—</td>
-      <td>—</td>
-      <td style="color:#2d6a12;font-weight:600">—</td>
-      <td><strong style="cursor:pointer;color:var(--blue)" onclick="apriSchedaCliente('CLI-007')" title="Vedi presidi">0 →</strong></td>
-      <td><span class="st s-ok">Attivo</span></td>
-      <td><button class="btn sm" onclick="apriQRModCliente('CLI-007','fasfffasdadsfs')">📱 QR</button></td>
-      <td><button class="btn sm" style="background:#e8f0fe;border-color:#aac4f7;color:#1a3f8a;font-size:11px" onclick="apriStoricoCliente('CLI-007')" title="Storico completo interventi">📋 Storico</button></td>
-      <td style="display:flex;gap:4px">
-        <button class="btn sm pr" onclick="apriModificaCliente('CLI-007')">✏️ Modifica</button>
-        <button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaCliente('CLI-007')">🗑️</button>
+        <button class="btn sm pr" onclick="apriModificaCliente('CLI-005')">✏️ Modifica</button>
+        <button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaCliente('CLI-005')">🗑️</button>
       </td>
     </tr></tbody></table></div>
   </div>
@@ -1156,7 +1142,7 @@ tr:hover td{background:#fafafa}
       <td>2037</td>
       <td><span class="bell grn" title="Fine vita: 2037 — OK">🔕 2037</span></td>
       <td><span class="bell amb" title="Scade il 16/10/2026">🔔 6m</span></td>
-      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><span class="st s-ok">✅ Conforme</span></td>
       <td><button class="btn sm" onclick="apriQRMod('IMP002-001','IMP002-001 — Estintore')">📱</button></td>
       <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP002-001')">Scheda</button></td>
       <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP002-001')" title="Stampa targhetta DYMO">🏷</button></td>
@@ -1175,7 +1161,7 @@ tr:hover td{background:#fafafa}
       <td>2037</td>
       <td><span class="bell grn" title="Fine vita: 2037 — OK">🔕 2037</span></td>
       <td><span class="bell amb" title="Scade il 16/10/2026">🔔 6m</span></td>
-      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><span class="st s-ok">✅ Conforme</span></td>
       <td><button class="btn sm" onclick="apriQRMod('IMP002-002','IMP002-002 — Estintore')">📱</button></td>
       <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP002-002')">Scheda</button></td>
       <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP002-002')" title="Stampa targhetta DYMO">🏷</button></td>
@@ -1776,13 +1762,13 @@ tr:hover td{background:#fafafa}
       <td>PIANO TERRA</td>
       <td>050041</td>
       <td>2025</td>
-      <td>16/04/2026</td>
-      <td>16/10/2026</td>
+      <td>17/04/2026</td>
+      <td>17/10/2026</td>
       <td>2030</td>
       <td>2035</td>
       <td>2043</td>
       <td><span class="bell grn" title="Fine vita: 2043 — OK">🔕 2043</span></td>
-      <td><span class="bell amb" title="Scade il 16/10/2026">🔔 6m</span></td>
+      <td><span class="bell amb" title="Scade il 17/10/2026">🔔 7m</span></td>
       <td><span class="st s-ok">✅ Conforme</span></td>
       <td><button class="btn sm" onclick="apriQRMod('IMP005-001','IMP005-001 — Estintore')">📱</button></td>
       <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-001')">Scheda</button></td>
@@ -1795,13 +1781,13 @@ tr:hover td{background:#fafafa}
       <td>1° PIANO</td>
       <td>050613</td>
       <td>2025</td>
-      <td>16/04/2026</td>
-      <td>16/10/2026</td>
+      <td>17/04/2026</td>
+      <td>17/10/2026</td>
       <td>2030</td>
       <td>2035</td>
       <td>2043</td>
       <td><span class="bell grn" title="Fine vita: 2043 — OK">🔕 2043</span></td>
-      <td><span class="bell amb" title="Scade il 16/10/2026">🔔 6m</span></td>
+      <td><span class="bell amb" title="Scade il 17/10/2026">🔔 7m</span></td>
       <td><span class="st s-ok">✅ Conforme</span></td>
       <td><button class="btn sm" onclick="apriQRMod('IMP005-002','IMP005-002 — Estintore')">📱</button></td>
       <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-002')">Scheda</button></td>
@@ -1814,13 +1800,13 @@ tr:hover td{background:#fafafa}
       <td>2° PIANO</td>
       <td>053491</td>
       <td>2025</td>
-      <td>16/04/2026</td>
-      <td>16/10/2026</td>
+      <td>17/04/2026</td>
+      <td>17/10/2026</td>
       <td>2030</td>
       <td>2035</td>
       <td>2043</td>
       <td><span class="bell grn" title="Fine vita: 2043 — OK">🔕 2043</span></td>
-      <td><span class="bell amb" title="Scade il 16/10/2026">🔔 6m</span></td>
+      <td><span class="bell amb" title="Scade il 17/10/2026">🔔 7m</span></td>
       <td><span class="st s-ok">✅ Conforme</span></td>
       <td><button class="btn sm" onclick="apriQRMod('IMP005-003','IMP005-003 — Estintore')">📱</button></td>
       <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-003')">Scheda</button></td>
@@ -1833,18 +1819,607 @@ tr:hover td{background:#fafafa}
       <td>3° PIANO</td>
       <td>052888</td>
       <td>2025</td>
-      <td>16/04/2026</td>
-      <td>16/10/2026</td>
+      <td>17/04/2026</td>
+      <td>17/10/2026</td>
       <td>2030</td>
       <td>2035</td>
       <td>2043</td>
       <td><span class="bell grn" title="Fine vita: 2043 — OK">🔕 2043</span></td>
-      <td><span class="bell amb" title="Scade il 16/10/2026">🔔 6m</span></td>
+      <td><span class="bell amb" title="Scade il 17/10/2026">🔔 7m</span></td>
       <td><span class="st s-ok">✅ Conforme</span></td>
       <td><button class="btn sm" onclick="apriQRMod('IMP005-004','IMP005-004 — Estintore')">📱</button></td>
       <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-004')">Scheda</button></td>
       <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-004')" title="Stampa targhetta DYMO">🏷</button></td>
       <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-004')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-005</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>PISCINA GRANDE</td>
+      <td>135214</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-005','IMP005-005 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-005')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-005')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-005')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-006</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>PISCINA PICCOLA</td>
+      <td>42012</td>
+      <td>2024</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td></td>
+      <td>2034</td>
+      <td>2042</td>
+      <td><span class="bell grn" title="Fine vita: 2042 — OK">🔕 2042</span></td>
+      <td><span class="bell gray" title="Nessuna data">🔕 —</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-006','IMP005-006 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-006')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-006')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-006')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-007</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>PISCINA PICCOLA</td>
+      <td>035182</td>
+      <td>2025</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2028</td>
+      <td>2035</td>
+      <td>2043</td>
+      <td><span class="bell grn" title="Fine vita: 2043 — OK">🔕 2043</span></td>
+      <td><span class="bell grn" title="Valido fino al 2028">🔕 2028</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-007','IMP005-007 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-007')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-007')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-007')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-008</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>PISCINA INUTILIZZATA</td>
+      <td>135787</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-008','IMP005-008 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-008')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-008')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-008')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-009</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>PISCINA INUTILIZZATA</td>
+      <td>30824</td>
+      <td>2017</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2023</td>
+      <td>2027</td>
+      <td>2035</td>
+      <td><span class="bell grn" title="Fine vita: 2035 — OK">🔕 2035</span></td>
+      <td><span class="bell red" title="Scaduto nel 2023">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-009','IMP005-009 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-009')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-009')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-009')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-010</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>PISCINA INUTILIZZATA</td>
+      <td>135936</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-010','IMP005-010 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-010')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-010')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-010')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-011</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>PISCINA INUTILIZZATA</td>
+      <td>133893</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-011','IMP005-011 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-011')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-011')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-011')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-012</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>CORRIDOIO</td>
+      <td>133931</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-012','IMP005-012 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-012')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-012')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-012')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-013</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>CORRIDOIO</td>
+      <td>134963</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-013','IMP005-013 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-013')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-013')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-013')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-014</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>SPOGLIATOIO DONNE</td>
+      <td>135679</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-014','IMP005-014 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-014')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-014')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-014')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-015</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>SPOGLIATOIO UOMINI</td>
+      <td>133861</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-015','IMP005-015 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-015')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-015')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-015')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-016</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>CORRIDOIO PISCINE</td>
+      <td>28777</td>
+      <td>2017</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2023</td>
+      <td>2027</td>
+      <td>2035</td>
+      <td><span class="bell grn" title="Fine vita: 2035 — OK">🔕 2035</span></td>
+      <td><span class="bell red" title="Scaduto nel 2023">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-016','IMP005-016 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-016')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-016')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-016')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-017</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>RECEPTION</td>
+      <td>063864</td>
+      <td>2018</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2023</td>
+      <td>2028</td>
+      <td>2036</td>
+      <td><span class="bell grn" title="Fine vita: 2036 — OK">🔕 2036</span></td>
+      <td><span class="bell red" title="Scaduto nel 2023">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-017','IMP005-017 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-017')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-017')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-017')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-018</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>INGRESSO LATO BAR</td>
+      <td>007550</td>
+      <td>2020</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2023</td>
+      <td>2030</td>
+      <td>2038</td>
+      <td><span class="bell grn" title="Fine vita: 2038 — OK">🔕 2038</span></td>
+      <td><span class="bell red" title="Scaduto nel 2023">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-018','IMP005-018 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-018')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-018')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-018')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-019</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>INGRESSO CHIESA</td>
+      <td>007866</td>
+      <td>2020</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2023</td>
+      <td>2030</td>
+      <td>2038</td>
+      <td><span class="bell grn" title="Fine vita: 2038 — OK">🔕 2038</span></td>
+      <td><span class="bell red" title="Scaduto nel 2023">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-019','IMP005-019 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-019')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-019')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-019')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-020</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>CORRIDOIO PALESTRE</td>
+      <td>135625</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-020','IMP005-020 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-020')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-020')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-020')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-021</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>PALESTRA CORDE</td>
+      <td>135141</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-021','IMP005-021 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-021')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-021')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-021')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-022</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>PALESTRA SPECCHI</td>
+      <td>13827</td>
+      <td>2019</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2025</td>
+      <td>2029</td>
+      <td>2037</td>
+      <td><span class="bell grn" title="Fine vita: 2037 — OK">🔕 2037</span></td>
+      <td><span class="bell red" title="Scaduto nel 2025">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-022','IMP005-022 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-022')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-022')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-022')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-023</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>SPOGLIATOIO ISTRUTTORI</td>
+      <td>135523</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-023','IMP005-023 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-023')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-023')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-023')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-024</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>SALA YOGA</td>
+      <td>135944</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-024','IMP005-024 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-024')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-024')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-024')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-025</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>SALA ATTREZZI</td>
+      <td>134238</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-025','IMP005-025 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-025')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-025')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-025')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-026</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>SALA ATTREZZI</td>
+      <td>133907</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-026','IMP005-026 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-026')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-026')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-026')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-027</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>SALA ATTREZZI</td>
+      <td>135866</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-027','IMP005-027 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-027')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-027')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-027')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-028</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>TAPIRULAN</td>
+      <td>314311</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-028','IMP005-028 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-028')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-028')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-028')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-029</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>CORRIDOIO 1° PIANO</td>
+      <td>135410</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-029','IMP005-029 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-029')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-029')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-029')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-030</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>ESTERNO PANNELLI SOLARI</td>
+      <td>136051</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-030','IMP005-030 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-030')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-030')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-030')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-031</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>ESTERNO PANNELLI SOLARI</td>
+      <td>133781</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-031','IMP005-031 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-031')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-031')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-031')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-032</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>FILTRI PISCINA</td>
+      <td>135679</td>
+      <td>2021</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2024</td>
+      <td>2031</td>
+      <td>2039</td>
+      <td><span class="bell grn" title="Fine vita: 2039 — OK">🔕 2039</span></td>
+      <td><span class="bell red" title="Scaduto nel 2024">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-032','IMP005-032 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-032')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-032')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-032')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-033</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>FILTRI PISCINA</td>
+      <td>063781</td>
+      <td>2018</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2023</td>
+      <td>2028</td>
+      <td>2036</td>
+      <td><span class="bell grn" title="Fine vita: 2036 — OK">🔕 2036</span></td>
+      <td><span class="bell red" title="Scaduto nel 2023">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-033','IMP005-033 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-033')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-033')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-033')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-034</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>FILTRI PISCINA</td>
+      <td>063781</td>
+      <td>2018</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2023</td>
+      <td>2028</td>
+      <td>2036</td>
+      <td><span class="bell grn" title="Fine vita: 2036 — OK">🔕 2036</span></td>
+      <td><span class="bell red" title="Scaduto nel 2023">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-034','IMP005-034 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-034')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-034')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-034')">🗑️</button></td>
+    </tr><tr>
+      <td><strong>IMP005-035</strong></td>
+      <td>🧯 Estintore</td>
+      <td>PISCINA PIAZZA EUROPA BARI</td>
+      <td>FILTRI PISCINA</td>
+      <td>09095</td>
+      <td>2022</td>
+      <td>—</td>
+      <td>Sep-26</td>
+      <td>2025</td>
+      <td>2032</td>
+      <td>2040</td>
+      <td><span class="bell grn" title="Fine vita: 2040 — OK">🔕 2040</span></td>
+      <td><span class="bell red" title="Scaduto nel 2025">🔔 SCADUTO</span></td>
+      <td><span class="st s-ok">✅ Positivo</span></td>
+      <td><button class="btn sm" onclick="apriQRMod('IMP005-035','IMP005-035 — Estintore')">📱</button></td>
+      <td><button class="btn sm pr" onclick="apriSchedaPresidio('IMP005-035')">Scheda</button></td>
+      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('IMP005-035')" title="Stampa targhetta DYMO">🏷</button></td>
+      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('IMP005-035')">🗑️</button></td>
     </tr></tbody></table></div>
   </div>
 </div>
@@ -1989,7 +2564,7 @@ tr:hover td{background:#fafafa}
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;align-items:end">
       <div class="fgg">
         <label>👥 Cliente *</label>
-        <select id="man-sem-cli" onchange="caricaPresidiManutenzione()" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-weight:700;color:var(--blue)"><option value="">— Seleziona cliente —</option><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-006">PISCINA PIAZZA EUROPA BARI</option><option value="CLI-007">fasfffasdadsfs</option></select>
+        <select id="man-sem-cli" onchange="caricaPresidiManutenzione()" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-weight:700;color:var(--blue)"><option value="">— Seleziona cliente —</option><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">PISCINA PIAZZA EUROPA BARI</option></select>
       </div>
       <div class="fgg">
         <label>📅 Data intervento *</label>
@@ -2096,7 +2671,7 @@ tr:hover td{background:#fafafa}
       <div class="ch"><span class="ct">📱 QR Code cliente</span></div>
       <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Il cliente, i VVF o i Vigili del Fuoco scansionano e vedono tutte le schede semestrali effettuate sull'impianto — ordine cronologico, esiti, tecnico, norma. Registro inattaccabile.</p>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <select id="sel-qr-cli" style="flex:1;padding:7px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:8px" onchange="updQRCli()"><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-006">PISCINA PIAZZA EUROPA BARI</option><option value="CLI-007">fasfffasdadsfs</option></select>
+        <select id="sel-qr-cli" style="flex:1;padding:7px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:8px" onchange="updQRCli()"><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">PISCINA PIAZZA EUROPA BARI</option></select>
       </div>
       <div style="display:flex;gap:14px;align-items:flex-start">
         <div class="qr-box" style="min-width:150px">
@@ -2264,10 +2839,10 @@ Nessun intervento">
   <div class="card">
     <div class="ch"><span class="ct">📊 Genera documenti e rapporti ufficiali</span></div>
     <table><thead><tr><th>Documento</th><th>Norma</th><th>Descrizione</th><th>Cliente</th><th>Genera</th></tr></thead><tbody>
-      <tr><td><strong>Verbale intervento manutenzione</strong></td><td>D.M. 1/9/2021</td><td>Elenco presidi con date verifica, matricola, esito</td><td><select id="rap-sel-1" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px"><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-006">PISCINA PIAZZA EUROPA BARI</option><option value="CLI-007">fasfffasdadsfs</option></select></td><td><button class="btn sm pr" onclick="esportaWord('verbale', document.getElementById('rap-sel-1').value)">⬇️ Word</button></td></tr>
-      <tr><td><strong>Registro manutenzioni annuale</strong></td><td>D.M. 1/9/2021 art.5</td><td>Tutti gli interventi registrati nell'anno</td><td><select id="rap-sel-2" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px"><option value="">Tutti i clienti</option><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-006">PISCINA PIAZZA EUROPA BARI</option><option value="CLI-007">fasfffasdadsfs</option></select></td><td><button class="btn sm pr" onclick="esportaWord('registro', document.getElementById('rap-sel-2').value)">⬇️ Word</button></td></tr>
-      <tr><td><strong>Scadenzario presidi</strong></td><td>D.M. 1/9/2021</td><td>Calendario scadenze con campanella stato</td><td><select id="rap-sel-3" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px"><option value="">Tutti i clienti</option><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-006">PISCINA PIAZZA EUROPA BARI</option><option value="CLI-007">fasfffasdadsfs</option></select></td><td><button class="btn sm pr" onclick="esportaWord('scadenzario', document.getElementById('rap-sel-3').value)">⬇️ Word</button></td></tr>
-      <tr><td><strong>Comunicazione anomalie</strong></td><td>D.M. 1/9/2021</td><td>Lettera formale presidi con anomalie/scaduti</td><td><select id="rap-sel-4" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px"><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-006">PISCINA PIAZZA EUROPA BARI</option><option value="CLI-007">fasfffasdadsfs</option></select></td><td><button class="btn sm pr" onclick="esportaWord('anomalie', document.getElementById('rap-sel-4').value)">⬇️ Word</button></td></tr>
+      <tr><td><strong>Verbale intervento manutenzione</strong></td><td>D.M. 1/9/2021</td><td>Elenco presidi con date verifica, matricola, esito</td><td><select id="rap-sel-1" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px"><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">PISCINA PIAZZA EUROPA BARI</option></select></td><td><button class="btn sm pr" onclick="esportaWord('verbale', document.getElementById('rap-sel-1').value)">⬇️ Word</button></td></tr>
+      <tr><td><strong>Registro manutenzioni annuale</strong></td><td>D.M. 1/9/2021 art.5</td><td>Tutti gli interventi registrati nell'anno</td><td><select id="rap-sel-2" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px"><option value="">Tutti i clienti</option><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">PISCINA PIAZZA EUROPA BARI</option></select></td><td><button class="btn sm pr" onclick="esportaWord('registro', document.getElementById('rap-sel-2').value)">⬇️ Word</button></td></tr>
+      <tr><td><strong>Scadenzario presidi</strong></td><td>D.M. 1/9/2021</td><td>Calendario scadenze con campanella stato</td><td><select id="rap-sel-3" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px"><option value="">Tutti i clienti</option><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">PISCINA PIAZZA EUROPA BARI</option></select></td><td><button class="btn sm pr" onclick="esportaWord('scadenzario', document.getElementById('rap-sel-3').value)">⬇️ Word</button></td></tr>
+      <tr><td><strong>Comunicazione anomalie</strong></td><td>D.M. 1/9/2021</td><td>Lettera formale presidi con anomalie/scaduti</td><td><select id="rap-sel-4" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:5px"><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">PISCINA PIAZZA EUROPA BARI</option></select></td><td><button class="btn sm pr" onclick="esportaWord('anomalie', document.getElementById('rap-sel-4').value)">⬇️ Word</button></td></tr>
       <tr><td><strong>Anagrafica clienti</strong></td><td>—</td><td>Elenco completo clienti con dati e presidi</td><td>—</td><td><button class="btn sm pr" onclick="esportaWord('clienti','')">⬇️ Word</button></td></tr>
     </tbody></table>
     <div style="margin-top:10px;font-size:11px;color:var(--text3)">💡 I documenti vengono scaricati come file .doc — aperti da Word, LibreOffice e Google Docs</div>
@@ -3301,7 +3876,7 @@ La validità del presente cartellino cessa in caso di manomissione o manutenzion
   <div class="md">
     <div class="md-t">🧯 Nuovo presidio antincendio</div>
     <div class="fg">
-      <div class="fgg"><label>Cliente *</label><select id="mpres-cli"><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-006">PISCINA PIAZZA EUROPA BARI</option><option value="CLI-007">fasfffasdadsfs</option></select></div>
+      <div class="fgg"><label>Cliente *</label><select id="mpres-cli"><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">PISCINA PIAZZA EUROPA BARI</option></select></div>
       <div class="fgg"><label>Codice presidio *</label><input type="text" id="mpres-cod" placeholder="EST-029"></div>
       <div class="fgg"><label>Tipo presidio *</label><select id="tipo-sel"><option>🧯 Estintore portatile/carrellato</option><option>🚪 Porta/Elemento REI</option><option>🚿 Idrante a muro UNI 45/70</option><option>🌀 Naspo DN 25</option><option>🔌 Manichetta antincendio</option><option>⚙️ Gruppo di pressurizzazione</option><option>💧 Rete sprinkler</option><option>💡 Luce di emergenza</option><option>🔴 Pulsante di emergenza</option><option>💨 Rivelatore di fumo</option><option>🌡️ Rivelatore di calore</option><option>🖥️ Centrale antincendio</option><option>🌬️ Evacuatore fumo/calore EFC</option><option>🔰 Segnaletica di sicurezza</option><option>📋 Presidio libero/personalizzato</option></select></div>
       <div class="fgg"><label>Ubicazione *</label><input type="text" id="mpres-ubi" placeholder="Piano, zona, locale..."></div>
@@ -3332,7 +3907,7 @@ La validità del presente cartellino cessa in caso di manomissione o manutenzion
   <div class="md">
     <div class="md-t">📝 Registra intervento di manutenzione</div>
     <div class="fg">
-      <div class="fgg"><label>Cliente *</label><select id="mint-cli"><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-006">PISCINA PIAZZA EUROPA BARI</option><option value="CLI-007">fasfffasdadsfs</option></select></div>
+      <div class="fgg"><label>Cliente *</label><select id="mint-cli"><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">PISCINA PIAZZA EUROPA BARI</option></select></div>
       <div class="fgg"><label>Codice presidio *</label><input type="text"></div>
       <div class="fgg"><label>Tipo presidio</label><select><option>🧯 Estintore</option><option>🚪 Porta REI</option><option>🚿 Idrante</option><option>🌀 Naspo</option><option>🔌 Manichetta</option><option>⚙️ Gruppo pressurizzazione</option><option>💧 Sprinkler</option><option>💡 Luce emergenza</option><option>🔴 Pulsante emergenza</option><option>💨 Rivelatore fumo</option><option>🌡️ Rivelatore calore</option><option>🖥️ Centrale antincendio</option><option>🌬️ Evacuatore EFC</option><option>🔰 Segnaletica</option><option>📋 Altro</option></select></div>
       <div class="fgg"><label>Data intervento *</label><input type="date"></div>
@@ -3364,7 +3939,7 @@ La validità del presente cartellino cessa in caso di manomissione o manutenzion
   </div>
 </div>
 
-<div class="notif show" id="notif">✅ Dati ripristinati dal salvataggio — 6 clienti, 66 presidi</div>
+<div class="notif show" id="notif">✅ Dati ripristinati dal salvataggio — 5 clienti, 97 presidi</div>
 
 <script>
 // ─── DATI ────────────────────────────────────────────────────────────────────
@@ -5458,7 +6033,7 @@ function disegnaQR(imgId, testoDaGenerare, size){
 
 // ── Testo QR compatto (max ~150 chars per scansione affidabile) ───────────────
 // URL Google Apps Script — storico cliente in tempo reale
-var FIREGUARD_API = 'https://script.google.com/macros/s/AKfycbwRPAkdDPfTtTPh2j0v9TkAojZr9RQyIBCLq3K-RwmKe_w70PG4Rihgzmih9TjnSNtP/exec';
+var FIREGUARD_API = 'https://script.google.com/macros/s/AKfycbzPl_i8uy5dxVIsUP2oTGaIBQQjY6GdSlqfFY5_lPSChxIkTf8KXSNrimibV2Cb4RTu/exec';
 
 function testoQRCliente(cliId){
   // Il QR punta direttamente alla pagina Google con lo storico completo del cliente
@@ -7854,6 +8429,35 @@ function sincronizzaGoogle(){
     aggiornaGoogleBadge('err');
     console.warn('Sync Google errore:', e);
   }
+}
+
+// ─── CARICA DATI DA GOOGLE (per tablet e telefono) ─────────────────────────
+function caricaDaGoogle(){
+  notifica('⏳ Caricamento dati da Google...');
+  fetch(FIREGUARD_API + '?action=load')
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(j.ok && j.data){
+        var d = j.data;
+        if(d.clienti && d.clienti.length > 0){
+          CLIENTI.length = 0; d.clienti.forEach(function(c){ CLIENTI.push(c); });
+        }
+        if(d.presidi && d.presidi.length > 0){
+          PRESIDI_DATA.length = 0; d.presidi.forEach(function(p){ PRESIDI_DATA.push(p); });
+        }
+        if(d.registro && d.registro.length > 0){
+          REG_DATA.length = 0; d.registro.forEach(function(r){ REG_DATA.push(r); });
+        }
+        salvaLS();
+        renderClienti(); renderPresidi(); renderRegistro(); buildDashboard();
+        notifica('✅ Dati aggiornati da Google!');
+      } else {
+        notifica('⚠️ Nessun dato trovato su Google. Fai prima Sync Google dal PC.');
+      }
+    })
+    .catch(function(e){
+      notifica('❌ Errore caricamento da Google: ' + e.message);
+    });
 }
 
 // Schedula sync automatica 10 secondi dopo ogni salvataggio (debounce)
