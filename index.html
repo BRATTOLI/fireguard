@@ -6306,191 +6306,236 @@ function colValKgTot(row){
 
 function importaExcel(){
   if(typeof salvaSnapshot==='function') salvaSnapshot('Prima di import Excel');
-  // Debug: verifica stato di ultimoImport
-  console.log('[importaExcel] ultimoImport =', ultimoImport);
-  console.log('[importaExcel] window.ultimoImport =', window.ultimoImport);
-
-  // Recupero di emergenza: se ultimoImport locale è null ma window ce l'ha
   if(!ultimoImport && window.ultimoImport) ultimoImport = window.ultimoImport;
-
   if(!ultimoImport || !ultimoImport.righe || !ultimoImport.righe.length){
     notifica('❌ Nessun dato da importare — ricarica il file Excel');
     return;
   }
 
-  ultimoImport.importato = true;
-  ultimoImport.dataImport = new Date().toLocaleString('it-IT');
+  // ── Rileva se il file è di tipo REI ──────────────────────────────────────
+  const isFileREI = !!xlHeaders.find(function(h){
+    return h.label.toLowerCase().includes('compartiment') ||
+           h.label.toLowerCase().includes('tagliafuoco') ||
+           h.label.toLowerCase().includes('ante');
+  });
 
-  // ── Genera ID cliente univoco dal nome file / testo rilevato ──────────────
+  // ── Nome cliente dal file ─────────────────────────────────────────────────
   const nomeCliente = (ultimoImport.clienteRilevato || ultimoImport.nomeFile.replace(/\.[^.]+$/,'') || 'Cliente importato')
                         .substring(0, 60).trim();
 
-  // Genera codice CLI progressivo basato sul massimo ID esistente (evita duplicati)
-  const _maxCliNum = CLI_DATA.reduce(function(m,c){ const n=parseInt((c.id||'').replace('CLI-',''))||0; return n>m?n:m; },0);
-  const nuovoCliId = 'CLI-' + String(_maxCliNum + 1).padStart(3, '0');
-
-  // STEP 1 — Crea il cliente in CLI_DATA se non esiste già (confronto per ragione sociale)
-  // Confronto flessibile: match esatto O il nome file contiene/è contenuto nella RS
+  // ── Cerca cliente esistente con match flessibile ──────────────────────────
   const clienteEsistente = CLI_DATA.find(function(c){
     const a = c.rs.toLowerCase().trim();
     const b = nomeCliente.toLowerCase().trim();
-    return a === b || a.includes(b) || b.includes(a) ||
-           // rimuovi articoli/preposizioni comuni per confronto robusto
-           a.replace(/\b(di|del|della|dei|delle|degli|il|lo|la|le|gli|i|un|una|uno)\b/g,'').trim() ===
-           b.replace(/\b(di|del|della|dei|delle|degli|il|lo|la|le|gli|i|un|una|uno)\b/g,'').trim();
+    // Match esatto
+    if(a === b) return true;
+    // Match parziale (uno contiene l'altro)
+    if(a.includes(b) || b.includes(a)) return true;
+    // Match senza parole brevi (di, del, la, ecc.)
+    const stopwords = /\b(di|del|della|dei|delle|degli|il|lo|la|le|gli|i|un|una|uno|e|a|in|su|per|con|da)\b/g;
+    const aNorm = a.replace(stopwords,'').replace(/\s+/g,' ').trim();
+    const bNorm = b.replace(stopwords,'').replace(/\s+/g,' ').trim();
+    if(aNorm === bNorm) return true;
+    // Match per parole chiave significative (almeno 2 parole in comune di lunghezza > 4)
+    const aWords = aNorm.split(' ').filter(function(w){ return w.length > 4; });
+    const bWords = bNorm.split(' ').filter(function(w){ return w.length > 4; });
+    const comuni = aWords.filter(function(w){ return bWords.includes(w); });
+    return comuni.length >= 2;
   });
 
-  let cliId;
-  if(!clienteEsistente){
-    const nuovoCliente = {
-      id:      nuovoCliId,
-      rs:      nomeCliente,
-      ind:     '—',          // non presente nel file Excel, da completare manualmente
-      ref:     '—',
-      tel:     '—',
-      cpi:     '—',
-      presidi: ultimoImport.righe.length,
-      stato:   'ok'
-    };
-    CLI_DATA.push(nuovoCliente);
-    cliId = nuovoCliId;
-  } else {
-    cliId = clienteEsistente.id;
-    // Aggiorna conteggio presidi
-    clienteEsistente.presidi = (clienteEsistente.presidi || 0) + ultimoImport.righe.length;
-  }
+  // ── Prefisso codice presidi ───────────────────────────────────────────────
+  const cliId = clienteEsistente ? clienteEsistente.id : null;
+  const prefisso = cliId ? cliId.replace('CLI-','IMP') : 'IMP000';
 
-  // STEP 2 — Push presidi in PRESIDI_DATA collegati al cliente
-  const prefisso = cliId.replace('CLI-','IMP');   // es. IMP001
-  let aggiunti = 0;
-  let contatore = 0; // contatore righe valide (esclude testo/note)
-  ultimoImport.righe.forEach(function(row, i){
-    // ── Salta righe non valide: note, legende, testo descrittivo ────────────
-    // Una riga porta REI valida ha almeno: numero porta (colonna 0 = numero intero)
-    // e colonna costruttore o matricola valorizzata
-    const colCompartREI = xlHeaders.find(function(h){
-      return h.label.toLowerCase().includes('compartiment') || h.label.toLowerCase().includes('tagliafuoco');
-    });
-    if(colCompartREI){
-      // Siamo in un file REI: salta righe dove la prima colonna non è un numero
+  // ── Calcola max numero presidio esistente per questo cliente ──────────────
+  // per non sovrascrivere presidi già presenti
+  const presidiEsistenti = cliId ? PRESIDI_DATA.filter(function(p){
+    return p.cod.startsWith(prefisso);
+  }) : [];
+  const maxNum = presidiEsistenti.reduce(function(m,p){
+    const n = parseInt((p.cod||'').split('-').pop()) || 0;
+    return n > m ? n : m;
+  }, 0);
+
+  // ── Processa righe Excel ──────────────────────────────────────────────────
+  let contatore = maxNum; // parte da dove finiscono i presidi esistenti
+  const nuoviPresidi = [];
+
+  ultimoImport.righe.forEach(function(row){
+    // Salta righe non valide per file REI
+    if(isFileREI){
       const primaCol = String(row[0]||'').trim();
-      if(!primaCol || isNaN(parseInt(primaCol))) return; // salta nota/legenda
-      // Salta anche righe dove il testo è chiaramente descrittivo (>80 caratteri)
-      const tuttoTesto = row.slice(0,5).map(function(c){return String(c||'');}).join(' ');
-      if(tuttoTesto.length > 150) return;
+      if(!primaCol || isNaN(parseInt(primaCol))) return;
+      const tuttoTesto = row.slice(0,6).map(function(c){ return String(c||''); }).join(' ');
+      if(tuttoTesto.length > 200) return; // riga descrittiva/nota
+      // Salta righe dove la matricola contiene testo lungo (es. "C. = CONFORME...")
+      const matricolaCol = String(row[15]||row[16]||'').trim();
+      if(matricolaCol.length > 20) return;
+    } else {
+      // File estintori: salta righe completamente vuote o solo con numeri
+      const vals = row.filter(function(c){ return String(c||'').trim().length > 0; });
+      if(vals.length < 3) return;
     }
+
     contatore++;
     const cod = prefisso + '-' + String(contatore).padStart(3, '0');
-    if(!PRESIDI_DATA.find(function(x){ return x.cod === cod; })){
-      // ── Rileva tipo presidio automaticamente ──────────────────────────────
-      const tipoRaw = (colVal(row,'compartimentaz') || colVal(row,'tipo') || colVal(row,'descrizione') || '').toLowerCase();
-      let tipoRilevato = 'EST'; // default estintore
-      if(tipoRaw.includes('rei') || tipoRaw.includes('tagliafuoco') || tipoRaw.includes('compartiment')) tipoRilevato = 'REI';
-      else if(tipoRaw.includes('idrante')) tipoRilevato = 'IDR';
-      else if(tipoRaw.includes('naspo')) tipoRilevato = 'NSP';
-      else if(tipoRaw.includes('uscita') || tipoRaw.includes('antipanico') || tipoRaw.includes('emergenza')) tipoRilevato = 'UES';
-      else if(tipoRaw.includes('luce')) tipoRilevato = 'EM';
-      else if(tipoRaw.includes('rivelat') || tipoRaw.includes('fumo')) tipoRilevato = 'RIV';
 
-      // Tenta anche dalla colonna numero (per Porte REI il file ha colonna NUMERO)
-      // Se c'è colonna 'compartimentaz' con REI dentro → sicuramente REI
-      const colCompart = xlHeaders.find(function(h){ return h.label.toLowerCase().includes('compartiment') || h.label.toLowerCase().includes('tagliafuoco'); });
-      if(colCompart) tipoRilevato = 'REI';
+    // Non sovrascrivere mai presidi già esistenti con lo stesso codice
+    if(PRESIDI_DATA.find(function(x){ return x.cod === cod; })){
+      console.warn('[import] Presidio', cod, 'già esiste — saltato');
+      return;
+    }
 
-      if(tipoRilevato === 'REI'){
-        // ── PORTA REI ────────────────────────────────────────────────────────
-        const esitoCrudo = colVal(row,'esito') || colVal(row,'esit') || '';
-        const esitoNorm  = esitoCrudo.toLowerCase().includes('non') ? 'nc' : esitoCrudo.toLowerCase().startsWith('c') ? 'ok' : 'N.V.';
-        PRESIDI_DATA.push({
-          cod:      cod,
-          tipo:     'REI',
-          cli:      nomeCliente,
-          ubi:      colVal(row,'posiz') || colVal(row,'ubicaz') || colVal(row,'numero') || '—',
-          matr:     colVal(row,'matricol') || colVal(row,'numero'),
-          annop:    colVal(row,'anno') || '—',
-          costr:    colVal(row,'costrut') || colVal(row,'marca') || '—',
-          esito:    esitoNorm,
-          // Campi specifici Porta REI
-          rei_tipo:      colVal(row,'compartiment') || colVal(row,'tagliafuoco') || '—',
-          rei_ante:      colVal(row,'ante') || '—',
-          rei_viteria:   colVal(row,'viteria') || colVal(row,'ruggine') || '—',
-          rei_cerniere:  colVal(row,'perni') || colVal(row,'cerniere') || '—',
-          rei_ossidaz:   colVal(row,'ossidaz') || '—',
-          rei_vernic:    colVal(row,'verniciatura') || colVal(row,'stato verniciatura') || '—',
-          rei_marcace:   colVal(row,'marcatura') || colVal(row,'ce') || '—',
-          rei_guarnterm: colVal(row,'termoespand') || colVal(row,'guarnizioni termoes') || '—',
-          rei_guarnbatt: colVal(row,'battuta') || colVal(row,'guarnizioni di battuta') || '—',
-          rei_chiudiport:colVal(row,'chiudiporta') || colVal(row,'en 1154') || '—',
-          rei_coord:     colVal(row,'coordinatore') || colVal(row,'en 1158') || '—',
-          rei_gioco:     colVal(row,'gioco') || '—',
-          rei_integrita: colVal(row,'integrit') || colVal(row,'manomissioni') || '—',
-          rei_din_libera:colVal(row,'porta libera') || colVal(row,'newton') || '—',
-          rei_din_press: colVal(row,'pressione') || colVal(row,'porta in pressione') || '—',
-          rei_scrocchi:  colVal(row,'rientro') || colVal(row,'scrocchi') || '—',
-          rei_barra_lung:colVal(row,'lunghezza barra') || colVal(row,'copertura') || '—',
-          rei_barra_alt: colVal(row,'altezza della barra') || colVal(row,'altezza barra') || '—',
-          rei_manut:     colVal(row,'manutenzione') || '—',
-          note:          colVal(row,'note') || '',
-          uv:            '—', scad: '—', rev: '—', coll: '—', vita: '—',
-          peso: '—', pesotot: '—', agente: '—',
-        });
-      } else {
-        // ── ESTINTORE / altri presidi standard ──────────────────────────────
-        PRESIDI_DATA.push({
-          cod:      cod,
-          tipo:     tipoRilevato,
-          cli:      nomeCliente,
-          ubi:      colVal(row, 'posiz') || colVal(row, 'ubicaz') || '—',
-          matr:     colVal(row, 'matricol'),
-          annop:    colVal(row, 'anno') || colVal(row, 'prod') || '—',
-          uv:       colVal(row, 'verific') || colVal(row, 'ultima'),
-          scad:     colVal(row, 'scad'),
-          rev:      colVal(row, 'revis'),
-          coll:     colVal(row, 'collaud'),
-          vita:     (function(){
-            const vitaExcel = colVal(row, 'vita');
-            if(vitaExcel && vitaExcel !== '—') return vitaExcel;
-            const annop = parseInt(colVal(row, 'anno') || colVal(row, 'prod') || '');
-            if(!isNaN(annop) && annop >= 1980) return String(annop + 18);
-            return '—';
-          })(),
-          esito:    colVal(row, 'esit') || 'N.V.',
-          costr:    colVal(row, 'costrut') || colVal(row, 'marca') || colVal(row, 'produt') || '—',
-          peso:     colValKg(row),
-          pesotot:  colValKgTot(row),
-          agente:   colVal(row, 'agente') || colVal(row, 'tipo') || colVal(row, 'polvere') || '—',
-          note:     colVal(row, 'note') || '',
-        });
-      }
-      aggiunti++;
+    if(isFileREI){
+      // ── PORTA REI ──────────────────────────────────────────────────────────
+      const esitoCrudo = colVal(row,'esito') || colVal(row,'esit') || '';
+      const esitoNorm = esitoCrudo.toLowerCase().includes('non') ? 'nc'
+                      : (esitoCrudo.toLowerCase().startsWith('c') && esitoCrudo.length < 10) ? 'ok'
+                      : 'N.V.';
+      // Colonna NUMERO PORTA (prima colonna del file REI)
+      const numPorta = String(row[0]||'').trim();
+      // Colonna COMPARTIMENTAZIONE (seconda colonna)
+      const tipoREI = String(row[1]||'').trim() || '—';
+      // Colonna COSTRUTTORE (col 8)
+      const costrREI = String(row[8]||'').trim() || '—';
+      // Colonna ANNO (col 9)
+      const annoREI = String(row[9]||'').trim() || '—';
+      // Colonna MATRICOLA (col 15)
+      const matrREI = String(row[15]||'').trim() || numPorta;
+      // Colonna ANTE (col 2)
+      const anteREI = String(row[2]||'').trim() || '—';
+
+      nuoviPresidi.push({
+        cod:           cod,
+        tipo:          'REI',
+        cli:           nomeCliente,
+        ubi:           numPorta ? 'Porta n. ' + numPorta : '—',
+        matr:          matrREI,
+        annop:         annoREI,
+        costr:         costrREI,
+        esito:         esitoNorm,
+        rei_tipo:      tipoREI,
+        rei_ante:      anteREI,
+        rei_viteria:   String(row[3]||'').trim() || '—',
+        rei_cerniere:  String(row[4]||'').trim() || '—',
+        rei_ossidaz:   String(row[5]||'').trim() || '—',
+        rei_vernic:    String(row[6]||'').trim() || '—',
+        rei_marcace:   String(row[7]||'').trim() || '—',
+        rei_guarnterm: String(row[10]||'').trim() || '—',
+        rei_guarnbatt: String(row[11]||'').trim() || '—',
+        rei_chiudiport:String(row[12]||'').trim() || '—',
+        rei_coord:     String(row[13]||'').trim() || '—',
+        rei_gioco:     String(row[14]||'').trim() || '—',
+        rei_integrita: String(row[16]||'').trim() || '—',
+        rei_din_libera:String(row[17]||'').trim() || '—',
+        rei_din_press: String(row[18]||'').trim() || '—',
+        rei_scrocchi:  String(row[19]||'').trim() || '—',
+        rei_barra_lung:String(row[20]||'').trim() || '—',
+        rei_barra_alt: String(row[21]||'').trim() || '—',
+        rei_manut:     String(row[22]||'').trim() || '—',
+        note:          '',
+        uv: '—', scad: '—', rev: '—', coll: '—', vita: '—',
+        peso: '—', pesotot: '—', agente: '—',
+      });
+    } else {
+      // ── ESTINTORE / altri presidi standard ────────────────────────────────
+      nuoviPresidi.push({
+        cod:     cod,
+        tipo:    'EST',
+        cli:     nomeCliente,
+        ubi:     colVal(row,'posiz') || colVal(row,'ubicaz') || colVal(row,'ubicazione') || '—',
+        matr:    colVal(row,'matricol'),
+        annop:   colVal(row,'anno') || colVal(row,'prod') || '—',
+        uv:      colVal(row,'verific') || colVal(row,'ultima') || '—',
+        scad:    colVal(row,'scad') || '—',
+        rev:     colVal(row,'revis') || '—',
+        coll:    colVal(row,'collaud') || '—',
+        vita:    (function(){
+          const vitaExcel = colVal(row,'vita');
+          if(vitaExcel && vitaExcel !== '—') return vitaExcel;
+          const annop = parseInt(colVal(row,'anno') || colVal(row,'prod') || '');
+          if(!isNaN(annop) && annop >= 1980) return String(annop + 18);
+          return '—';
+        })(),
+        esito:   colVal(row,'esit') || 'N.V.',
+        costr:   colVal(row,'costrut') || colVal(row,'marca') || colVal(row,'produt') || '—',
+        peso:    colValKg(row),
+        pesotot: colValKgTot(row),
+        agente:  colVal(row,'agente') || colVal(row,'tipo agente') || '—',
+        note:    colVal(row,'note') || '',
+      });
     }
   });
 
-  // STEP 3 — Svuota anteprima
+  if(nuoviPresidi.length === 0){
+    notifica('⚠️ Nessun presidio valido trovato nel file — controlla il formato');
+    return;
+  }
+
+  // ── CONFERMA PRIMA DI SALVARE ─────────────────────────────────────────────
+  const tipoStr = isFileREI ? 'Porte REI' : 'Estintori';
+  const cliStr  = clienteEsistente ? clienteEsistente.rs : nomeCliente + ' (NUOVO cliente)';
+  const confMsg = '📋 Stai per importare:\n\n' +
+    '• Tipo: ' + tipoStr + '\n' +
+    '• Cliente: ' + cliStr + '\n' +
+    '• Presidi da aggiungere: ' + nuoviPresidi.length + '\n' +
+    '• Presidi già presenti per questo cliente: ' + presidiEsistenti.length + '\n\n' +
+    'Confermi l\'importazione?';
+
+  if(!confirm(confMsg)){
+    notifica('❌ Importazione annullata');
+    return;
+  }
+
+  // ── ESEGUI IMPORT ─────────────────────────────────────────────────────────
+  ultimoImport.importato = true;
+  ultimoImport.dataImport = new Date().toLocaleString('it-IT');
+
+  // Crea cliente se non esiste
+  if(!clienteEsistente){
+    const _maxCliNum = CLI_DATA.reduce(function(m,c){ const n=parseInt((c.id||'').replace('CLI-',''))||0; return n>m?n:m; }, 0);
+    const nuovoCliId = 'CLI-' + String(_maxCliNum + 1).padStart(3, '0');
+    CLI_DATA.push({
+      id: nuovoCliId, rs: nomeCliente,
+      ind:'—', ref:'—', tel:'—', cpi:'—',
+      presidi: nuoviPresidi.length, stato:'ok'
+    });
+    // Aggiorna codici presidi con il nuovo ID
+    nuoviPresidi.forEach(function(p){
+      p.cod = nuovoCliId.replace('CLI-','IMP') + '-' + p.cod.split('-').pop();
+      p.cli = nomeCliente;
+    });
+  } else {
+    clienteEsistente.presidi = (clienteEsistente.presidi || 0) + nuoviPresidi.length;
+  }
+
+  // Aggiungi presidi
+  nuoviPresidi.forEach(function(p){ PRESIDI_DATA.push(p); });
+
+  // Svuota anteprima
   document.getElementById('xl-preview').style.display = 'none';
   document.getElementById('xl-thead').innerHTML = '';
   document.getElementById('xl-tbody').innerHTML = '';
   document.getElementById('file-xl').value = '';
 
-  // STEP 4 — Ricalcola fine vita su tutti i presidi (include quelli appena importati)
-  ricalcolaFineVitaTutti();
-
-  // STEP 5 — Aggiorna tutte le viste
+  // Aggiorna viste
+  if(typeof ricalcolaFineVitaTutti === 'function') ricalcolaFineVitaTutti();
   renderClienti();
   renderPresidi();
   buildDashboard();
-  aggiornaSezioneImportata();
+  if(typeof aggiornaSezioneImportata === 'function') aggiornaSezioneImportata();
 
-  // STEP 6 — Salva
+  // Salva
   salvaLS();
   aggiornaLSBadge();
+  if(typeof eseguiSalvatagioCloud === 'function') eseguiSalvatagioCloud();
 
-  // STEP 6 — Notifica
   const msg = clienteEsistente
-    ? '✅ ' + aggiunti + ' presidi aggiunti al cliente esistente: ' + nomeCliente
-    : '✅ Cliente creato: ' + nomeCliente + ' — ' + aggiunti + ' presidi importati';
+    ? '✅ ' + nuoviPresidi.length + ' presidi aggiunti a: ' + clienteEsistente.rs
+    : '✅ Nuovo cliente creato: ' + nomeCliente + ' — ' + nuoviPresidi.length + ' presidi importati';
   notifica(msg);
 }
+
 
 function resetImport(){
   document.getElementById('xl-preview').style.display = 'none';
