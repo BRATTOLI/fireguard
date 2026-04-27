@@ -2,6 +2,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>3E Antincendio — Gestione Presidi v10 — 3E di Brattoli Pasquale</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
@@ -421,6 +422,7 @@ tr:hover td{background:#fafafa}
     <button class="btn" style="font-size:12px;padding:8px 16px;background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7;font-weight:700" onclick="apriModalBackup()">📦 Backup cloud</button>
     <button class="btn" style="font-size:12px;padding:8px 16px;background:#f3e5f5;color:#4a148c;border-color:#ce93d8" onclick="eseguiBackupManuale()">💾 Salva backup ora</button>
     <button id="btn-migra-collezioni" class="btn" style="font-size:12px;padding:8px 16px;background:#fff3e0;color:#e65100;border-color:#ffb74d;font-weight:700" onclick="eseguiMigrazioneCollezioni()">🗄️ Migra a collezioni</button>
+    <button class="btn" style="font-size:12px;padding:8px 16px;background:#e3f2fd;color:#0d47a1;border-color:#90caf9;font-weight:700" onclick="apriModalEmail()">📧 Notifiche email</button>
   </div>
   <div id="alerts-dash"><div class="alert-dash amb"><div class="alert-icon">⏰</div><div class="alert-body"><div class="alert-title">🧯 36 presidi in scadenza nei prossimi 12 mesi — pianifica subito gli interventi</div><div class="alert-sub">IMP001-001 AZIENDA DE PALO GROUP SRL (6m) | IMP001-002 AZIENDA DE PALO GROUP SRL (6m) | IMP001-003 AZIENDA DE PALO GROUP SRL (6m) | IMP001-004 AZIENDA DE PALO GROUP SRL (6m) | IMP001-005 AZIENDA DE PALO GROUP SRL (6m) ... e altri 31</div></div><button class="btn sm amb" onclick="S('scadenze')">Pianifica →</button></div></div>
   <div class="kpi-g" id="kpi-dash">
@@ -2649,10 +2651,10 @@ tr:hover td{background:#fafafa}
               <th style="width:110px">Tipo att. (norma)</th>
               <th style="width:96px">Mann. eseguita</th>
               <th style="width:96px">Prox. mann.</th>
-              <th style="width:68px">Rev. eff.</th>
-              <th style="width:68px">Pross. Rev.</th>
-              <th style="width:68px">Collaudo</th>
-              <th style="width:64px">Fine vita</th>
+              <th style="width:76px">Rev. eff.</th>
+              <th style="width:76px">Pross. Rev.</th>
+              <th style="width:76px">Collaudo</th>
+              <th style="width:76px">Fine vita</th>
               <th style="width:38px">⏰</th>
               <th style="width:130px">Esito</th>
               <th style="width:160px">Anomalie / Note</th>
@@ -6749,16 +6751,16 @@ function caricaPresidiManutenzione(){
       '<td><input type="date" class="man-data-prox" data-idx="'+idx+'" value="'+dataPross+'" style="'+inpDCss+'"></td>' +
 
       // Revisione effettuata (anno, modificabile)
-      '<td style="width:68px"><input class="man-rev-eff" type="number" value="'+revEff+'" min="1980" max="2099" placeholder="es. 2025" style="'+inpCss+';width:64px;text-align:center" onchange="ricalcolaRevPross('+idx+')"></td>' +
+      '<td style="width:76px"><input class="man-rev-eff" type="number" value="'+revEff+'" min="1980" max="2099" placeholder="2025" style="'+inpCss+';width:72px;text-align:center" onchange="ricalcolaRevPross('+idx+')"></td>' +
 
       // Prossima revisione (calcolata auto: rev + 6 anni, modificabile)
-      '<td style="width:68px"><input class="man-rev-prox" type="number" value="'+revPross+'" min="1980" max="2099" placeholder="es. 2031" style="'+inpCss+';width:64px;text-align:center"></td>' +
+      '<td style="width:76px"><input class="man-rev-prox" type="number" value="'+revPross+'" min="1980" max="2099" placeholder="2031" style="'+inpCss+';width:72px;text-align:center"></td>' +
 
       // Collaudo effettuato (anno, modificabile)
-      '<td style="width:68px"><input class="man-coll-eff" type="number" value="'+collEff+'" min="1980" max="2099" placeholder="es. 2030" style="'+inpCss+';width:64px;text-align:center"></td>' +
+      '<td style="width:76px"><input class="man-coll-eff" type="number" value="'+collEff+'" min="1980" max="2099" placeholder="2030" style="'+inpCss+';width:72px;text-align:center"></td>' +
 
       // Fine vita (calcolata da anno prod, modificabile)
-      '<td style="width:64px"><input class="man-vita" type="number" value="'+fineVita+'" min="1980" max="2099" placeholder="es. 2038" style="'+inpCss+';width:60px;text-align:center;'+(annoProd&&(annoProd+18)<=TODAY.getFullYear()?'background:#ffecec;color:#9b1c1c;font-weight:700':'')+'" title="Fine vita UNI 9994-1:2024 = anno prod. + 18 anni"></td>' +
+      '<td style="width:76px"><input class="man-vita" type="number" value="'+fineVita+'" min="1980" max="2099" placeholder="2038" style="'+inpCss+';width:72px;text-align:center;'+(annoProd&&(annoProd+18)<=TODAY.getFullYear()?'background:#ffecec;color:#9b1c1c;font-weight:700':'')+'" title="Fine vita UNI 9994-1:2024 = anno prod. + 18 anni"></td>' +
 
       // Campanella
       '<td style="text-align:center;width:38px"><span class="bell '+campCls+'" title="Scad. mann.: '+p.scad+'">●</span><br><span style="font-size:9px;font-weight:700">'+campLbl+'</span></td>' +
@@ -9556,6 +9558,209 @@ window.eseguiBackupManuale = function() {
     </div>
     <div style="padding:12px 20px;border-top:1px solid #eee;display:flex;justify-content:flex-end">
       <button class="btn" onclick="closeM('mStoricoPresidio')">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// =============================================================================
+// SISTEMA NOTIFICHE EMAIL (EmailJS)
+// =============================================================================
+var _EJS_KEY = 'fg_emailjs_config';
+
+function apriModalEmail() {
+  try {
+    var cfg = JSON.parse(localStorage.getItem(_EJS_KEY) || '{}');
+    if (cfg.publicKey)  document.getElementById('ejs-public-key').value  = cfg.publicKey;
+    if (cfg.serviceId)  document.getElementById('ejs-service-id').value  = cfg.serviceId;
+    if (cfg.templateId) document.getElementById('ejs-template-id').value = cfg.templateId;
+    if (cfg.email)      document.getElementById('ejs-email-dest').value  = cfg.email;
+    if (cfg.giorni)     document.getElementById('ejs-giorni').value      = cfg.giorni;
+  } catch(e) {}
+  openM('mEmail');
+}
+window.apriModalEmail = apriModalEmail;
+
+function salvaConfigEmail() {
+  var cfg = {
+    publicKey:  (document.getElementById('ejs-public-key')||{value:''}).value.trim(),
+    serviceId:  (document.getElementById('ejs-service-id')||{value:''}).value.trim(),
+    templateId: (document.getElementById('ejs-template-id')||{value:''}).value.trim(),
+    email:      (document.getElementById('ejs-email-dest')||{value:''}).value.trim(),
+    giorni:     (document.getElementById('ejs-giorni')||{value:'60'}).value
+  };
+  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId || !cfg.email) {
+    mostraStatoEmail('❌ Compila tutti i campi prima di salvare.', 'error'); return;
+  }
+  localStorage.setItem(_EJS_KEY, JSON.stringify(cfg));
+  mostraStatoEmail('✅ Configurazione salvata!', 'ok');
+  notifica('✅ Configurazione email salvata');
+}
+window.salvaConfigEmail = salvaConfigEmail;
+
+function mostraStatoEmail(msg, tipo) {
+  var el = document.getElementById('email-stato');
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.padding = '8px 12px';
+  el.style.borderRadius = '6px';
+  el.style.background = tipo==='ok' ? '#e8f5e9' : tipo==='error' ? '#fdecea' : '#fff3cd';
+  el.style.color = tipo==='ok' ? '#1b5e20' : tipo==='error' ? '#7b1c1c' : '#856404';
+  el.textContent = msg;
+}
+
+function _getCfgEmail() {
+  try { return JSON.parse(localStorage.getItem(_EJS_KEY) || '{}'); } catch(e) { return {}; }
+}
+
+function testEmail() {
+  var cfg = _getCfgEmail();
+  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId || !cfg.email) {
+    mostraStatoEmail('❌ Salva prima la configurazione.', 'error'); return;
+  }
+  mostraStatoEmail('⏳ Invio email di test...', 'info');
+  emailjs.init(cfg.publicKey);
+  emailjs.send(cfg.serviceId, cfg.templateId, {
+    to_email: cfg.email,
+    subject:  '🧪 Test — 3E Antincendio',
+    message:  'Email di test dal sistema gestionale 3E Antincendio.\n\nSe ricevi questa email la configurazione è corretta!'
+  }).then(function() {
+    mostraStatoEmail('✅ Email di test inviata a ' + cfg.email, 'ok');
+    notifica('✅ Email di test inviata!');
+  }).catch(function(err) {
+    mostraStatoEmail('❌ Errore: ' + (err.text || JSON.stringify(err)), 'error');
+  });
+}
+window.testEmail = testEmail;
+
+function inviaNotificaEmail() {
+  var cfg = _getCfgEmail();
+  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId || !cfg.email) {
+    mostraStatoEmail('❌ Salva prima la configurazione.', 'error'); return;
+  }
+  var giorni = parseInt(cfg.giorni) || 60;
+  var oggi   = new Date();
+  var limite = new Date(oggi.getTime() + giorni * 86400000);
+
+  var inScadenza = [];
+  (PRESIDI_DATA || []).forEach(function(p) {
+    if (!p.scad) return;
+    var parti = p.scad.split('/');
+    if (parti.length !== 3) return;
+    var data = new Date(parti[2], parti[1]-1, parti[0]);
+    if (data >= oggi && data <= limite) {
+      inScadenza.push({
+        cod: p.cod, tipo: p.tipo, ubi: p.ubi||'—',
+        cliente: p.cli||'—', scad: p.scad,
+        giorniRimasti: Math.ceil((data - oggi) / 86400000)
+      });
+    }
+  });
+
+  if (inScadenza.length === 0) {
+    mostraStatoEmail('ℹ️ Nessuna scadenza nei prossimi ' + giorni + ' giorni.', 'info'); return;
+  }
+
+  var righe = inScadenza
+    .sort(function(a,b){ return a.giorniRimasti - b.giorniRimasti; })
+    .map(function(p) {
+      return '• ' + p.cod + ' (' + p.tipo + ') — ' + p.cliente + ' — ' + p.ubi +
+             '\n  Scadenza: ' + p.scad + ' (tra ' + p.giorniRimasti + ' giorni)';
+    }).join('\n\n');
+
+  var messaggio = '🔔 RIEPILOGO SCADENZE — ' + oggi.toLocaleDateString('it-IT') + '\n\n' +
+    'Presidi in scadenza entro ' + giorni + ' giorni: ' + inScadenza.length + '\n\n' +
+    righe + '\n\n—\n3E Antincendio — Sistema gestionale';
+
+  mostraStatoEmail('⏳ Invio in corso...', 'info');
+  emailjs.init(cfg.publicKey);
+  emailjs.send(cfg.serviceId, cfg.templateId, {
+    to_email: cfg.email,
+    subject:  '🔔 3E Antincendio — ' + inScadenza.length + ' scadenze nei prossimi ' + giorni + ' giorni',
+    message:  messaggio
+  }).then(function() {
+    mostraStatoEmail('✅ Email inviata! ' + inScadenza.length + ' scadenze segnalate.', 'ok');
+    notifica('✅ Riepilogo scadenze inviato via email!');
+    localStorage.setItem('fg_email_ultimo_invio', oggi.toISOString());
+  }).catch(function(err) {
+    mostraStatoEmail('❌ Errore: ' + (err.text || JSON.stringify(err)), 'error');
+  });
+}
+window.inviaNotificaEmail = inviaNotificaEmail;
+
+// Invio automatico ogni lunedì
+setTimeout(function() {
+  try {
+    var oggi = new Date();
+    if (oggi.getDay() !== 1) return;
+    var ultimo = localStorage.getItem('fg_email_ultimo_invio');
+    if (ultimo && (oggi - new Date(ultimo)) / 86400000 < 6) return;
+    var cfg = _getCfgEmail();
+    if (!cfg.publicKey || !cfg.email) return;
+    if ((PRESIDI_DATA||[]).length > 0) {
+      console.log('📧 Lunedì — invio automatico scadenze...');
+      inviaNotificaEmail();
+    }
+  } catch(e) {}
+}, 12000);
+</script>
+
+<!-- ═══ MODAL NOTIFICHE EMAIL ═══ -->
+<div class="mo" id="mEmail" style="align-items:center;padding:16px">
+  <div style="background:#fff;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.35);width:96%;max-width:600px;margin:auto;display:flex;flex-direction:column;max-height:92vh">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:2px solid #eee;flex-shrink:0">
+      <span style="font-size:15px;font-weight:800">📧 Notifiche Email Scadenze</span>
+      <button onclick="closeM('mEmail')" style="background:#f5f5f5;border:none;border-radius:8px;width:32px;height:32px;font-size:16px;cursor:pointer">&#x2715;</button>
+    </div>
+    <div style="padding:20px;overflow-y:auto;flex:1">
+
+      <!-- Configurazione EmailJS -->
+      <div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#0d47a1">
+        <b>📋 Come configurare:</b><br>
+        1. Vai su <a href="https://www.emailjs.com" target="_blank" style="color:#0d47a1">emailjs.com</a> → crea account gratuito<br>
+        2. Crea un <b>Email Service</b> (collega la tua email Libero)<br>
+        3. Crea un <b>Email Template</b> con variabili: <code>{{to_email}}</code>, <code>{{subject}}</code>, <code>{{message}}</code><br>
+        4. Copia i codici qui sotto e salva
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-weight:700;font-size:12px;display:block;margin-bottom:4px">Public Key (EmailJS)</label>
+          <input id="ejs-public-key" type="text" placeholder="es. abc123XYZ..." style="width:100%;padding:8px;border:1.5px solid #ccc;border-radius:6px;font-size:12px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-weight:700;font-size:12px;display:block;margin-bottom:4px">Service ID</label>
+          <input id="ejs-service-id" type="text" placeholder="es. service_abc123..." style="width:100%;padding:8px;border:1.5px solid #ccc;border-radius:6px;font-size:12px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-weight:700;font-size:12px;display:block;margin-bottom:4px">Template ID</label>
+          <input id="ejs-template-id" type="text" placeholder="es. template_abc123..." style="width:100%;padding:8px;border:1.5px solid #ccc;border-radius:6px;font-size:12px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-weight:700;font-size:12px;display:block;margin-bottom:4px">La tua email (dove ricevere le notifiche)</label>
+          <input id="ejs-email-dest" type="email" placeholder="es. tre-e-impianti@libero.it" style="width:100%;padding:8px;border:1.5px solid #ccc;border-radius:6px;font-size:12px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-weight:700;font-size:12px;display:block;margin-bottom:4px">Giorni anticipo notifica</label>
+          <select id="ejs-giorni" style="width:100%;padding:8px;border:1.5px solid #ccc;border-radius:6px;font-size:12px">
+            <option value="30">30 giorni prima</option>
+            <option value="60" selected>60 giorni prima</option>
+            <option value="90">90 giorni prima</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn grn" style="font-size:12px" onclick="salvaConfigEmail()">💾 Salva configurazione</button>
+        <button class="btn" style="font-size:12px;background:#0d47a1;color:#fff;border-color:#0d47a1" onclick="inviaNotificaEmail()">📧 Invia riepilogo ora</button>
+        <button class="btn" style="font-size:12px;background:#f5f5f5;color:#333" onclick="testEmail()">🧪 Test email</button>
+      </div>
+
+      <div id="email-stato" style="margin-top:12px;font-size:12px;display:none"></div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid #eee;display:flex;justify-content:flex-end">
+      <button class="btn" onclick="closeM('mEmail')">Chiudi</button>
     </div>
   </div>
 </div>
