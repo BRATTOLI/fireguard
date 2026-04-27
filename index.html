@@ -596,6 +596,10 @@ tr:hover td{background:#fafafa}
     <div class="pc-ic">🔰</div>
     <div class="pc-nm" style="color:#173404">Segnaletica</div>
     <div class="pc-nr" style="color:#173404">ISO 7010</div>
+  </div><div class="pc" style="background:#E8F5E9" onclick="filtroTipoPresidi('UES')">
+    <div class="pc-ic">🚨</div>
+    <div class="pc-nm" style="color:#1B5E20">Uscita Sicurezza</div>
+    <div class="pc-nr" style="color:#1B5E20">UNI EN 179/1125</div>
   </div><div class="pc" style="background:#F0F0F0" onclick="filtroTipoPresidi('LIB')">
     <div class="pc-ic">📋</div>
     <div class="pc-nm" style="color:#222">Libero</div>
@@ -3986,6 +3990,7 @@ document.getElementById('data-oggi').textContent = TODAY.toLocaleDateString('it-
 var TIPI=[
   {id:'EST',n:'Estintore',ic:'🧯',c:'#C0392B',bg:'#FDECEA',tc:'#7B1C1C',nr:'UNI 9994-1:2024'},
   {id:'REI',n:'Porta REI',ic:'🚪',c:'#8B5E00',bg:'#FFF3CD',tc:'#664D00',nr:'UNI EN 1634'},
+  {id:'UES',n:'Uscita Sicurezza',ic:'🚨',c:'#006400',bg:'#E8F5E9',tc:'#1B5E20',nr:'UNI EN 179/1125'},
   {id:'IDR',n:'Idrante',ic:'🚿',c:'#1A4F8A',bg:'#D5E8F4',tc:'#0C3060',nr:'UNI 10779'},
   {id:'NSP',n:'Naspo DN25',ic:'🌀',c:'#0F6E56',bg:'#E1F5EE',tc:'#085041',nr:'UNI EN 671-1'},
   {id:'MAN',n:'Manichetta',ic:'🔌',c:'#534AB7',bg:'#EEEDFE',tc:'#3C3489',nr:'UNI EN 14540'},
@@ -4758,33 +4763,64 @@ function renderPresidi(filtroTipo){
   const tb=document.getElementById('tbl-presidi');if(!tb)return;
   let data=filtroTipo?PRESIDI_DATA.filter(p=>p.tipo===filtroTipo):PRESIDI_DATA;
   const q=document.getElementById('pres-search');
-  if(q&&q.value){const v=q.value.toLowerCase();data=data.filter(p=>p.cod.toLowerCase().includes(v)||p.cli.toLowerCase().includes(v)||p.matr.toLowerCase().includes(v));}
+  if(q&&q.value){const v=q.value.toLowerCase();data=data.filter(p=>p.cod.toLowerCase().includes(v)||p.cli.toLowerCase().includes(v)||(p.matr||'').toLowerCase().includes(v));}
   const t=TIPI.find(x=>x.id===filtroTipo);
   if(t)document.getElementById('pres-title').textContent=t.ic+' '+t.n;
-  else document.getElementById('pres-title').textContent='🧯 Tutti i presidi';
-  tb.innerHTML=data.map(p=>{
-    const tip=TIPI.find(x=>x.id===p.tipo)||TIPI[0];
-    return`<tr>
-      <td><strong>${p.cod}</strong></td>
-      <td>${tip.ic} ${tip.n}</td>
-      <td>${p.cli}</td>
-      <td>${p.ubi}</td>
-      <td>${p.matr}</td>
-      <td>${p.annop||'—'}</td>
-      <td>${p.uv}</td>
-      <td>${p.scad}</td>
-      <td>${p.rev}</td>
-      <td>${p.coll}</td>
-      <td>${p.vita}</td>
-      <td>${campanellaVita(p.vita)}</td>
-      <td>${campanella(p.scad,p.rev)}</td>
-      <td>${stBadge(p.esito)}</td>
-      <td><button class="btn sm" onclick="apriQRMod('${p.cod}','${p.cod} — ${tip.n}')">📱</button></td>
-      <td><button class="btn sm pr" onclick="apriSchedaPresidio('${p.cod}')">Scheda</button></td>
-      <td><button class="btn sm" style="background:#e8f0fe;border-color:#aac4f7;color:#1a3f8a" onclick="apriStoricoPresidio('${p.cod}')" title="Storico completo interventi su questo presidio">📋</button></td>
-      <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('${p.cod}')" title="Stampa targhetta DYMO">🏷</button></td>
-      <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('${p.cod}')">🗑️</button></td>
-    </tr>`;}).join('');
+  else document.getElementById('pres-title').textContent='🔥 Tutti i presidi';
+
+  // ── Aggiorna intestazioni tabella in base al tipo ──────────────────────────
+  const thead = document.querySelector('#tbl-presidi')?.closest('table')?.querySelector('thead tr');
+
+  if(filtroTipo === 'REI'){
+    // Intestazioni specifiche Porta REI
+    if(thead) thead.innerHTML = '<th>Codice</th><th>Tipo REI</th><th>Cliente</th><th>N°/Posizione</th><th>Matricola</th><th>Ante</th><th>Costruttore</th><th>Anno</th><th>Marcatura CE</th><th>Chiudiporta</th><th>Din. Libera (N)</th><th>Din. Press. (N)</th><th>Manut.</th><th>Esito</th><th>📋</th><th>🗑️</th>';
+    tb.innerHTML=data.map(p=>{
+      const tip=TIPI.find(x=>x.id===p.tipo)||{ic:'🚪',n:'Porta REI'};
+      return`<tr>
+        <td><strong>${p.cod}</strong></td>
+        <td style="font-size:11px">${p.rei_tipo||'—'}</td>
+        <td style="font-size:11px">${p.cli}</td>
+        <td>${p.ubi||'—'}</td>
+        <td>${p.matr||'—'}</td>
+        <td style="text-align:center">${p.rei_ante||'—'}</td>
+        <td style="font-size:11px">${p.costr||'—'}</td>
+        <td style="text-align:center">${p.annop||'—'}</td>
+        <td style="text-align:center;font-size:11px">${p.rei_marcace||'—'}</td>
+        <td style="text-align:center;font-size:11px">${p.rei_chiudiport||'—'}</td>
+        <td style="text-align:center">${p.rei_din_libera||'—'}</td>
+        <td style="text-align:center">${p.rei_din_press||'—'}</td>
+        <td style="font-size:11px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${p.rei_manut||''}">${p.rei_manut||'—'}</td>
+        <td>${stBadge(p.esito)}</td>
+        <td><button class="btn sm" style="background:#e8f0fe;border-color:#aac4f7;color:#1a3f8a" onclick="apriStoricoPresidio('${p.cod}')" title="Storico">📋</button></td>
+        <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('${p.cod}')">🗑️</button></td>
+      </tr>`;}).join('');
+  } else {
+    // Intestazioni standard (estintori e altri)
+    if(thead) thead.innerHTML = '<th>Codice</th><th>Tipo</th><th>Cliente</th><th>Ubicazione</th><th>Matricola</th><th>Anno prod.</th><th>Ult. verifica</th><th>Prox. scad.</th><th>Revisione</th><th>Collaudo</th><th>Fine vita</th><th>⏰ Vita</th><th>⏰ Scad.</th><th>Stato</th><th>QR</th><th>Scheda</th><th>📋</th><th>🏷</th><th>🗑️</th>';
+    tb.innerHTML=data.map(p=>{
+      const tip=TIPI.find(x=>x.id===p.tipo)||TIPI[0];
+      return`<tr>
+        <td><strong>${p.cod}</strong></td>
+        <td>${tip.ic} ${tip.n}</td>
+        <td>${p.cli}</td>
+        <td>${p.ubi}</td>
+        <td>${p.matr}</td>
+        <td>${p.annop||'—'}</td>
+        <td>${p.uv}</td>
+        <td>${p.scad}</td>
+        <td>${p.rev}</td>
+        <td>${p.coll}</td>
+        <td>${p.vita}</td>
+        <td>${campanellaVita(p.vita)}</td>
+        <td>${campanella(p.scad,p.rev)}</td>
+        <td>${stBadge(p.esito)}</td>
+        <td><button class="btn sm" onclick="apriQRMod('${p.cod}','${p.cod} — ${tip.n}')">📱</button></td>
+        <td><button class="btn sm pr" onclick="apriSchedaPresidio('${p.cod}')">Scheda</button></td>
+        <td><button class="btn sm" style="background:#e8f0fe;border-color:#aac4f7;color:#1a3f8a" onclick="apriStoricoPresidio('${p.cod}')" title="Storico completo interventi su questo presidio">📋</button></td>
+        <td><button class="btn sm" style="background:#CC0000;color:#fff;border-color:#CC0000" onclick="apriTarghetta('${p.cod}')" title="Stampa targhetta DYMO">🏷</button></td>
+        <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('${p.cod}')">🗑️</button></td>
+      </tr>`;}).join('');
+  }
 }
 
 function apriStoricoPresidio(cod) {
@@ -6318,33 +6354,86 @@ function importaExcel(){
   ultimoImport.righe.forEach(function(row, i){
     const cod = prefisso + '-' + String(i + 1).padStart(3, '0');
     if(!PRESIDI_DATA.find(function(x){ return x.cod === cod; })){
-      PRESIDI_DATA.push({
-        cod:      cod,
-        tipo:     'EST',
-        cli:      nomeCliente,
-        ubi:      colVal(row, 'posiz') || colVal(row, 'ubicaz') || '—',
-        matr:     colVal(row, 'matricol'),
-        annop:    colVal(row, 'anno') || colVal(row, 'prod') || '—',
-        uv:       colVal(row, 'verific') || colVal(row, 'ultima'),
-        scad:     colVal(row, 'scad'),
-        rev:      colVal(row, 'revis'),
-        coll:     colVal(row, 'collaud'),
-        vita:     (function(){
-          // Prima prova colonna vita esplicita nel file
-          const vitaExcel = colVal(row, 'vita');
-          if(vitaExcel && vitaExcel !== '—') return vitaExcel;
-          // Altrimenti calcola da anno produzione + 18
-          const annop = parseInt(colVal(row, 'anno') || colVal(row, 'prod') || '');
-          if(!isNaN(annop) && annop >= 1980) return String(annop + 18);
-          return '—';
-        })(),
-        esito:    colVal(row, 'esit') || 'N.V.',
-        // ── Campi aggiuntivi da Excel ────────────────────────────────────────
-        costr:    colVal(row, 'costrut') || colVal(row, 'marca') || colVal(row, 'produt') || '—',
-        peso:     colValKg(row),
-        pesotot:  colValKgTot(row),
-        agente:   colVal(row, 'agente') || colVal(row, 'tipo') || colVal(row, 'polvere') || '—',
-      });
+      // ── Rileva tipo presidio automaticamente ──────────────────────────────
+      const tipoRaw = (colVal(row,'compartimentaz') || colVal(row,'tipo') || colVal(row,'descrizione') || '').toLowerCase();
+      let tipoRilevato = 'EST'; // default estintore
+      if(tipoRaw.includes('rei') || tipoRaw.includes('tagliafuoco') || tipoRaw.includes('compartiment')) tipoRilevato = 'REI';
+      else if(tipoRaw.includes('idrante')) tipoRilevato = 'IDR';
+      else if(tipoRaw.includes('naspo')) tipoRilevato = 'NSP';
+      else if(tipoRaw.includes('uscita') || tipoRaw.includes('antipanico') || tipoRaw.includes('emergenza')) tipoRilevato = 'UES';
+      else if(tipoRaw.includes('luce')) tipoRilevato = 'EM';
+      else if(tipoRaw.includes('rivelat') || tipoRaw.includes('fumo')) tipoRilevato = 'RIV';
+
+      // Tenta anche dalla colonna numero (per Porte REI il file ha colonna NUMERO)
+      // Se c'è colonna 'compartimentaz' con REI dentro → sicuramente REI
+      const colCompart = xlHeaders.find(function(h){ return h.label.toLowerCase().includes('compartiment') || h.label.toLowerCase().includes('tagliafuoco'); });
+      if(colCompart) tipoRilevato = 'REI';
+
+      if(tipoRilevato === 'REI'){
+        // ── PORTA REI ────────────────────────────────────────────────────────
+        const esitoCrudo = colVal(row,'esito') || colVal(row,'esit') || '';
+        const esitoNorm  = esitoCrudo.toLowerCase().includes('non') ? 'nc' : esitoCrudo.toLowerCase().startsWith('c') ? 'ok' : 'N.V.';
+        PRESIDI_DATA.push({
+          cod:      cod,
+          tipo:     'REI',
+          cli:      nomeCliente,
+          ubi:      colVal(row,'posiz') || colVal(row,'ubicaz') || colVal(row,'numero') || '—',
+          matr:     colVal(row,'matricol') || colVal(row,'numero'),
+          annop:    colVal(row,'anno') || '—',
+          costr:    colVal(row,'costrut') || colVal(row,'marca') || '—',
+          esito:    esitoNorm,
+          // Campi specifici Porta REI
+          rei_tipo:      colVal(row,'compartiment') || colVal(row,'tagliafuoco') || '—',
+          rei_ante:      colVal(row,'ante') || '—',
+          rei_viteria:   colVal(row,'viteria') || colVal(row,'ruggine') || '—',
+          rei_cerniere:  colVal(row,'perni') || colVal(row,'cerniere') || '—',
+          rei_ossidaz:   colVal(row,'ossidaz') || '—',
+          rei_vernic:    colVal(row,'verniciatura') || colVal(row,'stato verniciatura') || '—',
+          rei_marcace:   colVal(row,'marcatura') || colVal(row,'ce') || '—',
+          rei_guarnterm: colVal(row,'termoespand') || colVal(row,'guarnizioni termoes') || '—',
+          rei_guarnbatt: colVal(row,'battuta') || colVal(row,'guarnizioni di battuta') || '—',
+          rei_chiudiport:colVal(row,'chiudiporta') || colVal(row,'en 1154') || '—',
+          rei_coord:     colVal(row,'coordinatore') || colVal(row,'en 1158') || '—',
+          rei_gioco:     colVal(row,'gioco') || '—',
+          rei_integrita: colVal(row,'integrit') || colVal(row,'manomissioni') || '—',
+          rei_din_libera:colVal(row,'porta libera') || colVal(row,'newton') || '—',
+          rei_din_press: colVal(row,'pressione') || colVal(row,'porta in pressione') || '—',
+          rei_scrocchi:  colVal(row,'rientro') || colVal(row,'scrocchi') || '—',
+          rei_barra_lung:colVal(row,'lunghezza barra') || colVal(row,'copertura') || '—',
+          rei_barra_alt: colVal(row,'altezza della barra') || colVal(row,'altezza barra') || '—',
+          rei_manut:     colVal(row,'manutenzione') || '—',
+          note:          colVal(row,'note') || '',
+          uv:            '—', scad: '—', rev: '—', coll: '—', vita: '—',
+          peso: '—', pesotot: '—', agente: '—',
+        });
+      } else {
+        // ── ESTINTORE / altri presidi standard ──────────────────────────────
+        PRESIDI_DATA.push({
+          cod:      cod,
+          tipo:     tipoRilevato,
+          cli:      nomeCliente,
+          ubi:      colVal(row, 'posiz') || colVal(row, 'ubicaz') || '—',
+          matr:     colVal(row, 'matricol'),
+          annop:    colVal(row, 'anno') || colVal(row, 'prod') || '—',
+          uv:       colVal(row, 'verific') || colVal(row, 'ultima'),
+          scad:     colVal(row, 'scad'),
+          rev:      colVal(row, 'revis'),
+          coll:     colVal(row, 'collaud'),
+          vita:     (function(){
+            const vitaExcel = colVal(row, 'vita');
+            if(vitaExcel && vitaExcel !== '—') return vitaExcel;
+            const annop = parseInt(colVal(row, 'anno') || colVal(row, 'prod') || '');
+            if(!isNaN(annop) && annop >= 1980) return String(annop + 18);
+            return '—';
+          })(),
+          esito:    colVal(row, 'esit') || 'N.V.',
+          costr:    colVal(row, 'costrut') || colVal(row, 'marca') || colVal(row, 'produt') || '—',
+          peso:     colValKg(row),
+          pesotot:  colValKgTot(row),
+          agente:   colVal(row, 'agente') || colVal(row, 'tipo') || colVal(row, 'polvere') || '—',
+          note:     colVal(row, 'note') || '',
+        });
+      }
       aggiunti++;
     }
   });
