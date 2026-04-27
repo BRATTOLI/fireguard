@@ -4771,7 +4771,8 @@ function renderPresidi(filtroTipo){
   // ── Aggiorna intestazioni tabella in base al tipo ──────────────────────────
   const thead = document.querySelector('#tbl-presidi')?.closest('table')?.querySelector('thead tr');
 
-  if(filtroTipo === 'REI'){
+  const tuttoREI = data.length > 0 && data.every(function(p){ return p.tipo==='REI' || p.tipo==='UES'; });
+  if(filtroTipo === 'REI' || (tuttoREI && filtroTipo)){
     // Intestazioni specifiche Porta REI
     if(thead) thead.innerHTML = '<th>Codice</th><th>Tipo REI</th><th>Cliente</th><th>N°/Posizione</th><th>Matricola</th><th>Ante</th><th>Costruttore</th><th>Anno</th><th>Marcatura CE</th><th>Chiudiporta</th><th>Din. Libera (N)</th><th>Din. Press. (N)</th><th>Manut.</th><th>Esito</th><th>📋</th><th>🗑️</th>';
     tb.innerHTML=data.map(p=>{
@@ -4905,11 +4906,16 @@ function renderStoricoPresidio() {
   contenuto.innerHTML = html;
 }
 
+var _filtroTipoAttivo = null; // tiene traccia del tipo filtro attivo
+
 function filtroTipoPresidi(id){
-  renderPresidi(id);
+  _filtroTipoAttivo = (id === _filtroTipoAttivo) ? null : id; // toggle: riclicca per rimuovere filtro
+  renderPresidi(_filtroTipoAttivo);
   document.querySelectorAll('#pc-presidi .pc').forEach(c=>c.classList.remove('sel'));
-  const t=TIPI.find(x=>x.id===id);
-  if(t){const els=document.querySelectorAll('#pc-presidi .pc');els.forEach(el=>{if(el.textContent.includes(t.n))el.classList.add('sel');});}
+  if(_filtroTipoAttivo){
+    const t=TIPI.find(x=>x.id===_filtroTipoAttivo);
+    if(t){const els=document.querySelectorAll('#pc-presidi .pc');els.forEach(el=>{if(el.textContent.includes(t.n))el.classList.add('sel');});}
+  }
 }
 
 function renderDePaloTable(){
@@ -6324,8 +6330,14 @@ function importaExcel(){
   const nuovoCliId = 'CLI-' + String(_maxCliNum + 1).padStart(3, '0');
 
   // STEP 1 — Crea il cliente in CLI_DATA se non esiste già (confronto per ragione sociale)
+  // Confronto flessibile: match esatto O il nome file contiene/è contenuto nella RS
   const clienteEsistente = CLI_DATA.find(function(c){
-    return c.rs.toLowerCase() === nomeCliente.toLowerCase();
+    const a = c.rs.toLowerCase().trim();
+    const b = nomeCliente.toLowerCase().trim();
+    return a === b || a.includes(b) || b.includes(a) ||
+           // rimuovi articoli/preposizioni comuni per confronto robusto
+           a.replace(/\b(di|del|della|dei|delle|degli|il|lo|la|le|gli|i|un|una|uno)\b/g,'').trim() ===
+           b.replace(/\b(di|del|della|dei|delle|degli|il|lo|la|le|gli|i|un|una|uno)\b/g,'').trim();
   });
 
   let cliId;
@@ -6351,8 +6363,24 @@ function importaExcel(){
   // STEP 2 — Push presidi in PRESIDI_DATA collegati al cliente
   const prefisso = cliId.replace('CLI-','IMP');   // es. IMP001
   let aggiunti = 0;
+  let contatore = 0; // contatore righe valide (esclude testo/note)
   ultimoImport.righe.forEach(function(row, i){
-    const cod = prefisso + '-' + String(i + 1).padStart(3, '0');
+    // ── Salta righe non valide: note, legende, testo descrittivo ────────────
+    // Una riga porta REI valida ha almeno: numero porta (colonna 0 = numero intero)
+    // e colonna costruttore o matricola valorizzata
+    const colCompartREI = xlHeaders.find(function(h){
+      return h.label.toLowerCase().includes('compartiment') || h.label.toLowerCase().includes('tagliafuoco');
+    });
+    if(colCompartREI){
+      // Siamo in un file REI: salta righe dove la prima colonna non è un numero
+      const primaCol = String(row[0]||'').trim();
+      if(!primaCol || isNaN(parseInt(primaCol))) return; // salta nota/legenda
+      // Salta anche righe dove il testo è chiaramente descrittivo (>80 caratteri)
+      const tuttoTesto = row.slice(0,5).map(function(c){return String(c||'');}).join(' ');
+      if(tuttoTesto.length > 150) return;
+    }
+    contatore++;
+    const cod = prefisso + '-' + String(contatore).padStart(3, '0');
     if(!PRESIDI_DATA.find(function(x){ return x.cod === cod; })){
       // ── Rileva tipo presidio automaticamente ──────────────────────────────
       const tipoRaw = (colVal(row,'compartimentaz') || colVal(row,'tipo') || colVal(row,'descrizione') || '').toLowerCase();
@@ -6726,10 +6754,29 @@ function caricaPresidiManutenzione(){
   var cli = CLI_DATA.find(function(c){ return c.id===cliId; });
   if(!cli){ return; }
 
-  // Solo estintori per questa scheda — gli altri tipi verranno in schede dedicate
-  var presidi = PRESIDI_DATA.filter(function(p){ return p.cli===cli.rs; });
+  // Solo presidi estintori (EST, IDR, NSP, ecc.) — Porte REI hanno scheda dedicata
+  var tuttiPresidi = PRESIDI_DATA.filter(function(p){ return p.cli===cli.rs; });
+  var presidi = tuttiPresidi.filter(function(p){ return p.tipo !== 'REI' && p.tipo !== 'UES'; });
+  var nREI = tuttiPresidi.filter(function(p){ return p.tipo === 'REI' || p.tipo === 'UES'; }).length;
+
   document.getElementById('man-sem-nome-cli').textContent = cli.rs;
   document.getElementById('man-sem-count').textContent = presidi.length + ' presid' + (presidi.length===1?'io':'i');
+
+  // Avviso Porte REI se presenti
+  var avvisoREI = document.getElementById('man-sem-avviso-rei');
+  if(!avvisoREI){
+    avvisoREI = document.createElement('div');
+    avvisoREI.id = 'man-sem-avviso-rei';
+    avvisoREI.style.cssText = 'background:#FFF3CD;border:1.5px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#856404;display:none';
+    var cont2 = document.getElementById('man-sem-cont');
+    if(cont2) cont2.insertBefore(avvisoREI, cont2.firstChild);
+  }
+  if(nREI > 0){
+    avvisoREI.style.display = 'block';
+    avvisoREI.innerHTML = '🚪 <strong>' + nREI + ' Porta/e REI</strong> presente/i per questo cliente — la scheda Porte REI è in sviluppo. Per ora registra l\'esito manualmente nel Registro interventi.';
+  } else {
+    avvisoREI.style.display = 'none';
+  }
 
   var tbody = document.getElementById('tbl-man-sem-body');
   if(!tbody) return;
