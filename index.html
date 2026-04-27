@@ -4138,12 +4138,187 @@ function renderClienti(){
       <td><span class="st ${ss[c.stato]||'s-gray'}">${sl[c.stato]||'—'}</span></td>
       <td><button class="btn sm" onclick="apriQRModCliente('${c.id}','${c.rs}')">📱 QR</button></td>
       <td><button class="btn sm" style="background:#e8f0fe;border-color:#aac4f7;color:#1a3f8a;font-size:11px" onclick="apriStoricoCliente('${c.id}')" title="Storico completo interventi">📋 Storico</button></td>
+      <td><button class="btn sm" style="background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20;font-size:11px" onclick="generaReportAnnuale('${c.id}')" title="Report annuale per il cliente">📊 Report</button></td>
       <td style="display:flex;gap:4px">
         <button class="btn sm pr" onclick="apriModificaCliente('${c.id}')">✏️ Modifica</button>
         <button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaCliente('${c.id}')">🗑️</button>
       </td>
     </tr>`;}).join('');
   aggiornaSelectClienti();
+}
+
+// ─── REPORT ANNUALE PER CLIENTE ──────────────────────────────────────────────
+function generaReportAnnuale(cliId) {
+  var cli = CLI_DATA.find(function(c){ return c.id === cliId; });
+  if (!cli) { notifica('❌ Cliente non trovato'); return; }
+
+  var annoCorrente = new Date().getFullYear();
+  var presidiCli   = PRESIDI_DATA.filter(function(p){ return p.cli === cli.rs; });
+  var interventiCli = REG_DATA.filter(function(r){ return r.cliId === cliId; });
+
+  // Interventi dell'anno corrente
+  var interventiAnno = interventiCli.filter(function(r){
+    return r.d && r.d.indexOf(String(annoCorrente)) !== -1;
+  });
+
+  // Statistiche presidi
+  var nConformi   = presidiCli.filter(function(p){ return p.esito === 'ok'; }).length;
+  var nAnomalie   = presidiCli.filter(function(p){ return p.esito === 'anom'; }).length;
+  var nNonConf    = presidiCli.filter(function(p){ return p.esito === 'nc'; }).length;
+  var nNd         = presidiCli.filter(function(p){ return p.esito === 'nd'; }).length;
+
+  // Presidi da sostituire entro 2 anni
+  var daRinnovare = presidiCli.filter(function(p){
+    return p.vita && parseInt(p.vita) <= annoCorrente + 2;
+  });
+
+  // Scadenze prossimi 12 mesi
+  var oggi = new Date();
+  var tra12mesi = new Date(oggi.getFullYear(), oggi.getMonth()+12, oggi.getDate());
+  var inScadenza = presidiCli.filter(function(p){
+    if (!p.scad) return false;
+    var parti = p.scad.split('/');
+    if (parti.length !== 3) return false;
+    var data = new Date(parti[2], parti[1]-1, parti[0]);
+    return data >= oggi && data <= tra12mesi;
+  });
+
+  var ditta = typeof DITTA !== 'undefined' ? DITTA : {};
+
+  // ── Costruisci HTML Report ──────────────────────────────────────────────────
+  var html = '';
+
+  // Intestazione ditta
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
+  html += '<tr>';
+  html += '<td style="width:70%;vertical-align:top">';
+  html += '<div style="font-size:14pt;font-weight:bold;color:#1A4F8A">' + (ditta.rs||'3E di Brattoli Pasquale') + '</div>';
+  html += '<div style="font-size:9pt;color:#555">' + (ditta.ind||'') + (ditta.com ? ' — ' + ditta.com : '') + '</div>';
+  html += '<div style="font-size:9pt;color:#555">Tel. ' + (ditta.tel||'') + (ditta.email ? ' — ' + ditta.email : '') + '</div>';
+  html += '</td>';
+  html += '<td style="text-align:right;vertical-align:top">';
+  html += '<div style="font-size:10pt;font-weight:bold;color:#1A4F8A">REPORT ANNUALE MANUTENZIONE</div>';
+  html += '<div style="font-size:9pt;color:#555">Anno ' + annoCorrente + '</div>';
+  html += '<div style="font-size:9pt;color:#555">Data: ' + oggi.toLocaleDateString('it-IT') + '</div>';
+  html += '</td>';
+  html += '</tr></table>';
+
+  html += '<hr style="border:2px solid #1A4F8A;margin-bottom:14px">';
+
+  // Dati cliente
+  html += '<table style="width:100%;border-collapse:collapse;background:#f0f6ff;border:1px solid #b5d4f4;margin-bottom:14px">';
+  html += '<tr><td style="padding:10px 14px;border:none">';
+  html += '<div style="font-size:11pt;font-weight:bold;color:#1A4F8A">📋 CLIENTE: ' + cli.rs + '</div>';
+  if (cli.ind) html += '<div style="font-size:9pt;color:#555">Indirizzo: ' + cli.ind + (cli.com ? ' — ' + cli.com : '') + '</div>';
+  if (cli.cf)  html += '<div style="font-size:9pt;color:#555">C.F./P.IVA: ' + cli.cf + '</div>';
+  if (cli.ref) html += '<div style="font-size:9pt;color:#555">Referente: ' + cli.ref + '</div>';
+  html += '</td></tr></table>';
+
+  // Riepilogo statistiche
+  html += '<div style="font-size:10pt;font-weight:bold;color:#1A4F8A;margin-bottom:6px">📊 RIEPILOGO ANNO ' + annoCorrente + '</div>';
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:14px">';
+  html += '<tr>';
+  var kpis = [
+    { label: 'Presidi totali',         val: presidiCli.length,     bg: '#f0f6ff', color: '#1A4F8A' },
+    { label: 'Conformi',               val: nConformi,              bg: '#f0fff4', color: '#1b5e20' },
+    { label: 'Anomalie rilevate',       val: nAnomalie,              bg: '#fffbf0', color: '#856404' },
+    { label: 'Non conformi',           val: nNonConf,               bg: '#fff0f0', color: '#9b1c1c' },
+    { label: 'Interventi anno',        val: interventiAnno.length,  bg: '#f5f0ff', color: '#4a148c' },
+  ];
+  kpis.forEach(function(k) {
+    html += '<td style="text-align:center;padding:10px 6px;background:'+k.bg+';border:1px solid #e0e0e0">';
+    html += '<div style="font-size:16pt;font-weight:bold;color:'+k.color+'">'+k.val+'</div>';
+    html += '<div style="font-size:8pt;color:#666">'+k.label+'</div>';
+    html += '</td>';
+  });
+  html += '</tr></table>';
+
+  // Tabella presidi
+  html += '<div style="font-size:10pt;font-weight:bold;color:#1A4F8A;margin-bottom:6px">🧯 ELENCO PRESIDI</div>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:8pt;margin-bottom:14px">';
+  html += '<thead><tr style="background:#1A4F8A;color:#fff">';
+  html += '<th style="padding:5px 6px;text-align:left">Codice</th>';
+  html += '<th style="padding:5px 6px;text-align:left">Tipo</th>';
+  html += '<th style="padding:5px 6px;text-align:left">Ubicazione</th>';
+  html += '<th style="padding:5px 6px;text-align:left">Matricola</th>';
+  html += '<th style="padding:5px 6px;text-align:center">Ult. mann.</th>';
+  html += '<th style="padding:5px 6px;text-align:center">Pross. mann.</th>';
+  html += '<th style="padding:5px 6px;text-align:center">Revisione</th>';
+  html += '<th style="padding:5px 6px;text-align:center">Fine vita</th>';
+  html += '<th style="padding:5px 6px;text-align:center">Esito</th>';
+  html += '</tr></thead><tbody>';
+
+  presidiCli.forEach(function(p, i) {
+    var tip = (TIPI||[]).find(function(t){ return t.id === p.tipo; }) || { n: p.tipo };
+    var esitoColor = p.esito==='ok' ? '#1b5e20' : p.esito==='nc' ? '#9b1c1c' : p.esito==='anom' ? '#856404' : '#555';
+    var esitoLabel = p.esito==='ok' ? 'Conforme' : p.esito==='nc' ? 'Non conforme' : p.esito==='anom' ? 'Anomalia' : p.esito==='nd' ? 'N.D. in loco' : '—';
+    var vitaAllarme = p.vita && parseInt(p.vita) <= annoCorrente + 2;
+    html += '<tr style="background:' + (i%2===0 ? '#fff' : '#f9f9f9') + (vitaAllarme ? ';border-left:3px solid #C0392B' : '') + '">';
+    html += '<td style="padding:4px 6px;font-weight:bold">' + p.cod + '</td>';
+    html += '<td style="padding:4px 6px">' + tip.n + '</td>';
+    html += '<td style="padding:4px 6px">' + (p.ubi||'—') + '</td>';
+    html += '<td style="padding:4px 6px">' + (p.matr||'—') + '</td>';
+    html += '<td style="padding:4px 6px;text-align:center">' + (p.uv||'—') + '</td>';
+    html += '<td style="padding:4px 6px;text-align:center">' + (p.scad||'—') + '</td>';
+    html += '<td style="padding:4px 6px;text-align:center">' + (p.rev||'—') + (p.proxrev ? ' → '+p.proxrev : '') + '</td>';
+    html += '<td style="padding:4px 6px;text-align:center;' + (vitaAllarme?'color:#C0392B;font-weight:bold':'') + '">' + (p.vita||'—') + (vitaAllarme?' ⚠️':'') + '</td>';
+    html += '<td style="padding:4px 6px;text-align:center;color:' + esitoColor + ';font-weight:bold">' + esitoLabel + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+
+  // Presidi da rinnovare
+  if (daRinnovare.length > 0) {
+    html += '<div style="font-size:10pt;font-weight:bold;color:#C0392B;margin-bottom:6px">⚠️ PRESIDI DA SOSTITUIRE (fine vita entro ' + (annoCorrente+2) + ')</div>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:8pt;margin-bottom:14px;border:1.5px solid #C0392B">';
+    html += '<thead><tr style="background:#C0392B;color:#fff">';
+    html += '<th style="padding:5px 6px">Codice</th><th style="padding:5px 6px">Tipo</th><th style="padding:5px 6px">Ubicazione</th><th style="padding:5px 6px">Matricola</th><th style="padding:5px 6px">Anno prod.</th><th style="padding:5px 6px">Fine vita</th>';
+    html += '</tr></thead><tbody>';
+    daRinnovare.forEach(function(p, i) {
+      var tip = (TIPI||[]).find(function(t){ return t.id === p.tipo; }) || { n: p.tipo };
+      html += '<tr style="background:' + (i%2===0?'#fff5f5':'#fff') + '">';
+      html += '<td style="padding:4px 6px;font-weight:bold">' + p.cod + '</td>';
+      html += '<td style="padding:4px 6px">' + tip.n + '</td>';
+      html += '<td style="padding:4px 6px">' + (p.ubi||'—') + '</td>';
+      html += '<td style="padding:4px 6px">' + (p.matr||'—') + '</td>';
+      html += '<td style="padding:4px 6px;text-align:center">' + (p.annop||'—') + '</td>';
+      html += '<td style="padding:4px 6px;text-align:center;color:#C0392B;font-weight:bold">' + (p.vita||'—') + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+
+  // Scadenze prossimi 12 mesi
+  if (inScadenza.length > 0) {
+    html += '<div style="font-size:10pt;font-weight:bold;color:#E67E22;margin-bottom:6px">📅 SCADENZE PROSSIMI 12 MESI</div>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:8pt;margin-bottom:14px;border:1.5px solid #E67E22">';
+    html += '<thead><tr style="background:#E67E22;color:#fff">';
+    html += '<th style="padding:5px 6px">Codice</th><th style="padding:5px 6px">Tipo</th><th style="padding:5px 6px">Ubicazione</th><th style="padding:5px 6px">Scadenza</th>';
+    html += '</tr></thead><tbody>';
+    inScadenza.sort(function(a,b){ return (a.scad||'').localeCompare(b.scad||''); }).forEach(function(p, i) {
+      var tip = (TIPI||[]).find(function(t){ return t.id === p.tipo; }) || { n: p.tipo };
+      html += '<tr style="background:' + (i%2===0?'#fffbf0':'#fff') + '">';
+      html += '<td style="padding:4px 6px;font-weight:bold">' + p.cod + '</td>';
+      html += '<td style="padding:4px 6px">' + tip.n + '</td>';
+      html += '<td style="padding:4px 6px">' + (p.ubi||'—') + '</td>';
+      html += '<td style="padding:4px 6px;text-align:center;font-weight:bold;color:#E67E22">' + (p.scad||'—') + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+
+  // Nota finale
+  html += '<table style="width:100%;border-collapse:collapse;border:1px solid #ccc;margin-top:14px">';
+  html += '<tr><td style="padding:8px 12px;font-size:8pt;color:#555;border:none">';
+  html += '<b>Nota:</b> Il presente report è generato automaticamente dal sistema gestionale 3E Antincendio. ';
+  html += 'I dati si riferiscono ai presidi registrati al ' + oggi.toLocaleDateString('it-IT') + '. ';
+  html += 'Per informazioni contattare: ' + (ditta.tel||'') + ' — ' + (ditta.email||'');
+  html += '</td></tr></table>';
+
+  // Scarica il documento Word
+  var nomeFile = 'Report_Annuale_' + cli.rs.replace(/[^a-zA-Z0-9]/g,'_') + '_' + annoCorrente;
+  scaricaDoc(html, nomeFile);
+  notifica('✅ Report annuale scaricato per ' + cli.rs);
 }
 
 function apriStoricoCliente(cliId){
@@ -6485,7 +6660,7 @@ function caricaPresidiManutenzione(){
     // Revisione effettuata: dal presidio se presente, altrimenti vuoto
     var revEff   = (p.rev && p.rev!=='—') ? p.rev  : '';
     // Prossima revisione: dal presidio se presente, altrimenti calcolata (+6 anni)
-    var revPross = (p.proxrev && p.proxrev!=='—') ? p.proxrev : (revEff ? String(parseInt(revEff)+6) : (annoProd ? String(annoProd+5) : ''));
+    var revPross = (p.proxrev && p.proxrev!=='—') ? p.proxrev : (revEff ? String(parseInt(revEff)+5) : (annoProd ? String(annoProd+5) : ''));
     // Collaudo effettuato: dal presidio se presente, altrimenti vuoto
     var collEff  = (p.coll && p.coll!=='—') ? p.coll : '';
     // Fine vita: dal presidio se presente, altrimenti calcolo auto
@@ -6614,7 +6789,7 @@ function ricalcolaRigaAuto(idx){
   var revEffEl = row.querySelector('.man-rev-eff');
   var revEff   = revEffEl && !isNaN(parseInt(revEffEl.value)) ? parseInt(revEffEl.value) : annoProd;
   var revProssEl = row.querySelector('.man-rev-prox');
-  if(revProssEl) revProssEl.value = String(revEff + 6);
+  if(revProssEl) revProssEl.value = String(revEff + 5);
 
   // Collaudo: rimane fisso (unico collaudo — fine vita 18 anni, non serve prossimo)
 
@@ -6637,7 +6812,7 @@ function ricalcolaRevPross(idx){
   var revEff   = revEffEl ? parseInt(revEffEl.value) : NaN;
   if(isNaN(revEff)) return;
   var revProssEl = row.querySelector('.man-rev-prox');
-  if(revProssEl) revProssEl.value = String(revEff + 6);
+  if(revProssEl) revProssEl.value = String(revEff + 5);
 }
 
 function ricalcolaCollPross(idx){ /* non usata — collaudo unico */ }
