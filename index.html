@@ -4605,7 +4605,7 @@ function apriSchedaCliente(cliId){
   if(!cli) return;
   S('presidi');
   const search = document.getElementById('pres-search');
-  if(search){ search.value = cli.rs; renderPresidi(); }
+  if(search){ search.value = cli.rs; renderPresidi(); aggiornaTabPresidi(cli.id); }
   // Aggiorna il titolo con nome cliente e bottone + presidio pre-compilato
   const title = document.getElementById('pres-title');
   if(title) title.textContent = '👥 Presidi di: ' + cli.rs;
@@ -4825,6 +4825,9 @@ function renderPresidi(filtroTipo){
 
   // ── Aggiorna intestazioni tabella in base al tipo ──────────────────────────
   const thead = document.querySelector('#tbl-presidi')?.closest('table')?.querySelector('thead tr');
+
+  // Aggiorna i tab ogni volta che la tabella si aggiorna
+  setTimeout(function(){ if(typeof aggiornaTabPresidi==='function') aggiornaTabPresidi(null); }, 50);
 
   const tuttoREI = data.length > 0 && data.every(function(p){ return p.tipo==='REI' || p.tipo==='UES'; });
   if(filtroTipo === 'REI' || (tuttoREI && filtroTipo)){
@@ -6901,7 +6904,7 @@ function caricaPresidiManutenzione(){
   }
   if(nREI > 0){
     avvisoREI.style.display = 'block';
-    avvisoREI.innerHTML = '🚪 <strong>' + nREI + ' Porta/e REI</strong> presente/i per questo cliente — la scheda Porte REI è in sviluppo. Per ora registra l\'esito manualmente nel Registro interventi.';
+    avvisoREI.innerHTML = '🚪 <strong>' + nREI + ' Porta/e REI</strong> presente/i per questo cliente. <em>La scheda Porte REI è in lavorazione</em> — viene visualizzata separatamente nella sezione <strong>Presidi → tab 🚪 Porte REI</strong>. Per ora registra manualmente nel Registro interventi se necessario.';
   } else {
     avvisoREI.style.display = 'none';
   }
@@ -10025,11 +10028,24 @@ function aggiornaTabPresidi(cliId){
   var tabsEl = document.getElementById('pres-tabs');
   if(!tabsEl) return;
 
-  // Conta presidi per tipo per questo cliente (o tutti se nessun cliente)
-  var data = cliId ? PRESIDI_DATA.filter(function(p){
+  // Usa il filtro di ricerca attivo se presente
+  var searchEl = document.getElementById('pres-search');
+  var searchVal = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+  // Conta presidi per tipo per questo cliente (o filtro testo)
+  var data;
+  if(cliId){
     var cli = CLI_DATA.find(function(c){ return c.id === cliId; });
-    return cli ? cliMatch(p, cli) : true;
-  }) : PRESIDI_DATA;
+    data = cli ? PRESIDI_DATA.filter(function(p){ return cliMatch(p, cli); }) : PRESIDI_DATA;
+  } else if(searchVal){
+    data = PRESIDI_DATA.filter(function(p){
+      return p.cod.toLowerCase().includes(searchVal) ||
+             p.cli.toLowerCase().includes(searchVal) ||
+             (p.matr||'').toLowerCase().includes(searchVal);
+    });
+  } else {
+    data = PRESIDI_DATA;
+  }
 
   // Raggruppa per tipo
   var contegg = {};
