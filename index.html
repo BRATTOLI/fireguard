@@ -612,7 +612,8 @@ tr:hover td{background:#fafafa}
         <button class="btn pr" onclick="apriNuovoPresidio()">+ Nuovo presidio</button>
       </div>
     </div>
-    <div class="tw"><table><thead><tr><th>Codice</th><th>Tipo</th><th>Cliente</th><th>Ubicazione</th><th>Matricola</th><th>Anno prod.</th><th>Ult. verifica</th><th>Prox. scad.</th><th>Revisione</th><th>Collaudo</th><th>Fine vita</th><th>⏰ Vita</th><th>⏰ Scad.</th><th>Stato</th><th>QR</th><th>Scheda</th><th>🏷</th><th>🗑️</th></tr></thead>
+    <div id="pres-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+    <div class="tw"><table><thead><tr id="pres-thead-row"><th>Codice</th><th>Tipo</th><th>Cliente</th><th>Ubicazione</th><th>Matricola</th><th>Anno prod.</th><th>Ult. verifica</th><th>Prox. scad.</th><th>Revisione</th><th>Collaudo</th><th>Fine vita</th><th>⏰ Vita</th><th>⏰ Scad.</th><th>Stato</th><th>QR</th><th>Scheda</th><th>🏷</th><th>🗑️</th></tr></thead>
     <tbody id="tbl-presidi"><tr>
       <td><strong>EST-002</strong></td>
       <td>🧯 Estintore</td>
@@ -2529,12 +2530,66 @@ tr:hover td{background:#fafafa}
 
 <!-- ═══ IMPORT EXCEL ═══ -->
 <div id="import" class="sec">
-  <div class="alert-dash blu"><div class="alert-icon">📥</div><div class="alert-body"><div class="alert-title">Import dati da Excel — clienti, presidi, ubicazioni e tutte le colonne presenti nel tuo file</div><div class="alert-sub">Trascina il file Excel o clicca per selezionarlo. Il sistema riconosce automaticamente le colonne e importa tutti i dati.</div></div></div>
-  <div class="card">
-    <div class="ch"><span class="ct">📥 Carica file Excel</span></div>
+  <div class="alert-dash blu"><div class="alert-icon">📥</div><div class="alert-body"><div class="alert-title">Import dati da Excel — seleziona prima il tipo di presidio, poi carica il file</div><div class="alert-sub">Seleziona il tipo di presidio che stai importando. Il sistema userà la scheda corretta con i campi giusti.</div></div></div>
+
+  <!-- STEP 1: Selezione tipo presidio -->
+  <div class="card" id="import-step1">
+    <div class="ch"><span class="ct">📋 Step 1 — Seleziona il tipo di presidio da importare</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:4px 0 10px 0">
+      <div class="pc" style="background:#FDECEA;cursor:pointer" onclick="selezionaTipoImport('EST')" id="import-tipo-EST">
+        <div class="pc-ic">🧯</div>
+        <div class="pc-nm" style="color:#7B1C1C">Estintori</div>
+        <div class="pc-nr" style="color:#7B1C1C">UNI 9994-1:2024</div>
+      </div>
+      <div class="pc" style="background:#FFF3CD;cursor:pointer" onclick="selezionaTipoImport('REI')" id="import-tipo-REI">
+        <div class="pc-ic">🚪</div>
+        <div class="pc-nm" style="color:#664D00">Porte REI</div>
+        <div class="pc-nr" style="color:#664D00">UNI EN 1634</div>
+      </div>
+      <div class="pc" style="background:#E8F5E9;cursor:pointer" onclick="selezionaTipoImport('UES')" id="import-tipo-UES">
+        <div class="pc-ic">🚨</div>
+        <div class="pc-nm" style="color:#1B5E20">Uscite Sicurezza</div>
+        <div class="pc-nr" style="color:#1B5E20">UNI EN 179/1125</div>
+      </div>
+      <div class="pc" style="background:#D5E8F4;cursor:pointer" onclick="selezionaTipoImport('IDR')" id="import-tipo-IDR">
+        <div class="pc-ic">🚿</div>
+        <div class="pc-nm" style="color:#0C3060">Idranti</div>
+        <div class="pc-nr" style="color:#0C3060">UNI 10779</div>
+      </div>
+      <div class="pc" style="background:#E1F5EE;cursor:pointer" onclick="selezionaTipoImport('NSP')" id="import-tipo-NSP">
+        <div class="pc-ic">🌀</div>
+        <div class="pc-nm" style="color:#085041">Naspi DN25</div>
+        <div class="pc-nr" style="color:#085041">UNI EN 671-1</div>
+      </div>
+      <div class="pc" style="background:#FFF3CD;cursor:pointer" onclick="selezionaTipoImport('EM')" id="import-tipo-EM">
+        <div class="pc-ic">💡</div>
+        <div class="pc-nm" style="color:#412402">Luci emerg.</div>
+        <div class="pc-nr" style="color:#412402">UNI EN 50172</div>
+      </div>
+      <div class="pc" style="background:#EEEDFE;cursor:pointer" onclick="selezionaTipoImport('RIV')" id="import-tipo-RIV">
+        <div class="pc-ic">💨</div>
+        <div class="pc-nm" style="color:#26215C">Riv. fumo</div>
+        <div class="pc-nr" style="color:#26215C">UNI EN 54-7</div>
+      </div>
+      <div class="pc" style="background:#F0F0F0;cursor:pointer" onclick="selezionaTipoImport('LIB')" id="import-tipo-LIB">
+        <div class="pc-ic">📋</div>
+        <div class="pc-nm" style="color:#222">Altro/Libero</div>
+        <div class="pc-nr" style="color:#222">Generico</div>
+      </div>
+    </div>
+    <div id="import-tipo-selezionato" style="display:none;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:13px;color:#1b5e20;font-weight:700;margin-top:4px">
+      ✅ Tipo selezionato: <span id="import-tipo-label"></span> — ora carica il file Excel
+    </div>
+  </div>
+
+  <!-- STEP 2: Carica file (appare dopo selezione tipo) -->
+  <div class="card" id="import-step2" style="display:none">
+    <div class="ch"><span class="ct">📥 Step 2 — Carica il file Excel</span>
+      <button class="btn sm" onclick="resetTipoImport()" style="font-size:11px">← Cambia tipo</button>
+    </div>
     <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-xl').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
       <div class="drop-icon">📊</div>
-      <div class="drop-t">Trascina qui il tuo file Excel</div>
+      <div class="drop-t" id="drop-t-txt">Trascina qui il file Excel</div>
       <div class="drop-s">oppure clicca per selezionare un file .xlsx o .xls o .csv</div>
       <div style="margin-top:12px;font-size:11px;color:var(--text3)">Formati supportati: .xlsx .xls .csv</div>
     </div>
@@ -4928,15 +4983,17 @@ function cliMatch(presidio, cliente){
 var _filtroTipoAttivo = null; // tiene traccia del tipo filtro attivo
 
 function filtroTipoPresidi(id){
-  _filtroTipoAttivo = id; // imposta filtro fisso
+  _filtroTipoAttivo = id; // null = tutti, altrimenti tipo specifico
   renderPresidi(_filtroTipoAttivo);
-  // Mantieni header colonne corretto
-  _filtroTipoAttivo = id;
+  aggiornaTabPresidi(null);
+  // Evidenzia card tipo selezionata
   document.querySelectorAll('#pc-presidi .pc').forEach(c=>c.classList.remove('sel'));
   if(_filtroTipoAttivo){
     const t=TIPI.find(x=>x.id===_filtroTipoAttivo);
     if(t){const els=document.querySelectorAll('#pc-presidi .pc');els.forEach(el=>{if(el.textContent.includes(t.n))el.classList.add('sel');});}
   }
+  // Mantieni header corretto
+  _filtroTipoAttivo = id;
 }
 
 function renderDePaloTable(){
@@ -6333,12 +6390,11 @@ function importaExcel(){
     return;
   }
 
-  // ── Rileva se il file è di tipo REI ──────────────────────────────────────
-  const isFileREI = !!xlHeaders.find(function(h){
-    return h.label.toLowerCase().includes('compartiment') ||
-           h.label.toLowerCase().includes('tagliafuoco') ||
-           h.label.toLowerCase().includes('ante');
-  });
+  // ── Usa tipo selezionato manualmente — nessun rilevamento automatico ─────
+  // Se l'utente non ha selezionato un tipo, usa EST come default con avviso
+  var tipoForzato = _tipoImportSelezionato || 'EST';
+  var isFileREI = (tipoForzato === 'REI');
+  var isFileUES = (tipoForzato === 'UES');
 
   // ── Nome cliente dal file ─────────────────────────────────────────────────
   const nomeCliente = (ultimoImport.clienteRilevato || ultimoImport.nomeFile.replace(/\.[^.]+$/,'') || 'Cliente importato')
@@ -6463,7 +6519,7 @@ function importaExcel(){
       // ── ESTINTORE / altri presidi standard ────────────────────────────────
       nuoviPresidi.push({
         cod:     cod,
-        tipo:    'EST',
+        tipo:    tipoForzato,
         cli:     nomeCliente,
         cliId:   cliId || nuovoCliId || '',
         ubi:     colVal(row,'posiz') || colVal(row,'ubicaz') || colVal(row,'ubicazione') || '—',
@@ -6496,7 +6552,7 @@ function importaExcel(){
   }
 
   // ── CONFERMA PRIMA DI SALVARE ─────────────────────────────────────────────
-  const tipoStr = isFileREI ? 'Porte REI' : 'Estintori';
+  const tipoStr = (TIPI.find(function(t){ return t.id === tipoForzato; }) || { n: tipoForzato }).n;
   const cliStr  = clienteEsistente ? clienteEsistente.rs : nomeCliente + ' (NUOVO cliente)';
   const confMsg = '📋 Stai per importare:\n\n' +
     '• Tipo: ' + tipoStr + '\n' +
@@ -6534,6 +6590,10 @@ function importaExcel(){
 
   // Aggiungi presidi
   nuoviPresidi.forEach(function(p){ PRESIDI_DATA.push(p); });
+
+  // Reset selezione tipo import
+  _tipoImportSelezionato = null;
+  if(typeof resetTipoImport === 'function') resetTipoImport();
 
   // Svuota anteprima
   document.getElementById('xl-preview').style.display = 'none';
@@ -9908,6 +9968,101 @@ setTimeout(function() {
     }
   } catch(e) {}
 }, 12000);
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// SELEZIONE TIPO PRESIDIO NELL'IMPORT EXCEL
+// ═══════════════════════════════════════════════════════════════════
+var _tipoImportSelezionato = null;
+
+function selezionaTipoImport(tipo){
+  _tipoImportSelezionato = tipo;
+  // Evidenzia tipo selezionato
+  document.querySelectorAll('[id^="import-tipo-"]').forEach(function(el){
+    el.style.outline = '';
+    el.style.boxShadow = '';
+  });
+  var sel = document.getElementById('import-tipo-' + tipo);
+  if(sel){ sel.style.outline = '3px solid #1b5e20'; sel.style.boxShadow = '0 0 0 3px #a5d6a7'; }
+
+  // Mostra label tipo selezionato
+  var tipoInfo = TIPI.find(function(t){ return t.id === tipo; }) || { n: tipo, ic: '📋' };
+  var labelEl = document.getElementById('import-tipo-label');
+  if(labelEl) labelEl.textContent = tipoInfo.ic + ' ' + tipoInfo.n;
+  var statoEl = document.getElementById('import-tipo-selezionato');
+  if(statoEl) statoEl.style.display = 'block';
+
+  // Aggiorna testo drop zone
+  var dropTxt = document.getElementById('drop-t-txt');
+  if(dropTxt) dropTxt.textContent = 'Carica il file Excel per ' + tipoInfo.n;
+
+  // Mostra step 2
+  var step2 = document.getElementById('import-step2');
+  if(step2) step2.style.display = 'block';
+  if(step2) step2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+window.selezionaTipoImport = selezionaTipoImport;
+
+function resetTipoImport(){
+  _tipoImportSelezionato = null;
+  document.querySelectorAll('[id^="import-tipo-"]').forEach(function(el){
+    el.style.outline = '';
+    el.style.boxShadow = '';
+  });
+  var statoEl = document.getElementById('import-tipo-selezionato');
+  if(statoEl) statoEl.style.display = 'none';
+  var step2 = document.getElementById('import-step2');
+  if(step2) step2.style.display = 'none';
+  document.getElementById('xl-preview').style.display = 'none';
+}
+window.resetTipoImport = resetTipoImport;
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB PER TIPO NELLA SEZIONE PRESIDI
+// ═══════════════════════════════════════════════════════════════════
+function aggiornaTabPresidi(cliId){
+  var tabsEl = document.getElementById('pres-tabs');
+  if(!tabsEl) return;
+
+  // Conta presidi per tipo per questo cliente (o tutti se nessun cliente)
+  var data = cliId ? PRESIDI_DATA.filter(function(p){
+    var cli = CLI_DATA.find(function(c){ return c.id === cliId; });
+    return cli ? cliMatch(p, cli) : true;
+  }) : PRESIDI_DATA;
+
+  // Raggruppa per tipo
+  var contegg = {};
+  data.forEach(function(p){ contegg[p.tipo] = (contegg[p.tipo]||0) + 1; });
+
+  // Tipi presenti
+  var tipiPresenti = Object.keys(contegg).filter(function(t){ return contegg[t] > 0; });
+  if(tipiPresenti.length <= 1){
+    tabsEl.innerHTML = '';
+    return;
+  }
+
+  // Genera tab
+  var html = '<button style="padding:6px 14px;border-radius:20px;border:1.5px solid #ccc;background:' +
+    (!_filtroTipoAttivo?'#1A4F8A':'#f5f5f5') + ';color:' +
+    (!_filtroTipoAttivo?'#fff':'#333') + ';font-size:12px;font-weight:700;cursor:pointer" ' +
+    'onclick="filtroTipoPresidi(null)">Tutti (' + data.length + ')</button>';
+
+  tipiPresenti.forEach(function(tipoId){
+    var t = TIPI.find(function(x){ return x.id === tipoId; }) || { ic: '📋', n: tipoId, bg: '#f5f5f5', tc: '#333' };
+    var isActive = _filtroTipoAttivo === tipoId;
+    html += '<button style="padding:6px 14px;border-radius:20px;border:1.5px solid ' +
+      (isActive ? (t.c||'#333') : '#ddd') + ';background:' +
+      (isActive ? (t.bg||'#f5f5f5') : '#f5f5f5') + ';color:' +
+      (isActive ? (t.tc||'#333') : '#555') + ';font-size:12px;font-weight:700;cursor:pointer" ' +
+      'onclick="filtroTipoPresidi(\"' + tipoId + '\")">'+  
+      t.ic + ' ' + t.n + ' (' + contegg[tipoId] + ')</button>';
+  });
+
+  tabsEl.innerHTML = html;
+}
+window.aggiornaTabPresidi = aggiornaTabPresidi;
+
 </script>
 
 <!-- ═══ MODAL NOTIFICHE EMAIL ═══ -->
