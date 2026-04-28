@@ -2726,10 +2726,10 @@ tr:hover td{background:#fafafa}
               <th style="width:38px">Kg</th>
               <th style="width:44px">Kg tot.</th>
               <th style="width:76px">Costruttore</th>
-              <th style="width:48px">Anno</th>
+              <th style="width:60px">Anno</th>
               <th style="width:76px">Matricola</th>
               <th style="width:110px">Tipo att. (norma)</th>
-              <th style="width:96px">Mann. eseguita</th>
+              <th style="width:110px">Man. eseguita</th>
               <th style="width:96px">Prox. mann.</th>
               <th style="width:76px">Rev. eff.</th>
               <th style="width:76px">Pross. Rev.</th>
@@ -7053,7 +7053,7 @@ function renderSchedaEstintori(presidi, dataInt, cli){
   if(!tbody) return;
 
   // Ripristina intestazioni estintori
-  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" id="chk-all-pres" onchange="toggleTuttiPres(this)" title="Seleziona/deseleziona tutti" checked=""></th><th style="width:32px">N°</th><th style="width:130px">Ubicazione / Posizione</th><th style="width:72px">Tipo agente</th><th style="width:38px">Kg</th><th style="width:44px">Kg tot.</th><th style="width:76px">Costruttore</th><th style="width:48px">Anno</th><th style="width:76px">Matricola</th><th style="width:110px">Tipo att. (norma)</th><th style="width:96px">Mann. eseguita</th><th style="width:96px">Prox. mann.</th><th style="width:76px">Rev. eff.</th><th style="width:76px">Pross. Rev.</th><th style="width:76px">Collaudo</th><th style="width:76px">Fine vita</th><th style="width:38px">⏰</th><th style="width:130px">Esito</th><th style="width:160px">Anomalie / Note</th>';
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" id="chk-all-pres" onchange="toggleTuttiPres(this)" title="Seleziona/deseleziona tutti" checked=""></th><th style="width:32px">N°</th><th style="width:130px">Ubicazione / Posizione</th><th style="width:72px">Tipo agente</th><th style="width:38px">Kg</th><th style="width:44px">Kg tot.</th><th style="width:76px">Costruttore</th><th style="width:60px">Anno</th><th style="width:76px">Matricola</th><th style="width:110px">Tipo att. (norma)</th><th style="width:110px">Man. eseguita</th><th style="width:96px">Prox. mann.</th><th style="width:76px">Rev. eff.</th><th style="width:76px">Pross. Rev.</th><th style="width:76px">Collaudo</th><th style="width:76px">Fine vita</th><th style="width:38px">⏰</th><th style="width:130px">Esito</th><th style="width:160px">Anomalie / Note</th>';
 
   tbody.innerHTML = presidi.map(function(p, idx){
     var t = TIPI.find(function(x){ return x.id===p.tipo; })||TIPI[0];
@@ -7119,7 +7119,7 @@ function renderSchedaREI(presidiREI, dataInt, cli){
   var tblWrap = document.querySelector('#tbl-man-sem');
   if(!tbody) return;
 
-  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:80px">N°/Pos.</th><th style="width:70px">Tipo REI</th><th style="width:40px">Ante</th><th style="width:70px">Costruttore</th><th style="width:60px">Anno</th><th style="width:80px">Matricola</th><th style="width:110px">Mann. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Chiudiporta</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:80px">N°/Pos.</th><th style="width:70px">Tipo REI</th><th style="width:40px">Ante</th><th style="width:70px">Costruttore</th><th style="width:70px">Anno</th><th style="width:80px">Matricola</th><th style="width:130px">Man. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Chiudiporta</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
 
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
@@ -7173,7 +7173,7 @@ function renderSchedaUES(presidiUES, dataInt, cli){
   var thead = document.querySelector('#tbl-man-sem thead tr');
   if(!tbody) return;
 
-  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:60px">N°/Pos.</th><th style="width:90px">Dispositivo</th><th style="width:50px">Tipo</th><th style="width:35px">Ante</th><th style="width:70px">Costruttore</th><th style="width:60px">Anno</th><th style="width:80px">Ubicazione</th><th style="width:110px">Mann. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Integrità</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:60px">Alt.Barra</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:60px">N°/Pos.</th><th style="width:90px">Dispositivo</th><th style="width:50px">Tipo</th><th style="width:35px">Ante</th><th style="width:70px">Costruttore</th><th style="width:70px">Anno</th><th style="width:80px">Ubicazione</th><th style="width:130px">Man. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Integrità</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:60px">Alt.Barra</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
 
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
@@ -7348,14 +7348,14 @@ function salvaManutenzioneCompleta(){
   var rows = document.querySelectorAll('#tbl-man-sem-body tr');
   var n = 0;
   rows.forEach(function(row){
-    var chk = row.querySelector('.chk-pres');
+    var chk = row.querySelector('.chk-pres') || row.querySelector('.man-chk');
     if(chk && !chk.checked) return;
 
     var cod      = row.dataset.cod;
     var tipo     = row.dataset.tipo;
     var cliN     = row.dataset.cli;
     var tipoAtt  = (row.querySelector('.man-tipo-att')||{value:'4.5'}).value;
-    var dataInt  = (row.querySelector('.man-data-int')||{value:''}).value;
+    var dataInt  = (row.querySelector('.man-data-int')||row.querySelector('.man-sem-data')||{value:''}).value;
     var dataProx = (row.querySelector('.man-data-prox')||{value:''}).value;
     var esito    = (row.querySelector('.man-esito')||{value:'ok'}).value;
     var note     = (row.querySelector('.man-note')||{value:''}).value;
