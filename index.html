@@ -7124,7 +7124,7 @@ function renderSchedaREI(presidiREI, dataInt, cli){
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
   tbody.innerHTML = presidiREI.map(function(p, idx){
-    return '<tr id="man-row-rei-'+idx+'" data-cod="'+(p.cod||'')+'" data-tipo="REI" data-cli="'+(cli?cli.rs:'')+'">' +
+    return '<tr id="man-row-rei-'+idx+'">' +
       '<td><input type="checkbox" class="man-chk" checked=""></td>' +
       '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
       '<td><input type="text" class="man-ubi" value="'+(p.ubi||'')+'" style="'+inpCss+'"></td>' +
@@ -7178,7 +7178,7 @@ function renderSchedaUES(presidiUES, dataInt, cli){
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
   tbody.innerHTML = presidiUES.map(function(p, idx){
-    return '<tr id="man-row-ues-'+idx+'" data-cod="'+(p.cod||'')+'" data-tipo="UES" data-cli="'+(cli?cli.rs:'')+'">' +
+    return '<tr id="man-row-ues-'+idx+'">' +
       '<td><input type="checkbox" class="man-chk" checked=""></td>' +
       '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
       '<td><input type="text" value="'+(p.matr||'')+'" style="'+inpCss+'"></td>' +
@@ -7313,25 +7313,20 @@ function avviaStampa(tipo) {
   // Tipo presidio corrente
   var tipoPres = (document.getElementById('man-sem-tipo-pres') || {value:'EST'}).value || 'EST';
 
-  // Anteprima: apri subito SENZA salvare (renderPresidi svuoterebbe il tbody)
-  if(tipo === 'anteprima'){
-    if(tipoPres === 'REI')      apriAnteprimaSchedaREI();
-    else if(tipoPres === 'UES') apriAnteprimaSchedaUES();
-    else                        apriAnteprimaScheda();
-    return;
-  }
-
-  // Word / PDF: salva prima, poi scarica dopo 400ms
+  // Salva prima, poi avvia la stampa dopo 400ms
   salvaManutenzioneCompleta();
   setTimeout(function() {
     if(tipoPres === 'REI'){
-      if(tipo === 'word') stampaSchedaREIWord();
+      if(tipo === 'anteprima') apriAnteprimaSchedaREI();
+      else if(tipo === 'word') stampaSchedaREIWord();
       else if(tipo === 'pdf')  stampaSchedaREIPDF();
     } else if(tipoPres === 'UES'){
-      if(tipo === 'word') stampaSchedaUESWord();
+      if(tipo === 'anteprima') apriAnteprimaSchedaUES();
+      else if(tipo === 'word') stampaSchedaUESWord();
       else if(tipo === 'pdf')  stampaSchedaUESPDF();
     } else {
-      if (tipo === 'word')    stampaManutenzioneWord();
+      if (tipo === 'anteprima')    apriAnteprimaScheda();
+      else if (tipo === 'word')    stampaManutenzioneWord();
       else if (tipo === 'pdf')     stampaManutenzioneWordPDF();
     }
   }, 400);
@@ -8579,13 +8574,13 @@ function _buildHTMLSchedaREI(){
     '</tr></thead><tbody>';
 
   var rows = document.querySelectorAll('#tbl-man-sem-body tr[id^="man-row-rei-"]');
-  if(!rows.length){ notifica('⚠️ Nessuna riga Porta REI nel pannello'); return null; }
+  if(!rows.length) rows = document.querySelectorAll('#tbl-man-sem-body tr'); // fallback
   var nConf=0, nNC=0, nNE=0;
   rows.forEach(function(row, i){
     var chk = row.querySelector('.man-chk');
     if(chk && !chk.checked) return;
     var g = function(cls){ var el=row.querySelector('.'+cls); return el?el.value||'—':'—'; };
-    var gs = function(cls){ var el=row.querySelector('.'+cls); if(!el) return '—'; var opt=el.options[el.selectedIndex]; return opt?opt.text||'—':'—'; };
+    var gs = function(cls){ var el=row.querySelector('.'+cls); return el?el.options[el.selectedIndex].text||'—':'—'; };
     var esito = row.querySelector('.man-esito');
     var esitoVal = esito ? esito.value : 'ok';
     var esitoTxt = esitoVal==='nc' ? 'N.C.' : esitoVal==='nd' ? 'N.E.' : 'C.';
@@ -8593,8 +8588,6 @@ function _buildHTMLSchedaREI(){
     if(esitoVal==='ok') nConf++; else if(esitoVal==='nc') nNC++; else nNE++;
     var bg = i%2===0 ? '#fff' : '#fafafa';
     var nota = row.querySelector('.man-note'); var notaTxt = nota ? nota.value||'' : '';
-    var dataManEl = row.querySelector('.man-sem-data'); var dataManRaw = dataManEl ? dataManEl.value : '';
-    var dataManFmt = dataManRaw ? fromISO(dataManRaw) : dataInt;
     html += '<tr style="background:'+bg+'">' +
       '<td style="'+tdS+'">'+(i+1)+'</td>' +
       '<td style="'+tdL+'">'+g('man-ubi')+'</td>' +
@@ -8603,7 +8596,7 @@ function _buildHTMLSchedaREI(){
       '<td style="'+tdL+'">'+g('man-costr')+'</td>' +
       '<td style="'+tdS+'">'+g('man-anno')+'</td>' +
       '<td style="'+tdS+'">'+g('man-matr')+'</td>' +
-      '<td style="'+tdS+'">'+dataManFmt+'</td>' +
+      '<td style="'+tdS+'">'+g('man-sem-data')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-viteria')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-cerniere')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-ossidaz')+'</td>' +
@@ -8653,18 +8646,9 @@ function _buildHTMLSchedaREI(){
     '</div>';
 
   // Firme
-  html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-top:8px">' +
-    '<tr>' +
-    '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">' +
-    '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato<br><span style="font-size:7.5pt">(D.M. 37/08 — UNI 9994-1:2024)</span></div>' +
-    (typeof TIMBRO_B64!=='undefined' && TIMBRO_B64 ? '<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>' : '<div style="height:80px"></div>') +
-    '<b>'+DITTA.rs+'</b><br><span style="font-size:8pt">'+tecnico+(DITTA.dm37?' — Abit. '+DITTA.dm37:'')+'</span>' +
-    '</td>' +
-    '<td style="width:4%"></td>' +
-    '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">' +
-    '<div style="font-size:8pt;color:#555;margin-bottom:30px">Firma per ricevuta verbale — Responsabile cliente</div>' +
-    '<b>'+cli.rs+'</b><br><span style="font-size:8pt">'+(cli.ref||'')+'</span>' +
-    '</td>' +
+  html += '<table style="border-collapse:collapse;width:100%"><tr>' +
+    '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Timbro e firma Tecnico manutentore abilitato<br>(D.M. 37/08 — UNI 9994-1:2024)</td>' +
+    '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>' +
     '</tr></table>';
 
   return html;
@@ -8673,19 +8657,11 @@ function _buildHTMLSchedaREI(){
 function apriAnteprimaSchedaREI(){
   var html = _buildHTMLSchedaREI();
   if(!html) return;
-  var inner = document.getElementById('anteprima-scheda-inner');
-  if(!inner){ notifica('❌ Modal anteprima non trovato'); return; }
-  inner.innerHTML = html;
-  inner.querySelectorAll('table').forEach(function(t){ t.style.borderCollapse='collapse'; t.style.width='100%'; });
-  inner.querySelectorAll('td,th').forEach(function(c){ if(!c.style.padding) c.style.padding='3px 5px'; });
-  // Aggiorna bottoni Word/PDF nel modal per puntare a REI
-  var btnW = document.querySelector('#mAnteprimaScheda .btn.grn');
-  var btnP = document.querySelector('#mAnteprimaScheda .btn[style*="C0392B"]');
-  if(btnW){ btnW.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaSchedaREIWord,100); }; }
-  if(btnP){ btnP.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaSchedaREIPDF,100); }; }
-  var pan = document.getElementById('pannello-testi-modificabili');
-  if(pan) pan.style.display='none';
-  openM('mAnteprimaScheda');
+  var modal = document.getElementById('mAnteprima');
+  if(!modal){ notifica('❌ Modal anteprima non trovato'); return; }
+  var cont = document.getElementById('anteprima-content');
+  if(cont) cont.innerHTML = html;
+  openM('mAnteprima');
 }
 window.apriAnteprimaSchedaREI = apriAnteprimaSchedaREI;
 
@@ -8700,11 +8676,7 @@ function stampaSchedaREIWord(){
 window.stampaSchedaREIWord = stampaSchedaREIWord;
 
 function stampaSchedaREIPDF(){
-  var html = _buildHTMLSchedaREI();
-  if(!html) return;
-  var cli = CLI_DATA.find(function(c){ return c.id===(document.getElementById('man-sem-cli')||{value:''}).value; });
-  var nomeFile = 'Scheda_Porte_REI_' + (cli?cli.rs.replace(/[^a-zA-Z0-9]/g,'_'):'Cliente');
-  scaricaSchemaLandscapePDF(html, nomeFile);
+  stampaSchedaREIWord(); // usa Word per ora
 }
 window.stampaSchedaREIPDF = stampaSchedaREIPDF;
 
@@ -8753,13 +8725,13 @@ function _buildHTMLSchedaUES(){
     '</tr></thead><tbody>';
 
   var rows = document.querySelectorAll('#tbl-man-sem-body tr[id^="man-row-ues-"]');
-  if(!rows.length){ notifica('⚠️ Nessuna riga Uscita Sicurezza nel pannello'); return null; }
+  if(!rows.length) rows = document.querySelectorAll('#tbl-man-sem-body tr'); // fallback
   var nConf=0, nNC=0, nNE=0;
   rows.forEach(function(row, i){
     var chk = row.querySelector('.man-chk');
     if(chk && !chk.checked) return;
     var g = function(cls){ var el=row.querySelector('.'+cls); return el?el.value||'—':'—'; };
-    var gs = function(cls){ var el=row.querySelector('.'+cls); if(!el) return '—'; var opt=el.options[el.selectedIndex]; return opt?opt.text||'—':'—'; };
+    var gs = function(cls){ var el=row.querySelector('.'+cls); return el?el.options[el.selectedIndex].text||'—':'—'; };
     var esito = row.querySelector('.man-esito');
     var esitoVal = esito ? esito.value : 'ok';
     var esitoTxt = esitoVal==='nc' ? 'N.C.' : esitoVal==='nd' ? 'N.E.' : 'C.';
@@ -8767,8 +8739,6 @@ function _buildHTMLSchedaUES(){
     if(esitoVal==='ok') nConf++; else if(esitoVal==='nc') nNC++; else nNE++;
     var bg = i%2===0 ? '#fff' : '#fafafa';
     var nota = row.querySelector('.man-note'); var notaTxt = nota ? nota.value||'' : '';
-    var dataManEl = row.querySelector('.man-sem-data'); var dataManRaw = dataManEl ? dataManEl.value : '';
-    var dataManFmt = dataManRaw ? fromISO(dataManRaw) : dataInt;
     // Prima cella: N° dalla prima input del row
     var inputs = row.querySelectorAll('td');
     var numUES = inputs[2] ? (inputs[2].querySelector('input')||{value:i+1}).value : i+1;
@@ -8780,7 +8750,7 @@ function _buildHTMLSchedaUES(){
       '<td style="'+tdL+'">'+g('man-costr')+'</td>' +
       '<td style="'+tdS+'">'+g('man-anno')+'</td>' +
       '<td style="'+tdL+'">'+g('man-ubi')+'</td>' +
-      '<td style="'+tdS+'">'+dataManFmt+'</td>' +
+      '<td style="'+tdS+'">'+g('man-sem-data')+'</td>' +
       '<td style="'+tdS+'">'+gs('ues-viteria')+'</td>' +
       '<td style="'+tdS+'">'+gs('ues-cerniere')+'</td>' +
       '<td style="'+tdS+'">'+gs('ues-ossidaz')+'</td>' +
@@ -8812,18 +8782,9 @@ function _buildHTMLSchedaUES(){
     'Si diffida la Committenza dall\'utilizzo delle relative uscite fino al ripristino delle condizioni di conformità.' +
     '</div>';
 
-  html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-top:8px">' +
-    '<tr>' +
-    '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">' +
-    '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato<br><span style="font-size:7.5pt">(D.M. 37/08 — UNI 9994-1:2024)</span></div>' +
-    (typeof TIMBRO_B64!=='undefined' && TIMBRO_B64 ? '<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>' : '<div style="height:80px"></div>') +
-    '<b>'+DITTA.rs+'</b><br><span style="font-size:8pt">'+tecnico+(DITTA.dm37?' — Abit. '+DITTA.dm37:'')+'</span>' +
-    '</td>' +
-    '<td style="width:4%"></td>' +
-    '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">' +
-    '<div style="font-size:8pt;color:#555;margin-bottom:30px">Firma per ricevuta verbale — Responsabile cliente</div>' +
-    '<b>'+cli.rs+'</b><br><span style="font-size:8pt">'+(cli.ref||'')+'</span>' +
-    '</td>' +
+  html += '<table style="border-collapse:collapse;width:100%"><tr>' +
+    '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Timbro e firma Tecnico manutentore abilitato</td>' +
+    '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>' +
     '</tr></table>';
 
   return html;
@@ -8832,19 +8793,11 @@ function _buildHTMLSchedaUES(){
 function apriAnteprimaSchedaUES(){
   var html = _buildHTMLSchedaUES();
   if(!html) return;
-  var inner = document.getElementById('anteprima-scheda-inner');
-  if(!inner){ notifica('❌ Modal anteprima non trovato'); return; }
-  inner.innerHTML = html;
-  inner.querySelectorAll('table').forEach(function(t){ t.style.borderCollapse='collapse'; t.style.width='100%'; });
-  inner.querySelectorAll('td,th').forEach(function(c){ if(!c.style.padding) c.style.padding='3px 5px'; });
-  // Aggiorna bottoni Word/PDF nel modal per puntare a UES
-  var btnW = document.querySelector('#mAnteprimaScheda .btn.grn');
-  var btnP = document.querySelector('#mAnteprimaScheda .btn[style*="C0392B"]');
-  if(btnW){ btnW.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaSchedaUESWord,100); }; }
-  if(btnP){ btnP.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaSchedaUESPDF,100); }; }
-  var pan = document.getElementById('pannello-testi-modificabili');
-  if(pan) pan.style.display='none';
-  openM('mAnteprimaScheda');
+  var modal = document.getElementById('mAnteprima');
+  if(!modal){ notifica('❌ Modal anteprima non trovato'); return; }
+  var cont = document.getElementById('anteprima-content');
+  if(cont) cont.innerHTML = html;
+  openM('mAnteprima');
 }
 window.apriAnteprimaSchedaUES = apriAnteprimaSchedaUES;
 
@@ -8859,11 +8812,7 @@ function stampaSchedaUESWord(){
 window.stampaSchedaUESWord = stampaSchedaUESWord;
 
 function stampaSchedaUESPDF(){
-  var html = _buildHTMLSchedaUES();
-  if(!html) return;
-  var cli = CLI_DATA.find(function(c){ return c.id===(document.getElementById('man-sem-cli')||{value:''}).value; });
-  var nomeFile = 'Scheda_Uscite_Sicurezza_' + (cli?cli.rs.replace(/[^a-zA-Z0-9]/g,'_'):'Cliente');
-  scaricaSchemaLandscapePDF(html, nomeFile);
+  stampaSchedaUESWord();
 }
 window.stampaSchedaUESPDF = stampaSchedaUESPDF;
 
@@ -8920,11 +8869,6 @@ function apriAnteprimaScheda(){
   // Chiudi il pannello ad ogni riapertura anteprima
   var _pan = document.getElementById('pannello-testi-modificabili');
   if(_pan) _pan.style.display = 'none';
-  // Ripristina bottoni Word/PDF per estintori
-  var _btnW = document.querySelector('#mAnteprimaScheda .btn.grn');
-  var _btnP = document.querySelector('#mAnteprimaScheda .btn[style*="C0392B"]');
-  if(_btnW){ _btnW.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaManutenzioneWord,100); }; }
-  if(_btnP){ _btnP.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaManutenzioneWordPDF,100); }; }
   openM('mAnteprimaScheda');
 }
 
@@ -9909,6 +9853,7 @@ function setCloudStatus(stato) {
 // ─── AUTO-SAVE CON DEBOUNCE 2 SECONDI ────────────────────────────────────────
 var _autoSaveTimer = null;
 var _autoSaveAbilitato = false; // si attiva solo dopo il login
+var _staSalvando = false; // blocca onSnapshot durante il salvataggio
 
 function scheduleAutoSave() {
     if (!_autoSaveAbilitato) return;
@@ -9921,6 +9866,7 @@ function scheduleAutoSave() {
 
 function eseguiSalvatagioCloud() {
     if (!_autoSaveAbilitato) return;
+    _staSalvando = true;
     setCloudStatus('saving');
 
     var migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
@@ -9960,17 +9906,20 @@ function eseguiSalvatagioCloud() {
                 clienti: clienti, presidi: presidi, registro: registro,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(function() {
+                _staSalvando = false;
                 setCloudStatus('ok');
-            }).catch(function(e) { setCloudStatus('error'); });
+            }).catch(function(e) { _staSalvando = false; setCloudStatus('error'); });
             return;
         }
 
         batch.commit()
             .then(function() {
+                _staSalvando = false;
                 setCloudStatus('ok');
                 console.log('☁️ Salvato su collezioni: ' + count + ' documenti.');
             })
             .catch(function(err) {
+                _staSalvando = false;
                 setCloudStatus('error');
                 console.error('Errore salvataggio collezioni:', err);
                 setTimeout(function(){ setCloudStatus('ok'); }, 4000);
@@ -9988,10 +9937,12 @@ function eseguiSalvatagioCloud() {
         };
         db.collection('database').doc('principale').set(data)
             .then(function() {
+                _staSalvando = false;
                 setCloudStatus('ok');
                 console.log('☁️ Auto-save Firebase completato.');
             })
             .catch(function(err) {
+                _staSalvando = false;
                 setCloudStatus('error');
                 console.error('Errore auto-save Firebase:', err);
                 setTimeout(function(){ setCloudStatus('ok'); }, 4000);
@@ -10064,6 +10015,7 @@ function avviaSincronizzazione() {
     } else {
         // Leggi dal documento principale
         unsubscribe = db.collection('database').doc('principale').onSnapshot(function(doc) {
+            if (_staSalvando) { console.log('⏸️ Snapshot ignorato (salvataggio in corso)'); return; }
             if (doc.exists) {
                 var cloudData = doc.data();
                 var _c = cloudData.clienti  || []; CLI_DATA.length = 0;     _c.forEach(function(x){ CLI_DATA.push(x); });
@@ -10102,6 +10054,7 @@ function _avviaSincronizzazioneCollezioni() {
     }
 
     _u.push(db.collection('clienti').onSnapshot(function(snap) {
+        if (_staSalvando) { console.log('⏸️ Snapshot clienti ignorato (salvataggio in corso)'); return; }
         CLI_DATA.length = 0;
         snap.forEach(function(d) { CLI_DATA.push(d.data()); });
         CLI_DATA.sort(function(a,b){ return (a.id||'').localeCompare(b.id||''); });
@@ -10109,12 +10062,14 @@ function _avviaSincronizzazioneCollezioni() {
     }, function(e) { console.error('Listener clienti:', e); _aggiornaUI('clienti'); }));
 
     _u.push(db.collection('presidi').onSnapshot(function(snap) {
+        if (_staSalvando) { console.log('⏸️ Snapshot presidi ignorato (salvataggio in corso)'); return; }
         PRESIDI_DATA.length = 0;
         snap.forEach(function(d) { PRESIDI_DATA.push(d.data()); });
         _aggiornaUI('presidi');
     }, function(e) { console.error('Listener presidi:', e); _aggiornaUI('presidi'); }));
 
     _u.push(db.collection('interventi').onSnapshot(function(snap) {
+        if (_staSalvando) { console.log('⏸️ Snapshot interventi ignorato (salvataggio in corso)'); return; }
         REG_DATA.length = 0;
         snap.forEach(function(d) { REG_DATA.push(d.data()); });
         REG_DATA.sort(function(a,b){ return (b.n||0)-(a.n||0); });
