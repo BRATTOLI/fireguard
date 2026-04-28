@@ -6961,22 +6961,45 @@ function caricaPresidiManutenzione(){
   document.getElementById('man-sem-nome-cli').textContent = cli.rs;
   document.getElementById('man-sem-count').textContent = presidi.length + ' presid' + (presidi.length===1?'io':'i');
 
-  // ── Tab per tipo presidio in manutenzione ────────────────────────────────
-  var nUES = tuttiPresidi.filter(function(p){ return p.tipo === 'UES'; }).length;
-  var nEST = presidi.length; // già filtrati senza REI/UES
+  // ── Conta per tipo ────────────────────────────────────────────────────────
+  var presidiREI = tuttiPresidi.filter(function(p){ return p.tipo === 'REI'; });
+  var presidiUES = tuttiPresidi.filter(function(p){ return p.tipo === 'UES'; });
+  var nUES = presidiUES.length;
+  var nEST = presidi.length;
+  var nREIonly = presidiREI.length;
+
+  // ── Tab cliccabili ────────────────────────────────────────────────────────
   var tabsManEl = document.getElementById('man-sem-tabs');
   if(tabsManEl){
     var tabsHtml = '';
     if(nEST > 0){
-      tabsHtml += '<button style="padding:6px 14px;border-radius:20px;border:1.5px solid #7B1C1C;background:#FDECEA;color:#7B1C1C;font-size:12px;font-weight:700;cursor:default">🧯 Estintori (' + nEST + ')</button>';
+      tabsHtml += '<button data-man-tipo="EST" style="padding:6px 14px;border-radius:20px;border:1.5px solid #7B1C1C;background:#FDECEA;color:#7B1C1C;font-size:12px;font-weight:700;cursor:pointer">🧯 Estintori (' + nEST + ')</button>';
     }
-    if(nREI > 0){
-      tabsHtml += '<button style="padding:6px 14px;border-radius:20px;border:1.5px solid #ffc107;background:#FFF3CD;color:#856404;font-size:12px;font-weight:700;cursor:default">🚪 Porte REI (' + nREI + ') — scheda in lavorazione</button>';
+    if(nREIonly > 0){
+      tabsHtml += '<button data-man-tipo="REI" style="padding:6px 14px;border-radius:20px;border:1.5px solid #8B5E00;background:#FFF3CD;color:#664D00;font-size:12px;font-weight:700;cursor:pointer">🚪 Porte REI (' + nREIonly + ')</button>';
     }
     if(nUES > 0){
-      tabsHtml += '<button style="padding:6px 14px;border-radius:20px;border:1.5px solid #1B5E20;background:#E8F5E9;color:#1B5E20;font-size:12px;font-weight:700;cursor:default">🚨 Uscite Sicurezza (' + nUES + ') — scheda in lavorazione</button>';
+      tabsHtml += '<button data-man-tipo="UES" style="padding:6px 14px;border-radius:20px;border:1.5px solid #1B5E20;background:#E8F5E9;color:#1B5E20;font-size:12px;font-weight:700;cursor:pointer">🚨 Uscite Sicurezza (' + nUES + ')</button>';
     }
     tabsManEl.innerHTML = tabsHtml;
+
+    // Aggancia eventi click
+    tabsManEl.querySelectorAll('button[data-man-tipo]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var tipo = this.getAttribute('data-man-tipo');
+        // Evidenzia tab attivo
+        tabsManEl.querySelectorAll('button').forEach(function(b){ b.style.outline=''; });
+        this.style.outline = '3px solid #1A4F8A';
+        // Carica scheda corretta
+        if(tipo === 'EST') renderSchedaEstintori(presidi, dataInt, cli);
+        else if(tipo === 'REI') renderSchedaREI(presidiREI, dataInt, cli);
+        else if(tipo === 'UES') renderSchedaUES(presidiUES, dataInt, cli);
+      });
+    });
+
+    // Attiva primo tab disponibile
+    var primoBtn = tabsManEl.querySelector('button[data-man-tipo]');
+    if(primoBtn){ primoBtn.style.outline = '3px solid #1A4F8A'; }
   }
 
   // Avviso Porte REI se presenti
@@ -6998,152 +7021,211 @@ function caricaPresidiManutenzione(){
   var tbody = document.getElementById('tbl-man-sem-body');
   if(!tbody) return;
 
-  // Svuota sempre il tbody (evita dati residui del cliente precedente)
+  // Svuota sempre il tbody
   tbody.innerHTML = '';
-
-  // Se non ci sono estintori ma solo REI/UES, mostra messaggio
-  if(presidi.length === 0){
-    tbody.innerHTML = '<tr><td colspan="20" style="text-align:center;padding:24px;color:#856404;font-size:13px">' +
-      (nREI > 0 ? '🚪 Questo cliente ha solo Porte REI/Uscite Sicurezza — nessun estintore da manutenere. Vai nella sezione Presidi → tab 🚪 Porte REI.' :
-                  '⚠️ Nessun presidio estintore trovato per questo cliente.') +
-      '</td></tr>';
-    if(cont) cont.style.display = 'block';
-    if(vuoto) vuoto.style.display = 'none';
-    return;
-  }
 
   var oggi = new Date().toISOString().split('T')[0];
   var dataEl = document.getElementById('man-sem-data');
   var dataInt = (dataEl && dataEl.value) ? dataEl.value : oggi;
 
+  // Se non ci sono estintori, mostra la scheda del primo tipo disponibile
+  if(presidi.length === 0){
+    if(presidiREI.length > 0){
+      renderSchedaREI(presidiREI, dataInt, cli);
+    } else if(presidiUES.length > 0){
+      renderSchedaUES(presidiUES, dataInt, cli);
+    } else {
+      tbody.innerHTML = '<tr><td colspan="20" style="text-align:center;padding:24px;color:#555;font-size:13px">⚠️ Nessun presidio trovato per questo cliente.</td></tr>';
+    }
+    if(cont) cont.style.display = 'block';
+    if(vuoto) vuoto.style.display = 'none';
+    return;
+  }
+
+  // Carica scheda estintori di default
+  renderSchedaEstintori(presidi, dataInt, cli);
+
+  if(cont)  cont.style.display = 'block';
+  if(vuoto) vuoto.style.display = 'none';
+}
+
+// ── SCHEDA ESTINTORI ──────────────────────────────────────────────────────────
+function renderSchedaEstintori(presidi, dataInt, cli){
+  var tbody = document.getElementById('tbl-man-sem-body');
+  var thead = document.querySelector('#tbl-man-sem thead tr');
+  if(!tbody) return;
+
+  // Ripristina intestazioni estintori
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" id="chk-all-pres" onchange="toggleTuttiPres(this)" title="Seleziona/deseleziona tutti" checked=""></th><th style="width:32px">N°</th><th style="width:130px">Ubicazione / Posizione</th><th style="width:72px">Tipo agente</th><th style="width:38px">Kg</th><th style="width:44px">Kg tot.</th><th style="width:76px">Costruttore</th><th style="width:48px">Anno</th><th style="width:76px">Matricola</th><th style="width:110px">Tipo att. (norma)</th><th style="width:96px">Mann. eseguita</th><th style="width:96px">Prox. mann.</th><th style="width:76px">Rev. eff.</th><th style="width:76px">Pross. Rev.</th><th style="width:76px">Collaudo</th><th style="width:76px">Fine vita</th><th style="width:38px">⏰</th><th style="width:130px">Esito</th><th style="width:160px">Anomalie / Note</th>';
+
   tbody.innerHTML = presidi.map(function(p, idx){
     var t = TIPI.find(function(x){ return x.id===p.tipo; })||TIPI[0];
 
-    // ── Campanella scadenza manutenzione ──────────────────────────────────
+    // Campanella scadenza
     var d = parseData(p.scad); var diff = daysDiff(d);
     var campCls = diff===null?'gray':diff<0?'red':diff<=30?'red':diff<=365?'amb':'grn';
     var campLbl = diff===null?'—':diff<0?'SCAD':diff<=30?diff+'gg':Math.ceil(diff/30)+'m';
 
-    // ── Anno produzione → calcoli automatici ──────────────────────────────
     var annoProd = annoProdDaPresidio(p);
-    // Revisione effettuata: dal presidio se presente, altrimenti vuoto
     var revEff   = (p.rev && p.rev!=='—') ? p.rev  : '';
-    // Prossima revisione: dal presidio se presente, altrimenti calcolata (+6 anni)
     var revPross = (p.proxrev && p.proxrev!=='—') ? p.proxrev : (revEff ? String(parseInt(revEff)+5) : (annoProd ? String(annoProd+5) : ''));
-    // Collaudo effettuato: dal presidio se presente, altrimenti vuoto
     var collEff  = (p.coll && p.coll!=='—') ? p.coll : '';
-    // Fine vita: dal presidio se presente, altrimenti calcolo auto
     var fineVita = (p.vita && p.vita!=='—') ? p.vita : (annoProd ? String(annoProd+18) : '');
-
-    // ── Data scadenza manutenzione (prossima) = +6 mesi da oggi ──────────
     var dataPross = calcolaProssimaScadDaTipoAtt(dataInt, '4.5');
-
-    // ── Tipo agente per etichetta ──────────────────────────────────────────
     var agenteLbl = (p.agente && p.agente!=='—') ? p.agente.substring(0,12) : (p.tipo==='EST'?'Polvere':'—');
-    // ── Recupera peso/costr dall'ultimo intervento nel registro se mancano nel presidio
     var _ultimoReg = REG_DATA.filter(function(r){ return r.cod===p.cod; })[0] || {};
     if(!p.peso || p.peso==='—' || p.peso==='') p.peso = _ultimoReg.peso || '';
     if(!p.pesotot || p.pesotot==='—' || p.pesotot==='') p.pesotot = _ultimoReg.pesotot || '';
     if(!p.costr || p.costr==='—' || p.costr==='') p.costr = _ultimoReg.costr || '';
     if(!p.agente || p.agente==='—' || p.agente==='') p.agente = _ultimoReg.agente || p.agente;
-    // ── Peso / capacità ───────────────────────────────────────────────────
-    var pesoLbl   = (p.peso && p.peso!=='—') ? p.peso : '—';
-
-    // ── Colore riga in base a scadenza ─────────────────────────────────────
+    var pesoLbl = (p.peso && p.peso!=='—') ? p.peso : '—';
     var rowBg = diff!==null&&diff<0 ? 'background:#fff5f5' : diff!==null&&diff<=30 ? 'background:#fffbf0' : '';
-
-    // ── Opzioni tipo attività ──────────────────────────────────────────────
     var tipoAttOpts = [
-      ['4.4','att.4.4 — Sorveglianza'],
-      ['4.5','att.4.5 — Controllo periodico (semestrale)'],
-      ['4.6','att.4.6 — Revisione programmata'],
-      ['4.7','att.4.7 — Collaudo bombola'],
-      ['4.8','att.4.8 — Manutenzione straordinaria'],
-      ['4.1','att.4.1 — Primo impianto / presa in carico'],
-    ].map(function(o){
-      return '<option value="'+o[0]+'" '+(o[0]==='4.5'?'selected':'')+'>'+o[1]+'</option>';
-    }).join('');
+      ['4.4','att.4.4 — Sorveglianza'],['4.5','att.4.5 — Controllo periodico (semestrale)'],
+      ['4.6','att.4.6 — Revisione programmata'],['4.7','att.4.7 — Collaudo bombola'],
+      ['4.8','att.4.8 — Collaudo estintore CO2'],['4.9','att.4.9 — Verifica periodica'],
+    ];
+    var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
+    return '<tr id="man-row-'+idx+'" style="'+rowBg+'">' +
+      '<td><input type="checkbox" class="man-chk" data-idx="'+idx+'" checked=""></td>' +
+      '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
+      '<td><input class="man-ubi" type="text" value="'+(p.ubi||'')+'\" style="'+inpCss+'"></td>' +
+      '<td><input class="man-agente" type="text" value="'+agenteLbl+'" style="'+inpCss+'"></td>' +
+      '<td><input class="man-kg" type="number" value="'+(p.peso||'')+'" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input class="man-kgtot" type="number" value="'+(p.pesotot||'')+'" style="'+inpCss+';text-align:center"><span style="font-size:9px;color:#aaa"> kg</span></td>' +
+      '<td><input class="man-costr" type="text" value="'+(p.costr||'')+'" style="'+inpCss+'"></td>' +
+      '<td><input class="man-anno" type="number" value="'+(p.annop||'')+'" min="1960" max="2099" style="'+inpCss+';text-align:center" onchange="ricalcolaRigaAuto('+idx+')"></td>' +
+      '<td><input class="man-matr" type="text" value="'+(p.matr||'')+'" style="'+inpCss+'"></td>' +
+      '<td><select class="man-tipo-att" style="'+inpCss+'">' + tipoAttOpts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]==='4.5'?' selected':'')+'>'+o[1]+'</option>'; }).join('') + '</select></td>' +
+      '<td><input class="man-sem-data" type="date" value="'+dataInt+'" style="'+inpCss+'" onchange="aggiornaTutteLeDate(this.value)"></td>' +
+      '<td><input class="man-prox-data" type="date" value="'+dataPross+'" style="'+inpCss+'"></td>' +
+      '<td><input class="man-rev-eff" type="number" value="'+revEff+'" min="1980" max="2099" placeholder="2025" style="'+inpCss+';text-align:center" onchange="ricalcolaRevPross('+idx+')"></td>' +
+      '<td><input class="man-rev-prox" type="number" value="'+revPross+'" min="1980" max="2099" placeholder="2031" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input class="man-coll-eff" type="number" value="'+collEff+'" min="1980" max="2099" placeholder="2030" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input class="man-vita" type="number" value="'+fineVita+'" min="1980" max="2099" placeholder="2038" style="'+inpCss+';text-align:center;'+(annoProd&&(annoProd+18)<=new Date().getFullYear()?'background:#ffecec;color:#9b1c1c;font-weight:700':'')+'\" title="Fine vita UNI 9994-1:2024 = anno prod. + 18 anni"></td>' +
+      '<td><span class="bell '+campCls+'" title="'+campLbl+'">'+campLbl+'</span></td>' +
+      '<td><select class="man-esito" style="'+inpCss+'">' +
+        '<option value="ok"'+((!p.esito||p.esito==='ok'||p.esito==='N.V.')?' selected':'')+'>✅ Conforme</option>' +
+        '<option value="anom"'+(p.esito==='anom'?' selected':'')+'>⚠️ Anomalia</option>' +
+        '<option value="nc"'+(p.esito==='nc'?' selected':'')+'>❌ Non conforme</option>' +
+        '<option value="nd"'+(p.esito==='nd'?' selected':'')+'>🔴 Non disponibile in loco</option>' +
+      '</select></td>' +
+      '<td><input type="text" class="man-note" data-idx="'+idx+'" placeholder="Note anomalie..." style="'+inpCss+'"></td>' +
+      '</tr>';
+  }).join('');
+}
 
-    // ── Opzioni esito ──────────────────────────────────────────────────────
-    var esitoOpts = [
-      ['ok',   '✅ Conforme'],
-      ['anom', '⚠️ Anomalia rilevata'],
-      ['nc',   '❌ Non conforme'],
-      ['nd',   '🚫 Non disponibile in loco'],
-    ].map(function(e){
-      return '<option value="'+e[0]+'" '+(e[0]==='ok'?'selected':'')+'>'+e[1]+'</option>';
-    }).join('');
+// ── SCHEDA PORTE REI ──────────────────────────────────────────────────────────
+function renderSchedaREI(presidiREI, dataInt, cli){
+  var tbody = document.getElementById('tbl-man-sem-body');
+  var thead = document.querySelector('#tbl-man-sem thead tr');
+  var tblWrap = document.querySelector('#tbl-man-sem');
+  if(!tbody) return;
 
-    // ── CSS campi input nella tabella ──────────────────────────────────────
-    var inpCss  = 'font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:#fff;width:100%';
-    var inpDCss = 'font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:#fff;width:92px';
-    var selCss  = 'font-size:10.5px;padding:2px 3px;border:1px solid var(--border);border-radius:4px;background:#fff;width:100%';
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:100px">N°/Posizione</th><th style="width:70px">Tipo REI</th><th style="width:50px">Ante</th><th style="width:70px">Costruttore</th><th style="width:50px">Anno</th><th style="width:80px">Matricola</th><th style="width:96px">Mann. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Chiudiporta</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
 
-    return '<tr id="man-row-'+idx+'" data-cod="'+p.cod+'" data-tipo="'+p.tipo+'" data-cli="'+p.cli+'" data-annoprod="'+(annoProd||'')+'" style="'+rowBg+'">' +
+  var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
-      // Checkbox selezione
-      '<td style="text-align:center;width:26px"><input type="checkbox" class="chk-pres" data-idx="'+idx+'" checked></td>' +
-
-      // N° posizione (modificabile)
-      '<td style="width:32px"><input class="man-pos" type="text" value="'+(idx+1)+'" style="'+inpCss+';width:28px;text-align:center"></td>' +
-
-      // Ubicazione / Posizione (modificabile)
-      '<td style="width:130px"><input class="man-ubi" type="text" value="'+p.ubi+'" style="'+inpCss+'"></td>' +
-
-      // Tipo agente (modificabile)
-      '<td style="width:72px"><input class="man-agente" type="text" value="'+agenteLbl+'" style="'+inpCss+'"></td>' +
-
-      // KG (modificabile)
-      '<td style="width:38px"><input class="man-peso" type="text" value="'+pesoLbl+'" placeholder="kg" style="'+inpCss+';width:34px;text-align:center"></td>' +
-
-      // KG TOTALE (modificabile)
-      '<td style="width:44px"><input class="man-pesotot" type="text" value="'+(p.pesotot&&p.pesotot!=='—'?p.pesotot:'')+'" placeholder="kg" style="'+inpCss+';width:40px;text-align:center"></td>' +
-
-      // Costruttore (modificabile)
-      '<td style="width:76px"><input class="man-costr" type="text" value="'+(p.costr&&p.costr!=='—'?p.costr:'')+'" style="'+inpCss+'"></td>' +
-
-      // Anno costruzione (modificabile, ricalcola automaticamente)
-      '<td style="width:48px"><input class="man-annop" type="number" value="'+(annoProd||'')+'" min="1980" max="2099" style="'+inpCss+';width:44px;text-align:center" onchange="ricalcolaRigaAuto('+idx+')"></td>' +
-
-      // Matricola (modificabile)
-      '<td style="width:76px"><input class="man-matr" type="text" value="'+(p.matr&&p.matr!=='—'?p.matr:'')+'" style="'+inpCss+'"></td>' +
-
-      // Tipo attività att.4.x (select modificabile)
-      '<td style="width:110px"><select class="man-tipo-att" data-idx="'+idx+'" onchange="ricalcolaScadDaTipoAtt('+idx+')" style="'+selCss+'">'+tipoAttOpts+'</select></td>' +
-
-      // Manutenzione scadenza (data ultima verifica) — modificabile
-      '<td><input type="date" class="man-data-int" data-idx="'+idx+'" value="'+dataInt+'" style="'+inpDCss+'" onchange="ricalcolaScadDaTipoAtt('+idx+')"></td>' +
-
-      // Prossima manutenzione — calcolata auto
-      '<td><input type="date" class="man-data-prox" data-idx="'+idx+'" value="'+dataPross+'" style="'+inpDCss+'"></td>' +
-
-      // Revisione effettuata (anno, modificabile)
-      '<td style="width:76px"><input class="man-rev-eff" type="number" value="'+revEff+'" min="1980" max="2099" placeholder="2025" style="'+inpCss+';width:72px;text-align:center" onchange="ricalcolaRevPross('+idx+')"></td>' +
-
-      // Prossima revisione (calcolata auto: rev + 6 anni, modificabile)
-      '<td style="width:76px"><input class="man-rev-prox" type="number" value="'+revPross+'" min="1980" max="2099" placeholder="2031" style="'+inpCss+';width:72px;text-align:center"></td>' +
-
-      // Collaudo effettuato (anno, modificabile)
-      '<td style="width:76px"><input class="man-coll-eff" type="number" value="'+collEff+'" min="1980" max="2099" placeholder="2030" style="'+inpCss+';width:72px;text-align:center"></td>' +
-
-      // Fine vita (calcolata da anno prod, modificabile)
-      '<td style="width:76px"><input class="man-vita" type="number" value="'+fineVita+'" min="1980" max="2099" placeholder="2038" style="'+inpCss+';width:72px;text-align:center;'+(annoProd&&(annoProd+18)<=TODAY.getFullYear()?'background:#ffecec;color:#9b1c1c;font-weight:700':'')+'" title="Fine vita UNI 9994-1:2024 = anno prod. + 18 anni"></td>' +
-
-      // Campanella
-      '<td style="text-align:center;width:38px"><span class="bell '+campCls+'" title="Scad. mann.: '+p.scad+'">●</span><br><span style="font-size:9px;font-weight:700">'+campLbl+'</span></td>' +
-
-      // Esito
-      '<td style="width:130px"><select class="man-esito" data-idx="'+idx+'" onchange="coloraRigaEsito('+idx+',this.value)" style="'+selCss+'">'+esitoOpts+'</select></td>' +
-
-      // Anomalie / Note
-      '<td style="width:160px"><input type="text" class="man-note" data-idx="'+idx+'" placeholder="Note anomalie..." style="'+inpCss+'"></td>' +
-
+  tbody.innerHTML = presidiREI.map(function(p, idx){
+    return '<tr id="man-row-rei-'+idx+'">' +
+      '<td><input type="checkbox" class="man-chk" checked=""></td>' +
+      '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
+      '<td><input type="text" class="man-ubi" value="'+(p.ubi||'')+'" style="'+inpCss+'"></td>' +
+      '<td><input type="text" class="rei-tipo" value="'+(p.rei_tipo||'REI 120')+'" style="'+inpCss+'"></td>' +
+      '<td><input type="text" class="rei-ante" value="'+(p.rei_ante||'')+'" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input type="text" class="man-costr" value="'+(p.costr||'')+'" style="'+inpCss+'"></td>' +
+      '<td><input type="number" class="man-anno" value="'+(p.annop||'')+'" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input type="text" class="man-matr" value="'+(p.matr||'')+'" style="'+inpCss+'"></td>' +
+      '<td><input type="date" class="man-sem-data" value="'+dataInt+'" style="'+inpCss+'"></td>' +
+      '<td><select class="rei-viteria" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="rei-cerniere" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="rei-ossidaz" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="rei-vernic" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="rei-marcace" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="rei-chiudiport" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><input type="text" class="rei-din-lib" value="'+(p.rei_din_libera||'')+'" placeholder="Newton" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input type="text" class="rei-din-pr" value="'+(p.rei_din_press||'')+'" placeholder="Newton" style="'+inpCss+';text-align:center"></td>' +
+      '<td><select class="rei-scrocchi" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><input type="text" class="rei-manut" value="'+(p.rei_manut||'NESSUNA')+'" style="'+inpCss+'"></td>' +
+      '<td><select class="man-esito" style="'+inpCss+'"><option value="ok"'+(p.esito!=='nc'?' selected':'')+'>C. — Conforme</option><option value="nc"'+(p.esito==='nc'?' selected':'')+'>N.C. — Non conforme</option><option value="nd">N.E. — Non accessibile</option></select></td>' +
+      '<td><input type="text" class="man-note" placeholder="Note..." style="'+inpCss+'"></td>' +
       '</tr>';
   }).join('');
 
-  if(cont)  cont.style.display = 'block';
-  if(vuoto) vuoto.style.display = 'none';
+  // Ripristina valori selezionati dalle select
+  presidiREI.forEach(function(p, idx){
+    var row = document.getElementById('man-row-rei-'+idx);
+    if(!row) return;
+    var setVal = function(cls, val){
+      var el = row.querySelector('.'+cls);
+      if(el && val && val!=='—') el.value = val;
+    };
+    setVal('rei-viteria',   p.rei_viteria);
+    setVal('rei-cerniere',  p.rei_cerniere);
+    setVal('rei-ossidaz',   p.rei_ossidaz);
+    setVal('rei-vernic',    p.rei_vernic);
+    setVal('rei-marcace',   p.rei_marcace);
+    setVal('rei-chiudiport',p.rei_chiudiport);
+    setVal('rei-scrocchi',  p.rei_scrocchi);
+  });
 }
+
+// ── SCHEDA USCITE DI SICUREZZA ────────────────────────────────────────────────
+function renderSchedaUES(presidiUES, dataInt, cli){
+  var tbody = document.getElementById('tbl-man-sem-body');
+  var thead = document.querySelector('#tbl-man-sem thead tr');
+  if(!tbody) return;
+
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:80px">N°/Pos.</th><th style="width:80px">Dispositivo</th><th style="width:50px">Tipo</th><th style="width:40px">Ante</th><th style="width:70px">Costruttore</th><th style="width:50px">Anno</th><th style="width:80px">Ubicazione</th><th style="width:96px">Mann. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Integrità</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:60px">Alt.Barra</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
+
+  var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
+
+  tbody.innerHTML = presidiUES.map(function(p, idx){
+    return '<tr id="man-row-ues-'+idx+'">' +
+      '<td><input type="checkbox" class="man-chk" checked=""></td>' +
+      '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
+      '<td><input type="text" value="'+(p.matr||'')+'" style="'+inpCss+'"></td>' +
+      '<td><input type="text" class="ues-dispositivo" value="'+(p.ues_dispositivo||'Maniglioni')+'" style="'+inpCss+'"></td>' +
+      '<td><select class="ues-tipo" style="'+inpCss+'"><option value="Antipanico"'+(p.ues_tipo==='Antipanico'?' selected':'')+'>Antipanico</option><option value="Emergenza"'+(p.ues_tipo==='Emergenza'?' selected':'')+'>Emergenza</option></select></td>' +
+      '<td><input type="text" class="ues-ante" value="'+(p.ues_ante||'')+'" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input type="text" class="man-costr" value="'+(p.costr||'')+'" style="'+inpCss+'"></td>' +
+      '<td><input type="number" class="man-anno" value="'+(p.annop||'')+'" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input type="text" class="man-ubi" value="'+(p.ubi||'')+'" style="'+inpCss+'"></td>' +
+      '<td><input type="date" class="man-sem-data" value="'+dataInt+'" style="'+inpCss+'"></td>' +
+      '<td><select class="ues-viteria" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="ues-cerniere" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="ues-ossidaz" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="ues-vernic" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="ues-marcace" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="ues-integrita" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><input type="text" class="ues-din-lib" value="'+(p.ues_din_libera||'')+'" placeholder="Newton" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input type="text" class="ues-din-pr" value="'+(p.ues_din_press||'')+'" placeholder="Newton" style="'+inpCss+';text-align:center"></td>' +
+      '<td><select class="ues-scrocchi" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="\\">\\</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><input type="text" class="ues-barra-alt" value="'+(p.ues_barra_alt||'')+'" placeholder="mm" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input type="text" class="ues-manut" value="'+(p.ues_manut||'NESSUNA')+'" style="'+inpCss+'"></td>' +
+      '<td><select class="man-esito" style="'+inpCss+'"><option value="ok"'+(p.esito!=='nc'?' selected':'')+'>C. — Conforme</option><option value="nc"'+(p.esito==='nc'?' selected':'')+'>N.C. — Non conforme</option><option value="nd">N.E. — Non accessibile</option></select></td>' +
+      '<td><input type="text" class="man-note" placeholder="Note..." style="'+inpCss+'"></td>' +
+      '</tr>';
+  }).join('');
+
+  // Ripristina valori select da dati presidio
+  presidiUES.forEach(function(p, idx){
+    var row = document.getElementById('man-row-ues-'+idx);
+    if(!row) return;
+    var setVal = function(cls, val){
+      var el = row.querySelector('.'+cls);
+      if(el && val && val!=='—') el.value = val;
+    };
+    setVal('ues-viteria',   p.ues_viteria);
+    setVal('ues-cerniere',  p.ues_cerniere);
+    setVal('ues-ossidaz',   p.ues_ossidaz);
+    setVal('ues-vernic',    p.ues_vernic);
+    setVal('ues-marcace',   p.ues_marcace);
+    setVal('ues-integrita', p.ues_integrita);
+    setVal('ues-scrocchi',  p.ues_scrocchi);
+  });
+}
+
 
 // ── Ricalcoli automatici per riga ────────────────────────────────────────────
 
