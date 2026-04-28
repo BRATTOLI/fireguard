@@ -2694,6 +2694,9 @@ tr:hover td{background:#fafafa}
         </div>
       </div>
 
+      <!-- Tab tipo presidio in manutenzione -->
+      <div id="man-sem-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+
       <div class="tw" style="overflow-x:auto">
         <table id="tbl-man-sem" style="font-size:11px;min-width:1400px;table-layout:fixed;width:100%">
           <thead>
@@ -4605,7 +4608,7 @@ function apriSchedaCliente(cliId){
   if(!cli) return;
   S('presidi');
   const search = document.getElementById('pres-search');
-  if(search){ search.value = cli.rs; renderPresidi(); aggiornaTabPresidi(cli.id); }
+  if(search){ search.value = cli.rs; renderPresidi(_filtroTipoAttivo); aggiornaTabPresidi(cli.id); }
   // Aggiorna il titolo con nome cliente e bottone + presidio pre-compilato
   const title = document.getElementById('pres-title');
   if(title) title.textContent = '👥 Presidi di: ' + cli.rs;
@@ -4719,7 +4722,7 @@ function vediPresidiFuoriVita(codici){
 function rimuoviFiltroPresidi(){
   var banner = document.getElementById('dash-filtro-banner');
   if(banner) banner.style.display='none';
-  renderPresidi();
+  renderPresidi(_filtroTipoAttivo);
 }
 
 function gestisciTipoCustom(){ /* non più necessaria */ }
@@ -4808,7 +4811,7 @@ function eliminaCliente(cliId){
     if(PRESIDI_DATA[i].cli===cli.rs) PRESIDI_DATA.splice(i,1);
   }
   renderClienti();
-  renderPresidi();
+  renderPresidi(_filtroTipoAttivo);
   buildDashboard();
   salvaLS();
   notifica('🗑️ Cliente "'+cli.rs+'" eliminato con '+nPres+' presidi.');
@@ -5796,7 +5799,7 @@ function salvaSchedaPresidio(cod){
     if(u)   p['man_u_'+i]=u;
     if(pp2) p['man_p_'+i]=pp2;
   });
-  renderPresidi();
+  renderPresidi(_filtroTipoAttivo);
   buildDashboard();
   salvaLS();
   aggiornaLSBadge();
@@ -5820,7 +5823,7 @@ function salvaSchedaPresidio2(cod){
     if(pp2) p['man_p_'+i]=pp2;
     if(e)   p['man_e_'+i]=e;
   }
-  renderPresidi();
+  renderPresidi(_filtroTipoAttivo);
   buildDashboard();
   salvaLS();
   aggiornaLSBadge();
@@ -5841,7 +5844,7 @@ function eliminaPresidio(cod){
   // Aggiorna conteggio presidi sul cliente
   const cli = CLI_DATA.find(c=>c.rs===p.cli);
   if(cli && cli.presidi>0) cli.presidi--;
-  renderPresidi();
+  renderPresidi(_filtroTipoAttivo);
   renderClienti();
   buildDashboard();
   salvaLS();
@@ -5944,7 +5947,7 @@ function salvaPresidio(){
     .forEach(function(id){ const el=document.getElementById(id); if(el) el.value=''; });
 
   closeM('mPres');
-  renderPresidi();
+  renderPresidi(_filtroTipoAttivo);
   renderClienti();
   buildDashboard();
   salvaLS();
@@ -6672,7 +6675,7 @@ function importaExcel(){
   // Aggiorna viste
   if(typeof ricalcolaFineVitaTutti === 'function') ricalcolaFineVitaTutti();
   renderClienti();
-  renderPresidi();
+  renderPresidi(_filtroTipoAttivo);
   buildDashboard();
   if(typeof aggiornaSezioneImportata === 'function') aggiornaSezioneImportata();
 
@@ -6957,6 +6960,24 @@ function caricaPresidiManutenzione(){
 
   document.getElementById('man-sem-nome-cli').textContent = cli.rs;
   document.getElementById('man-sem-count').textContent = presidi.length + ' presid' + (presidi.length===1?'io':'i');
+
+  // ── Tab per tipo presidio in manutenzione ────────────────────────────────
+  var nUES = tuttiPresidi.filter(function(p){ return p.tipo === 'UES'; }).length;
+  var nEST = presidi.length; // già filtrati senza REI/UES
+  var tabsManEl = document.getElementById('man-sem-tabs');
+  if(tabsManEl){
+    var tabsHtml = '';
+    if(nEST > 0){
+      tabsHtml += '<button style="padding:6px 14px;border-radius:20px;border:1.5px solid #7B1C1C;background:#FDECEA;color:#7B1C1C;font-size:12px;font-weight:700;cursor:default">🧯 Estintori (' + nEST + ')</button>';
+    }
+    if(nREI > 0){
+      tabsHtml += '<button style="padding:6px 14px;border-radius:20px;border:1.5px solid #ffc107;background:#FFF3CD;color:#856404;font-size:12px;font-weight:700;cursor:default">🚪 Porte REI (' + nREI + ') — scheda in lavorazione</button>';
+    }
+    if(nUES > 0){
+      tabsHtml += '<button style="padding:6px 14px;border-radius:20px;border:1.5px solid #1B5E20;background:#E8F5E9;color:#1B5E20;font-size:12px;font-weight:700;cursor:default">🚨 Uscite Sicurezza (' + nUES + ') — scheda in lavorazione</button>';
+    }
+    tabsManEl.innerHTML = tabsHtml;
+  }
 
   // Avviso Porte REI se presenti
   var avvisoREI = document.getElementById('man-sem-avviso-rei');
@@ -7358,7 +7379,7 @@ function salvaManutenzioneCompleta(){
 
   if(n===0){ notifica('⚠️ Nessuna riga selezionata o senza data'); return; }
   REG_DATA.forEach(function(r,i){ r.n = REG_DATA.length - i; });
-  renderPresidi();
+  renderPresidi(_filtroTipoAttivo);
   renderRegistro();
   buildDashboard();
   salvaLS();
@@ -7413,7 +7434,7 @@ document.addEventListener('click', function(e) {
       var searchEl = document.getElementById('pres-search');
       if (searchEl) {
         searchEl.value = cod;
-        if (typeof renderPresidi === 'function') renderPresidi();
+        if (typeof renderPresidi === 'function') renderPresidi(_filtroTipoAttivo);
       }
     }, 400);
     return;
@@ -8224,7 +8245,7 @@ function azzeraRegistro(){
   if(!confirm('Sei sicuro? Tutte le schede semestrali verranno cancellate.\nClienti e presidi rimangono intatti.\n\nOperazione non reversibile.')) return;
   REG_DATA.length=0;
   PRESIDI_DATA.forEach(function(p){p.uv='—';p.scad='—';p.esito='';});
-  renderRegistro();renderPresidi();renderClienti();buildDashboard();salvaLS();
+  renderRegistro();renderPresidi(_filtroTipoAttivo);renderClienti();buildDashboard();salvaLS();
   notifica('🗑️ Registro azzerato — clienti e presidi intatti');
 }
 
@@ -9115,7 +9136,7 @@ setInterval(function(){ if(typeof salvaLS === 'function') salvaLS(); }, 60000);
 
 // ─── SEARCH PRESIDI ──────────────────────────────────────────────────────────
 var searchInp=document.getElementById('pres-search');
-if(searchInp)searchInp.addEventListener('input',()=>renderPresidi());
+if(searchInp)searchInp.addEventListener('input',()=>renderPresidi(_filtroTipoAttivo));
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 // Salva i dati embedded nell'HTML (dal backup) prima che caricaLS() li sovrascriva
@@ -9150,7 +9171,7 @@ renderTipiGrid('pc-presidi','filtroTipoPresidi');
 renderTipiGrid('pc-schede','apriScheda');
 renderTipiGrid('pc-blank','apriScheda');
 renderClienti(); // chiama anche aggiornaSelectClienti() internamente
-renderPresidi();
+renderPresidi(_filtroTipoAttivo);
 renderDePaloTable();
 renderRegistro();
 buildDashboard();
@@ -9284,7 +9305,7 @@ function ripristinaSnapshot(idx) {
   CLI_DATA.length = 0;     snap.clienti.forEach(function(x)  { CLI_DATA.push(x); });
   PRESIDI_DATA.length = 0; snap.presidi.forEach(function(x)  { PRESIDI_DATA.push(x); });
   REG_DATA.length = 0;     snap.registro.forEach(function(x) { REG_DATA.push(x); });
-  renderClienti(); renderPresidi(); renderRegistro(); buildDashboard(); salvaLS();
+  renderClienti(); renderPresidi(_filtroTipoAttivo); renderRegistro(); buildDashboard(); salvaLS();
   notifica('↺ Ripristinato: ' + snap.desc + ' — ' + d);
   closeM('mSnapshot');
 }
@@ -9598,7 +9619,7 @@ function avviaSincronizzazione() {
                 var _p = cloudData.presidi  || []; PRESIDI_DATA.length = 0; _p.forEach(function(x){ PRESIDI_DATA.push(x); });
                 var _r = cloudData.registro || []; REG_DATA.length = 0;     _r.forEach(function(x){ REG_DATA.push(x); });
                 if (typeof renderClienti  === 'function') renderClienti();
-                if (typeof renderPresidi  === 'function') renderPresidi();
+                if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
                 if (typeof renderRegistro === 'function') renderRegistro();
                 if (typeof buildDashboard === 'function') buildDashboard();
                 setCloudStatus('ok');
@@ -9620,7 +9641,7 @@ function _avviaSincronizzazioneCollezioni() {
     function _aggiornaUI(fonte) {
         _pronti[fonte] = true;
         if (fonte === 'clienti'    && typeof renderClienti  === 'function') renderClienti();
-        if (fonte === 'presidi'    && typeof renderPresidi  === 'function') renderPresidi();
+        if (fonte === 'presidi'    && typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
         if (fonte === 'interventi' && typeof renderRegistro === 'function') renderRegistro();
         if (_pronti.clienti && _pronti.presidi && _pronti.interventi) {
             if (typeof buildDashboard === 'function') buildDashboard();
@@ -9800,7 +9821,7 @@ window.ripristinaDaBackup = function(dataStr) {
             CLI_DATA.length = 0;     (b.clienti  || []).forEach(function(x){ CLI_DATA.push(x); });
             PRESIDI_DATA.length = 0; (b.presidi  || []).forEach(function(x){ PRESIDI_DATA.push(x); });
             REG_DATA.length = 0;     (b.registro || []).forEach(function(x){ REG_DATA.push(x); });
-            renderClienti(); renderPresidi(); renderRegistro(); buildDashboard();
+            renderClienti(); renderPresidi(_filtroTipoAttivo); renderRegistro(); buildDashboard();
             salvaLS(); setCloudStatus('ok');
             notifica('✅ Backup del ' + dataStr + ' ripristinato — ' + b.nClienti + ' clienti, ' + b.nPresidi + ' presidi');
             closeM('mBackup');
