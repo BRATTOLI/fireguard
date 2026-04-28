@@ -7313,20 +7313,25 @@ function avviaStampa(tipo) {
   // Tipo presidio corrente
   var tipoPres = (document.getElementById('man-sem-tipo-pres') || {value:'EST'}).value || 'EST';
 
-  // Salva prima, poi avvia la stampa dopo 400ms
+  // Anteprima: apri subito SENZA salvare (renderPresidi svuoterebbe il tbody)
+  if(tipo === 'anteprima'){
+    if(tipoPres === 'REI')      apriAnteprimaSchedaREI();
+    else if(tipoPres === 'UES') apriAnteprimaSchedaUES();
+    else                        apriAnteprimaScheda();
+    return;
+  }
+
+  // Word / PDF: salva prima, poi scarica dopo 400ms
   salvaManutenzioneCompleta();
   setTimeout(function() {
     if(tipoPres === 'REI'){
-      if(tipo === 'anteprima') apriAnteprimaSchedaREI();
-      else if(tipo === 'word') stampaSchedaREIWord();
+      if(tipo === 'word') stampaSchedaREIWord();
       else if(tipo === 'pdf')  stampaSchedaREIPDF();
     } else if(tipoPres === 'UES'){
-      if(tipo === 'anteprima') apriAnteprimaSchedaUES();
-      else if(tipo === 'word') stampaSchedaUESWord();
+      if(tipo === 'word') stampaSchedaUESWord();
       else if(tipo === 'pdf')  stampaSchedaUESPDF();
     } else {
-      if (tipo === 'anteprima')    apriAnteprimaScheda();
-      else if (tipo === 'word')    stampaManutenzioneWord();
+      if (tipo === 'word')    stampaManutenzioneWord();
       else if (tipo === 'pdf')     stampaManutenzioneWordPDF();
     }
   }, 400);
