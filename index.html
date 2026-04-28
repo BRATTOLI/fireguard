@@ -8579,13 +8579,13 @@ function _buildHTMLSchedaREI(){
     '</tr></thead><tbody>';
 
   var rows = document.querySelectorAll('#tbl-man-sem-body tr[id^="man-row-rei-"]');
-  if(!rows.length) rows = document.querySelectorAll('#tbl-man-sem-body tr'); // fallback
+  if(!rows.length){ notifica('⚠️ Nessuna riga Porta REI nel pannello'); return null; }
   var nConf=0, nNC=0, nNE=0;
   rows.forEach(function(row, i){
     var chk = row.querySelector('.man-chk');
     if(chk && !chk.checked) return;
     var g = function(cls){ var el=row.querySelector('.'+cls); return el?el.value||'—':'—'; };
-    var gs = function(cls){ var el=row.querySelector('.'+cls); return el?el.options[el.selectedIndex].text||'—':'—'; };
+    var gs = function(cls){ var el=row.querySelector('.'+cls); if(!el) return '—'; var opt=el.options[el.selectedIndex]; return opt?opt.text||'—':'—'; };
     var esito = row.querySelector('.man-esito');
     var esitoVal = esito ? esito.value : 'ok';
     var esitoTxt = esitoVal==='nc' ? 'N.C.' : esitoVal==='nd' ? 'N.E.' : 'C.';
@@ -8740,13 +8740,13 @@ function _buildHTMLSchedaUES(){
     '</tr></thead><tbody>';
 
   var rows = document.querySelectorAll('#tbl-man-sem-body tr[id^="man-row-ues-"]');
-  if(!rows.length) rows = document.querySelectorAll('#tbl-man-sem-body tr'); // fallback
+  if(!rows.length){ notifica('⚠️ Nessuna riga Uscita Sicurezza nel pannello'); return null; }
   var nConf=0, nNC=0, nNE=0;
   rows.forEach(function(row, i){
     var chk = row.querySelector('.man-chk');
     if(chk && !chk.checked) return;
     var g = function(cls){ var el=row.querySelector('.'+cls); return el?el.value||'—':'—'; };
-    var gs = function(cls){ var el=row.querySelector('.'+cls); return el?el.options[el.selectedIndex].text||'—':'—'; };
+    var gs = function(cls){ var el=row.querySelector('.'+cls); if(!el) return '—'; var opt=el.options[el.selectedIndex]; return opt?opt.text||'—':'—'; };
     var esito = row.querySelector('.man-esito');
     var esitoVal = esito ? esito.value : 'ok';
     var esitoTxt = esitoVal==='nc' ? 'N.C.' : esitoVal==='nd' ? 'N.E.' : 'C.';
