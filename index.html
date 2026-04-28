@@ -7043,29 +7043,6 @@ function caricaPresidiManutenzione(){
 }
 
 
-  // Avviso Porte REI se presenti
-  var avvisoREI = document.getElementById('man-sem-avviso-rei');
-  if(!avvisoREI){
-    avvisoREI = document.createElement('div');
-    avvisoREI.id = 'man-sem-avviso-rei';
-    avvisoREI.style.cssText = 'background:#FFF3CD;border:1.5px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#856404;display:none';
-    var cont2 = document.getElementById('man-sem-cont');
-    if(cont2) cont2.insertBefore(avvisoREI, cont2.firstChild);
-  }
-  if(nREI > 0){
-    avvisoREI.style.display = 'block';
-    avvisoREI.innerHTML = '🚪 <strong>' + nREI + ' Porta/e REI</strong> presente/i per questo cliente. <em>La scheda Porte REI è in lavorazione</em> — viene visualizzata separatamente nella sezione <strong>Presidi → tab 🚪 Porte REI</strong>. Per ora registra manualmente nel Registro interventi se necessario.';
-  } else {
-    avvisoREI.style.display = 'none';
-  }
-
-  var tbody = document.getElementById('tbl-man-sem-body');
-  if(!tbody) return;
-
-  // Svuota sempre il tbody
-  tbody.innerHTML = '';
-
-
 // ── SCHEDA ESTINTORI ──────────────────────────────────────────────────────────
 function renderSchedaEstintori(presidi, dataInt, cli){
   var tbody = document.getElementById('tbl-man-sem-body');
