@@ -7136,7 +7136,7 @@ function renderSchedaREI(presidiREI, dataInt, cli){
   var tblWrap = document.querySelector('#tbl-man-sem');
   if(!tbody) return;
 
-  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:100px">N°/Posizione</th><th style="width:70px">Tipo REI</th><th style="width:50px">Ante</th><th style="width:70px">Costruttore</th><th style="width:50px">Anno</th><th style="width:80px">Matricola</th><th style="width:96px">Mann. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Chiudiporta</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:100px">N°/Posizione</th><th style="width:70px">Tipo REI</th><th style="width:50px">Ante</th><th style="width:70px">Costruttore</th><th style="width:52px">Anno</th><th style="width:80px">Matricola</th><th style="width:100px">Mann. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Chiudiporta</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
 
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
@@ -7326,12 +7326,25 @@ function avviaStampa(tipo) {
     notifica('❌ Inserisci la data intervento');
     return;
   }
+  // Tipo presidio corrente
+  var tipoPres = (document.getElementById('man-sem-tipo-pres') || {value:'EST'}).value || 'EST';
+
   // Salva prima, poi avvia la stampa dopo 400ms
   salvaManutenzioneCompleta();
   setTimeout(function() {
-    if (tipo === 'anteprima')    apriAnteprimaScheda();
-    else if (tipo === 'word')    stampaManutenzioneWord();
-    else if (tipo === 'pdf')     stampaManutenzioneWordPDF();
+    if(tipoPres === 'REI'){
+      if(tipo === 'anteprima') apriAnteprimaSchedaREI();
+      else if(tipo === 'word') stampaSchedaREIWord();
+      else if(tipo === 'pdf')  stampaSchedaREIPDF();
+    } else if(tipoPres === 'UES'){
+      if(tipo === 'anteprima') apriAnteprimaSchedaUES();
+      else if(tipo === 'word') stampaSchedaUESWord();
+      else if(tipo === 'pdf')  stampaSchedaUESPDF();
+    } else {
+      if (tipo === 'anteprima')    apriAnteprimaScheda();
+      else if (tipo === 'word')    stampaManutenzioneWord();
+      else if (tipo === 'pdf')     stampaManutenzioneWordPDF();
+    }
   }, 400);
 }
 
@@ -8516,6 +8529,306 @@ function scaricaSchemaLandscapePDF(html, nomeFile){
   win.document.close();
   win.focus();
 }
+
+// ── HELPER: intestazione documento comune ────────────────────────────────────
+function _intestazioneDocTipo(cli, dataInt, tecnico, titoloScheda, norma){
+  var html = intestazioneDoc();
+  html += '<h2 style="color:#C0392B;font-size:13pt;margin:0 0 2px 0;text-align:center">' + titoloScheda + '</h2>';
+  html += '<p style="font-size:8.5pt;color:#555;margin:0 0 10px 0;text-align:center">' + norma + '</p>';
+  var tdS = 'padding:4px 6px;border:1px solid #ccc;font-size:9pt;vertical-align:middle;';
+  html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-bottom:12px">' +
+    '<tr><td style="'+tdS+'width:18%;background:#f5f5f5;font-weight:bold">Cliente</td><td style="'+tdS+'width:32%"><b>'+cli.rs+'</b></td><td style="'+tdS+'width:18%;background:#f5f5f5;font-weight:bold">Data manutenzione</td><td style="'+tdS+'width:32%"><b>'+dataInt+'</b></td></tr>' +
+    '<tr><td style="'+tdS+'background:#f5f5f5;font-weight:bold">Sede impianto</td><td style="'+tdS+'">'+cli.ind+'</td><td style="'+tdS+'background:#f5f5f5;font-weight:bold">Tecnico esecutore</td><td style="'+tdS+'"><b>'+tecnico+'</b></td></tr>' +
+    '<tr><td style="'+tdS+'background:#f5f5f5;font-weight:bold">Referente cliente</td><td style="'+tdS+'">'+(cli.ref||'—')+'</td><td style="'+tdS+'background:#f5f5f5;font-weight:bold">Norma applicata</td><td style="'+tdS+'">'+norma+'</td></tr>' +
+    '</table>';
+  return html;
+}
+
+// ── SCHEDA PORTE REI — WORD/ANTEPRIMA ────────────────────────────────────────
+function _buildHTMLSchedaREI(){
+  var sel   = document.getElementById('man-sem-cli');
+  var cliId = sel ? sel.value : '';
+  var cli   = CLI_DATA.find(function(c){ return c.id===cliId; });
+  if(!cli){ notifica('❌ Seleziona un cliente'); return null; }
+
+  var tecnico = (document.getElementById('man-sem-tec')||{value:''}).value || (DITTA||{}).rs || '';
+  var dataEl  = document.getElementById('man-sem-data');
+  var dataInt = dataEl ? (dataEl.value ? fromISO(dataEl.value) : TODAY.toLocaleDateString('it-IT')) : TODAY.toLocaleDateString('it-IT');
+  var noteGen = (document.getElementById('man-sem-note')||{value:''}).value.trim();
+
+  var thS = 'background:#8B5E00;color:white;padding:4px 5px;border:1px solid #999;font-size:7pt;text-align:center;font-weight:bold;';
+  var tdS = 'padding:3px 5px;border:1px solid #ccc;font-size:7.5pt;vertical-align:middle;text-align:center;';
+  var tdL = 'padding:3px 5px;border:1px solid #ccc;font-size:7.5pt;vertical-align:middle;';
+
+  var html = _intestazioneDocTipo(cli, dataInt, tecnico,
+    'SCHEDA DI CONTROLLO PORTE REI — PORTE TAGLIAFUOCO',
+    'D.M. 1/9/2021 — UNI 11473 — UNI 9723 — EN 16034');
+
+  // Tabella REI
+  html += '<table style="border-collapse:collapse;width:100%;font-size:7pt;margin-bottom:10px">' +
+    '<thead><tr>' +
+    '<th style="'+thS+'width:22px">N°</th>' +
+    '<th style="'+thS+'">Posizione / N° Porta</th>' +
+    '<th style="'+thS+'width:55px">Compartiment.</th>' +
+    '<th style="'+thS+'width:28px">Ante</th>' +
+    '<th style="'+thS+'">Costruttore</th>' +
+    '<th style="'+thS+'width:36px">Anno</th>' +
+    '<th style="'+thS+'">Matricola</th>' +
+    '<th style="'+thS+'width:50px">Mann. eseguita</th>' +
+    '<th style="'+thS+'width:28px">Viter.</th>' +
+    '<th style="'+thS+'width:28px">Cern.</th>' +
+    '<th style="'+thS+'width:28px">Ossid.</th>' +
+    '<th style="'+thS+'width:28px">Vernic.</th>' +
+    '<th style="'+thS+'width:28px">Marc.CE</th>' +
+    '<th style="'+thS+'width:36px">Chiudiporta</th>' +
+    '<th style="'+thS+'width:36px">Din.Lib (N)</th>' +
+    '<th style="'+thS+'width:36px">Din.Pr (N)</th>' +
+    '<th style="'+thS+'width:28px">Scrocc.</th>' +
+    '<th style="'+thS+'">Manutenzione</th>' +
+    '<th style="'+thS+'width:60px">Esito</th>' +
+    '<th style="'+thS+'">Note</th>' +
+    '</tr></thead><tbody>';
+
+  var rows = document.querySelectorAll('#tbl-man-sem-body tr[id^="man-row-rei-"]');
+  var nConf=0, nNC=0, nNE=0;
+  rows.forEach(function(row, i){
+    var chk = row.querySelector('.man-chk');
+    if(chk && !chk.checked) return;
+    var g = function(cls){ var el=row.querySelector('.'+cls); return el?el.value||'—':'—'; };
+    var gs = function(cls){ var el=row.querySelector('.'+cls); return el?el.options[el.selectedIndex].text||'—':'—'; };
+    var esito = row.querySelector('.man-esito');
+    var esitoVal = esito ? esito.value : 'ok';
+    var esitoTxt = esitoVal==='nc' ? 'N.C.' : esitoVal==='nd' ? 'N.E.' : 'C.';
+    var esitoColor = esitoVal==='nc' ? '#C0392B' : esitoVal==='nd' ? '#856404' : '#1a7a3a';
+    if(esitoVal==='ok') nConf++; else if(esitoVal==='nc') nNC++; else nNE++;
+    var bg = i%2===0 ? '#fff' : '#fafafa';
+    var nota = row.querySelector('.man-note'); var notaTxt = nota ? nota.value||'' : '';
+    html += '<tr style="background:'+bg+'">' +
+      '<td style="'+tdS+'">'+(i+1)+'</td>' +
+      '<td style="'+tdL+'">'+g('man-ubi')+'</td>' +
+      '<td style="'+tdS+'">'+g('rei-tipo')+'</td>' +
+      '<td style="'+tdS+'">'+g('rei-ante')+'</td>' +
+      '<td style="'+tdL+'">'+g('man-costr')+'</td>' +
+      '<td style="'+tdS+'">'+g('man-anno')+'</td>' +
+      '<td style="'+tdS+'">'+g('man-matr')+'</td>' +
+      '<td style="'+tdS+'">'+g('man-sem-data')+'</td>' +
+      '<td style="'+tdS+'">'+gs('rei-viteria')+'</td>' +
+      '<td style="'+tdS+'">'+gs('rei-cerniere')+'</td>' +
+      '<td style="'+tdS+'">'+gs('rei-ossidaz')+'</td>' +
+      '<td style="'+tdS+'">'+gs('rei-vernic')+'</td>' +
+      '<td style="'+tdS+'">'+gs('rei-marcace')+'</td>' +
+      '<td style="'+tdS+'">'+gs('rei-chiudiport')+'</td>' +
+      '<td style="'+tdS+'">'+g('rei-din-lib')+'</td>' +
+      '<td style="'+tdS+'">'+g('rei-din-pr')+'</td>' +
+      '<td style="'+tdS+'">'+gs('rei-scrocchi')+'</td>' +
+      '<td style="'+tdL+'">'+g('rei-manut')+'</td>' +
+      '<td style="'+tdS+';color:'+esitoColor+';font-weight:bold">'+esitoTxt+'</td>' +
+      '<td style="'+tdL+'">'+notaTxt+'</td>' +
+      '</tr>';
+  });
+  html += '</tbody></table>';
+
+  // Riepilogo
+  var totale = nConf+nNC+nNE;
+  html += '<table style="border-collapse:collapse;width:100%;margin-bottom:14px"><tr>' +
+    '<td style="padding:6px;background:#1A4F8A;color:#fff;font-weight:bold;font-size:8pt;border:1px solid #ccc">Totale porte verificate</td>' +
+    '<td style="padding:6px;background:#1A4F8A;color:#fff;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+totale+'</td>' +
+    '<td style="padding:6px;background:#e8f5e9;color:#1a7a3a;font-weight:bold;font-size:8pt;border:1px solid #ccc">✅ Conformi</td>' +
+    '<td style="padding:6px;background:#e8f5e9;color:#1a7a3a;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+nConf+'</td>' +
+    '<td style="padding:6px;background:#fdecea;color:#C0392B;font-weight:bold;font-size:8pt;border:1px solid #ccc">❌ Non conformi</td>' +
+    '<td style="padding:6px;background:#fdecea;color:#C0392B;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+nNC+'</td>' +
+    '<td style="padding:6px;background:#fff3cd;color:#856404;font-weight:bold;font-size:8pt;border:1px solid #ccc">N.E. Non accessibili</td>' +
+    '<td style="padding:6px;background:#fff3cd;color:#856404;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+nNE+'</td>' +
+    '</tr></table>';
+
+  if(noteGen){
+    html += '<p style="font-size:8pt;color:#333;margin-bottom:10px"><b>Note generali:</b> '+noteGen+'</p>';
+  }
+
+  // Nota bene e dichiarazione
+  html += '<div style="border:1px solid #e74c3c;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:7pt;color:#333">' +
+    '<b style="color:#C0392B">⚠️ NOTA BENE — LIMITAZIONE DI RESPONSABILITÀ</b><br>' +
+    'La presente manutenzione si riferisce esclusivamente alle porte e uscite antincendio sopra elencate. ' +
+    'I presidi contrassegnati come N.C. (NON CONFORME) presentano anomalie che ne compromettono la sicurezza d\'uso. ' +
+    'Si diffida la Committenza dall\'utilizzo delle relative porte fino al ripristino delle condizioni di conformità. ' +
+    'Il presente rapporto, inviato tramite canali telematici (SDI/e-mail), si intende approvato in assenza di contestazioni scritte entro 5 giorni lavorativi.' +
+    '</div>';
+
+  html += '<div style="border:1px solid #ccc;border-radius:4px;padding:8px 10px;margin-bottom:14px;font-size:7pt;color:#333">' +
+    '<b>DICHIARAZIONE DI CONFORMITÀ (D.M. 1/9/2021):</b> Il sottoscritto <b>'+tecnico+'</b>, ' +
+    'in qualità di Tecnico Manutentore Qualificato, dichiara che tutte le porte sopra elencate sono state controllate a regola d\'arte. ' +
+    'Le porte con ESITO CONFORME risultano efficienti e pronte all\'uso.' +
+    '</div>';
+
+  // Firme
+  html += '<table style="border-collapse:collapse;width:100%"><tr>' +
+    '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Timbro e firma Tecnico manutentore abilitato<br>(D.M. 37/08 — UNI 9994-1:2024)</td>' +
+    '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>' +
+    '</tr></table>';
+
+  return html;
+}
+
+function apriAnteprimaSchedaREI(){
+  var html = _buildHTMLSchedaREI();
+  if(!html) return;
+  var modal = document.getElementById('mAnteprima');
+  if(!modal){ notifica('❌ Modal anteprima non trovato'); return; }
+  var cont = document.getElementById('anteprima-content');
+  if(cont) cont.innerHTML = html;
+  openM('mAnteprima');
+}
+window.apriAnteprimaSchedaREI = apriAnteprimaSchedaREI;
+
+function stampaSchedaREIWord(){
+  var html = _buildHTMLSchedaREI();
+  if(!html) return;
+  var cli = CLI_DATA.find(function(c){ return c.id===(document.getElementById('man-sem-cli')||{value:''}).value; });
+  var nomeFile = 'Scheda_Porte_REI_' + (cli?cli.rs.replace(/[^a-zA-Z0-9]/g,'_'):'Cliente');
+  scaricaDocLandscape(html, nomeFile);
+  notifica('✅ Scheda Porte REI scaricata');
+}
+window.stampaSchedaREIWord = stampaSchedaREIWord;
+
+function stampaSchedaREIPDF(){
+  stampaSchedaREIWord(); // usa Word per ora
+}
+window.stampaSchedaREIPDF = stampaSchedaREIPDF;
+
+// ── SCHEDA USCITE DI SICUREZZA — WORD/ANTEPRIMA ──────────────────────────────
+function _buildHTMLSchedaUES(){
+  var sel   = document.getElementById('man-sem-cli');
+  var cliId = sel ? sel.value : '';
+  var cli   = CLI_DATA.find(function(c){ return c.id===cliId; });
+  if(!cli){ notifica('❌ Seleziona un cliente'); return null; }
+
+  var tecnico = (document.getElementById('man-sem-tec')||{value:''}).value || (DITTA||{}).rs || '';
+  var dataEl  = document.getElementById('man-sem-data');
+  var dataInt = dataEl ? (dataEl.value ? fromISO(dataEl.value) : TODAY.toLocaleDateString('it-IT')) : TODAY.toLocaleDateString('it-IT');
+  var noteGen = (document.getElementById('man-sem-note')||{value:''}).value.trim();
+
+  var thS = 'background:#1B5E20;color:white;padding:4px 5px;border:1px solid #999;font-size:7pt;text-align:center;font-weight:bold;';
+  var tdS = 'padding:3px 5px;border:1px solid #ccc;font-size:7.5pt;vertical-align:middle;text-align:center;';
+  var tdL = 'padding:3px 5px;border:1px solid #ccc;font-size:7.5pt;vertical-align:middle;';
+
+  var html = _intestazioneDocTipo(cli, dataInt, tecnico,
+    'SCHEDA DI CONTROLLO USCITE DI SICUREZZA — DISPOSITIVI DI APERTURA',
+    'UNI EN 1125 / UNI EN 179 — D.M. 1/9/2021');
+
+  html += '<table style="border-collapse:collapse;width:100%;font-size:7pt;margin-bottom:10px">' +
+    '<thead><tr>' +
+    '<th style="'+thS+'width:22px">N°</th>' +
+    '<th style="'+thS+'">N°/Posizione</th>' +
+    '<th style="'+thS+'">Dispositivo</th>' +
+    '<th style="'+thS+'width:50px">A/E — Ante</th>' +
+    '<th style="'+thS+'">Costruttore</th>' +
+    '<th style="'+thS+'width:36px">Anno</th>' +
+    '<th style="'+thS+'">Ubicazione</th>' +
+    '<th style="'+thS+'width:50px">Mann. eseguita</th>' +
+    '<th style="'+thS+'width:28px">Viter.</th>' +
+    '<th style="'+thS+'width:28px">Cern.</th>' +
+    '<th style="'+thS+'width:28px">Ossid.</th>' +
+    '<th style="'+thS+'width:28px">Vernic.</th>' +
+    '<th style="'+thS+'width:28px">Marc.CE</th>' +
+    '<th style="'+thS+'width:28px">Integr.</th>' +
+    '<th style="'+thS+'width:36px">Din.Lib (N)</th>' +
+    '<th style="'+thS+'width:36px">Din.Pr (N)</th>' +
+    '<th style="'+thS+'width:36px">Alt.Barra</th>' +
+    '<th style="'+thS+'">Manutenzione</th>' +
+    '<th style="'+thS+'width:55px">Esito</th>' +
+    '<th style="'+thS+'">Note</th>' +
+    '</tr></thead><tbody>';
+
+  var rows = document.querySelectorAll('#tbl-man-sem-body tr[id^="man-row-ues-"]');
+  var nConf=0, nNC=0, nNE=0;
+  rows.forEach(function(row, i){
+    var chk = row.querySelector('.man-chk');
+    if(chk && !chk.checked) return;
+    var g = function(cls){ var el=row.querySelector('.'+cls); return el?el.value||'—':'—'; };
+    var gs = function(cls){ var el=row.querySelector('.'+cls); return el?el.options[el.selectedIndex].text||'—':'—'; };
+    var esito = row.querySelector('.man-esito');
+    var esitoVal = esito ? esito.value : 'ok';
+    var esitoTxt = esitoVal==='nc' ? 'N.C.' : esitoVal==='nd' ? 'N.E.' : 'C.';
+    var esitoColor = esitoVal==='nc' ? '#C0392B' : esitoVal==='nd' ? '#856404' : '#1a7a3a';
+    if(esitoVal==='ok') nConf++; else if(esitoVal==='nc') nNC++; else nNE++;
+    var bg = i%2===0 ? '#fff' : '#fafafa';
+    var nota = row.querySelector('.man-note'); var notaTxt = nota ? nota.value||'' : '';
+    // Prima cella: N° dalla prima input del row
+    var inputs = row.querySelectorAll('td');
+    var numUES = inputs[2] ? (inputs[2].querySelector('input')||{value:i+1}).value : i+1;
+    html += '<tr style="background:'+bg+'">' +
+      '<td style="'+tdS+'">'+(i+1)+'</td>' +
+      '<td style="'+tdS+'">'+numUES+'</td>' +
+      '<td style="'+tdL+'">'+g('ues-dispositivo')+'</td>' +
+      '<td style="'+tdS+'">'+gs('ues-tipo')+' — '+g('ues-ante')+'</td>' +
+      '<td style="'+tdL+'">'+g('man-costr')+'</td>' +
+      '<td style="'+tdS+'">'+g('man-anno')+'</td>' +
+      '<td style="'+tdL+'">'+g('man-ubi')+'</td>' +
+      '<td style="'+tdS+'">'+g('man-sem-data')+'</td>' +
+      '<td style="'+tdS+'">'+gs('ues-viteria')+'</td>' +
+      '<td style="'+tdS+'">'+gs('ues-cerniere')+'</td>' +
+      '<td style="'+tdS+'">'+gs('ues-ossidaz')+'</td>' +
+      '<td style="'+tdS+'">'+gs('ues-vernic')+'</td>' +
+      '<td style="'+tdS+'">'+gs('ues-marcace')+'</td>' +
+      '<td style="'+tdS+'">'+gs('ues-integrita')+'</td>' +
+      '<td style="'+tdS+'">'+g('ues-din-lib')+'</td>' +
+      '<td style="'+tdS+'">'+g('ues-din-pr')+'</td>' +
+      '<td style="'+tdS+'">'+g('ues-barra-alt')+'</td>' +
+      '<td style="'+tdL+'">'+g('ues-manut')+'</td>' +
+      '<td style="'+tdS+';color:'+esitoColor+';font-weight:bold">'+esitoTxt+'</td>' +
+      '<td style="'+tdL+'">'+notaTxt+'</td>' +
+      '</tr>';
+  });
+  html += '</tbody></table>';
+
+  var totale = nConf+nNC+nNE;
+  html += '<table style="border-collapse:collapse;width:100%;margin-bottom:14px"><tr>' +
+    '<td style="padding:6px;background:#1A4F8A;color:#fff;font-weight:bold;font-size:8pt;border:1px solid #ccc">Totale uscite verificate</td>' +
+    '<td style="padding:6px;background:#1A4F8A;color:#fff;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+totale+'</td>' +
+    '<td style="padding:6px;background:#e8f5e9;color:#1a7a3a;font-weight:bold;font-size:8pt;border:1px solid #ccc">✅ Conformi</td>' +
+    '<td style="padding:6px;background:#e8f5e9;color:#1a7a3a;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+nConf+'</td>' +
+    '<td style="padding:6px;background:#fdecea;color:#C0392B;font-weight:bold;font-size:8pt;border:1px solid #ccc">❌ Non conformi</td>' +
+    '<td style="padding:6px;background:#fdecea;color:#C0392B;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+nNC+'</td>' +
+    '</tr></table>';
+
+  html += '<div style="border:1px solid #e74c3c;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:7pt;color:#333">' +
+    '<b style="color:#C0392B">⚠️ NOTA BENE</b> — Le uscite di sicurezza contrassegnate come N.C. presentano anomalie gravi che ne compromettono l\'efficienza. ' +
+    'Si diffida la Committenza dall\'utilizzo delle relative uscite fino al ripristino delle condizioni di conformità.' +
+    '</div>';
+
+  html += '<table style="border-collapse:collapse;width:100%"><tr>' +
+    '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Timbro e firma Tecnico manutentore abilitato</td>' +
+    '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>' +
+    '</tr></table>';
+
+  return html;
+}
+
+function apriAnteprimaSchedaUES(){
+  var html = _buildHTMLSchedaUES();
+  if(!html) return;
+  var modal = document.getElementById('mAnteprima');
+  if(!modal){ notifica('❌ Modal anteprima non trovato'); return; }
+  var cont = document.getElementById('anteprima-content');
+  if(cont) cont.innerHTML = html;
+  openM('mAnteprima');
+}
+window.apriAnteprimaSchedaUES = apriAnteprimaSchedaUES;
+
+function stampaSchedaUESWord(){
+  var html = _buildHTMLSchedaUES();
+  if(!html) return;
+  var cli = CLI_DATA.find(function(c){ return c.id===(document.getElementById('man-sem-cli')||{value:''}).value; });
+  var nomeFile = 'Scheda_Uscite_Sicurezza_' + (cli?cli.rs.replace(/[^a-zA-Z0-9]/g,'_'):'Cliente');
+  scaricaDocLandscape(html, nomeFile);
+  notifica('✅ Scheda Uscite Sicurezza scaricata');
+}
+window.stampaSchedaUESWord = stampaSchedaUESWord;
+
+function stampaSchedaUESPDF(){
+  stampaSchedaUESWord();
+}
+window.stampaSchedaUESPDF = stampaSchedaUESPDF;
 
 function apriAnteprimaScheda(){
   // Genera l'HTML della scheda (stesso di stampaManutenzioneWord) ma lo mette nel modal
