@@ -4160,7 +4160,7 @@ function generaReportAnnuale(cliId) {
   if (!cli) { notifica('❌ Cliente non trovato'); return; }
 
   var annoCorrente = new Date().getFullYear();
-  var presidiCli   = PRESIDI_DATA.filter(function(p){ return p.cli === cli.rs; });
+  var presidiCli   = PRESIDI_DATA.filter(function(p){ return cliMatch(p, cli); });
   var interventiCli = REG_DATA.filter(function(r){ return r.cliId === cliId; });
 
   // Interventi dell'anno corrente
@@ -4742,7 +4742,7 @@ function eliminaCliente(cliId){
   if(typeof salvaSnapshot==='function') salvaSnapshot('Prima di eliminare cliente');
   const cli = CLI_DATA.find(c=>c.id===cliId);
   if(!cli) return;
-  const nPres = PRESIDI_DATA.filter(p=>p.cli===cli.rs).length;
+  const nPres = PRESIDI_DATA.filter(p=>cliMatch(p, cli)).length;
   if(!confirm('\u26a0\ufe0f ATTENZIONE!\n\nEliminare il cliente "'+cli.rs+'" e tutti i suoi '+nPres+' presidi?\n\nQuesta operazione NON è reversibile.')) return;
   if(!confirm('\ud83d\udd34 SECONDA CONFERMA\n\nSei sicuro di voler eliminare il cliente "'+cli.rs+'" con '+nPres+' presidi?\n\nPremi OK per confermare definitivamente.')) return;
   // Rimuovi cliente
@@ -4906,11 +4906,32 @@ function renderStoricoPresidio() {
   contenuto.innerHTML = html;
 }
 
+// Helper: confronto nome cliente flessibile (gestisce piccole differenze di nome)
+function cliMatch(presidio, cliente){
+  if(!presidio || !cliente) return false;
+  // Match per ID diretto
+  if(presidio.cliId && cliente.id && presidio.cliId === cliente.id) return true;
+  const a = (presidio.cli||'').toLowerCase().trim();
+  const b = (cliente.rs||'').toLowerCase().trim();
+  if(!a || !b) return false;
+  if(a === b) return true;
+  if(a.includes(b) || b.includes(a)) return true;
+  // Match per parole significative (>4 caratteri)
+  const aW = a.split(/\s+/).filter(function(w){ return w.length > 4; });
+  const bW = b.split(/\s+/).filter(function(w){ return w.length > 4; });
+  if(aW.length === 0 || bW.length === 0) return false;
+  const comuni = aW.filter(function(w){ return bW.includes(w); });
+  return comuni.length >= Math.min(2, Math.min(aW.length, bW.length));
+}
+
+
 var _filtroTipoAttivo = null; // tiene traccia del tipo filtro attivo
 
 function filtroTipoPresidi(id){
-  _filtroTipoAttivo = (id === _filtroTipoAttivo) ? null : id; // toggle: riclicca per rimuovere filtro
+  _filtroTipoAttivo = id; // imposta filtro fisso
   renderPresidi(_filtroTipoAttivo);
+  // Mantieni header colonne corretto
+  _filtroTipoAttivo = id;
   document.querySelectorAll('#pc-presidi .pc').forEach(c=>c.classList.remove('sel'));
   if(_filtroTipoAttivo){
     const t=TIPI.find(x=>x.id===_filtroTipoAttivo);
@@ -6409,6 +6430,7 @@ function importaExcel(){
         cod:           cod,
         tipo:          'REI',
         cli:           nomeCliente,
+        cliId:         cliId || nuovoCliId || '',
         ubi:           numPorta ? 'Porta n. ' + numPorta : '—',
         matr:          matrREI,
         annop:         annoREI,
@@ -6443,6 +6465,7 @@ function importaExcel(){
         cod:     cod,
         tipo:    'EST',
         cli:     nomeCliente,
+        cliId:   cliId || nuovoCliId || '',
         ubi:     colVal(row,'posiz') || colVal(row,'ubicaz') || colVal(row,'ubicazione') || '—',
         matr:    colVal(row,'matricol'),
         annop:   colVal(row,'anno') || colVal(row,'prod') || '—',
@@ -6800,7 +6823,7 @@ function caricaPresidiManutenzione(){
   if(!cli){ return; }
 
   // Solo presidi estintori (EST, IDR, NSP, ecc.) — Porte REI hanno scheda dedicata
-  var tuttiPresidi = PRESIDI_DATA.filter(function(p){ return p.cli===cli.rs; });
+  var tuttiPresidi = PRESIDI_DATA.filter(function(p){ return cliMatch(p, cli); });
   var presidi = tuttiPresidi.filter(function(p){ return p.tipo !== 'REI' && p.tipo !== 'UES'; });
   var nREI = tuttiPresidi.filter(function(p){ return p.tipo === 'REI' || p.tipo === 'UES'; }).length;
 
@@ -8321,7 +8344,7 @@ function esportaWord(tipo, cliId){
     // ── Verbale presidi cliente ──────────────────────────────────────────────
     var cli = CLI_DATA.find(function(x){ return x.id===cliId; });
     if(!cli){ notifica('❌ Seleziona un cliente'); return; }
-    var presidi = PRESIDI_DATA.filter(function(p){ return p.cli===cli.rs; });
+    var presidi = PRESIDI_DATA.filter(function(p){ return cliMatch(p, cli); });
     nomeFile = 'Verbale_'+cli.rs.replace(/\s+/g,'_')+'_'+TODAY.toLocaleDateString('it-IT').replace(/\//g,'-');
     html = intestazioneDoc();
     html += '<h2 style="color:#C0392B;font-size:13pt">VERBALE DI MANUTENZIONE PRESIDI ANTINCENDIO</h2>';
