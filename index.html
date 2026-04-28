@@ -10059,25 +10059,29 @@ function aggiornaTabPresidi(cliId){
   }
 
   // Genera tab
-  var html = '<button style="padding:6px 14px;border-radius:20px;border:1.5px solid #ccc;background:' +
+  var html = '<button data-tutti="1" style="padding:6px 14px;border-radius:20px;border:1.5px solid #ccc;background:' +
     (!_filtroTipoAttivo?'#1A4F8A':'#f5f5f5') + ';color:' +
-    (!_filtroTipoAttivo?'#fff':'#333') + ';font-size:12px;font-weight:700;cursor:pointer" ' +
-    'onclick="filtroTipoPresidi(null)">Tutti (' + data.length + ')</button>';
+    (!_filtroTipoAttivo?'#fff':'#333') + ';font-size:12px;font-weight:700;cursor:pointer">Tutti (' + data.length + ')</button>';
 
   tipiPresenti.forEach(function(tipoId){
     var t = TIPI.find(function(x){ return x.id === tipoId; }) || { ic: '📋', n: tipoId, bg: '#f5f5f5', tc: '#333' };
     var isActive = _filtroTipoAttivo === tipoId;
-    html += '<button style="padding:6px 14px;border-radius:20px;border:1.5px solid ' +
+    html += '<button data-tipo="' + tipoId + '" style="padding:6px 14px;border-radius:20px;border:1.5px solid ' +
       (isActive ? (t.c||'#333') : '#ddd') + ';background:' +
       (isActive ? (t.bg||'#f5f5f5') : '#f5f5f5') + ';color:' +
-      (isActive ? (t.tc||'#333') : '#555') + ';font-size:12px;font-weight:700;cursor:pointer" ' +
-      'onclick="filtroTipoPresidi(\"' + tipoId + '\")">'+  
+      (isActive ? (t.tc||'#333') : '#555') + ';font-size:12px;font-weight:700;cursor:pointer">' +
       t.ic + ' ' + t.n + ' (' + contegg[tipoId] + ')</button>';
   });
 
   tabsEl.innerHTML = html;
+
+  // Attacca eventi click dopo aver impostato innerHTML
+  tabsEl.querySelectorAll('button[data-tipo]').forEach(function(btn){
+    btn.addEventListener('click', function(){ filtroTipoPresidi(this.getAttribute('data-tipo')); });
+  });
+  var tuttiBtn = tabsEl.querySelector('button[data-tutti]');
+  if(tuttiBtn) tuttiBtn.addEventListener('click', function(){ filtroTipoPresidi(null); });
 }
-window.aggiornaTabPresidi = aggiornaTabPresidi;
 
 </script>
 
