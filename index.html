@@ -4830,9 +4830,11 @@ function renderPresidi(filtroTipo){
   setTimeout(function(){ if(typeof aggiornaTabPresidi==='function') aggiornaTabPresidi(null); }, 50);
 
   const tuttoREI = data.length > 0 && data.every(function(p){ return p.tipo==='REI' || p.tipo==='UES'; });
-  if(filtroTipo === 'REI' || (tuttoREI && filtroTipo)){
-    // Intestazioni specifiche Porta REI
-    if(thead) thead.innerHTML = '<th>Codice</th><th>Tipo REI</th><th>Cliente</th><th>N°/Posizione</th><th>Matricola</th><th>Ante</th><th>Costruttore</th><th>Anno</th><th>Marcatura CE</th><th>Chiudiporta</th><th>Din. Libera (N)</th><th>Din. Press. (N)</th><th>Manut.</th><th>Esito</th><th>📋</th><th>🗑️</th>';
+  const tuttoUES = data.length > 0 && data.every(function(p){ return p.tipo==='UES'; });
+  const tuttoREI2 = data.length > 0 && data.every(function(p){ return p.tipo==='REI'; });
+
+  if(filtroTipo === 'REI' || tuttoREI2){
+    if(thead) thead.innerHTML = '<th>Codice</th><th>Tipo REI</th><th>Cliente</th><th>N°/Posizione</th><th>Matricola</th><th>Ante</th><th>Costruttore</th><th>Anno</th><th>Marc.CE</th><th>Chiudiporta</th><th>Din.Lib.(N)</th><th>Din.Press.(N)</th><th>Manut.</th><th>Esito</th><th>📋</th><th>🗑️</th>';
     tb.innerHTML=data.map(p=>{
       const tip=TIPI.find(x=>x.id===p.tipo)||{ic:'🚪',n:'Porta REI'};
       return`<tr>
@@ -4853,6 +4855,31 @@ function renderPresidi(filtroTipo){
         <td><button class="btn sm" style="background:#e8f0fe;border-color:#aac4f7;color:#1a3f8a" onclick="apriStoricoPresidio('${p.cod}')" title="Storico">📋</button></td>
         <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('${p.cod}')">🗑️</button></td>
       </tr>`;}).join('');
+
+  } else if(filtroTipo === 'UES' || tuttoUES){
+    if(thead) thead.innerHTML = '<th>Codice</th><th>Dispositivo</th><th>Cliente</th><th>Ubicazione</th><th>N°</th><th>Tipo</th><th>Ante</th><th>Costruttore</th><th>Anno</th><th>Marc.CE</th><th>Din.Lib.(N)</th><th>Din.Press.(N)</th><th>Integrità</th><th>Manutenzione</th><th>Esito</th><th>📋</th><th>🗑️</th>';
+    tb.innerHTML=data.map(p=>{
+      const tip=TIPI.find(x=>x.id===p.tipo)||{ic:'🚨',n:'Uscita Sicurezza'};
+      return`<tr>
+        <td><strong>${p.cod}</strong></td>
+        <td style="font-size:11px">${p.ues_dispositivo||'—'}</td>
+        <td style="font-size:11px">${p.cli}</td>
+        <td>${p.ubi||'—'}</td>
+        <td style="text-align:center">${p.matr||'—'}</td>
+        <td style="text-align:center;font-size:11px">${p.ues_tipo||'—'}</td>
+        <td style="text-align:center">${p.ues_ante||'—'}</td>
+        <td style="font-size:11px">${p.costr||'—'}</td>
+        <td style="text-align:center">${p.annop||'—'}</td>
+        <td style="text-align:center;font-size:11px">${p.ues_marcace||'—'}</td>
+        <td style="text-align:center">${p.ues_din_libera||'—'}</td>
+        <td style="text-align:center">${p.ues_din_press||'—'}</td>
+        <td style="text-align:center;font-size:11px">${p.ues_integrita||'—'}</td>
+        <td style="font-size:11px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${p.ues_manut||''}">${p.ues_manut||'—'}</td>
+        <td>${stBadge(p.esito)}</td>
+        <td><button class="btn sm" style="background:#e8f0fe;border-color:#aac4f7;color:#1a3f8a" onclick="apriStoricoPresidio('${p.cod}')" title="Storico">📋</button></td>
+        <td><button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaPresidio('${p.cod}')">🗑️</button></td>
+      </tr>`;}).join('');
+
   } else {
     // Intestazioni standard (estintori e altri)
     if(thead) thead.innerHTML = '<th>Codice</th><th>Tipo</th><th>Cliente</th><th>Ubicazione</th><th>Matricola</th><th>Anno prod.</th><th>Ult. verifica</th><th>Prox. scad.</th><th>Revisione</th><th>Collaudo</th><th>Fine vita</th><th>⏰ Vita</th><th>⏰ Scad.</th><th>Stato</th><th>QR</th><th>Scheda</th><th>📋</th><th>🏷</th><th>🗑️</th>';
@@ -6397,6 +6424,7 @@ function importaExcel(){
   // Se l'utente non ha selezionato un tipo, usa EST come default con avviso
   var tipoForzato = _tipoImportSelezionato || 'EST';
   var isFileREI = (tipoForzato === 'REI');
+  var isFileUES  = (tipoForzato === 'UES');
   var isFileUES = (tipoForzato === 'UES');
 
   // ── Nome cliente dal file ─────────────────────────────────────────────────
@@ -6517,6 +6545,43 @@ function importaExcel(){
         note:          '',
         uv: '—', scad: '—', rev: '—', coll: '—', vita: '—',
         peso: '—', pesotot: '—', agente: '—',
+      });
+    } else if(isFileUES){
+      // ── USCITA DI SICUREZZA ────────────────────────────────────────────────
+      var numUES2 = String(row[0]||'').trim();
+      var esitoCrudoUES2 = String(row[22]||row[21]||'').trim();
+      var esitoNormUES2 = esitoCrudoUES2.toLowerCase().includes('n.c') ? 'nc'
+                        : (esitoCrudoUES2.toLowerCase().startsWith('c') && esitoCrudoUES2.length < 5) ? 'ok'
+                        : 'N.V.';
+      var tipoAnteUES2 = String(row[2]||'').trim();
+      var anteUES2 = tipoAnteUES2.replace(/[AE]/i,'').trim() || '—';
+      var tipoDispUES2 = tipoAnteUES2.includes('A') ? 'Antipanico' : tipoAnteUES2.includes('E') ? 'Emergenza' : '—';
+      var ubicazioneUES2 = String(row[21]||'').trim() || '—';
+      nuoviPresidi.push({
+        cod:            cod, tipo: 'UES', cli: nomeCliente,
+        cliId:          cliId || nuovoCliId || '',
+        ubi:            ubicazioneUES2 || (numUES2 ? 'Uscita n. ' + numUES2 : '—'),
+        matr:           numUES2 || '—',
+        annop:          String(row[9]||'').trim() || '—',
+        costr:          String(row[8]||'').trim() || '—',
+        esito:          esitoNormUES2,
+        ues_dispositivo:String(row[1]||'').trim() || '—',
+        ues_tipo:       tipoDispUES2,
+        ues_ante:       anteUES2,
+        ues_viteria:    String(row[3]||'').trim() || '—',
+        ues_cerniere:   String(row[4]||'').trim() || '—',
+        ues_ossidaz:    String(row[5]||'').trim() || '—',
+        ues_vernic:     String(row[6]||'').trim() || '—',
+        ues_marcace:    String(row[7]||'').trim() || '—',
+        ues_integrita:  String(row[10]||'').trim() || '—',
+        ues_din_libera: String(row[11]||'').trim() || '—',
+        ues_din_press:  String(row[12]||'').trim() || '—',
+        ues_scrocchi:   String(row[13]||'').trim() || '—',
+        ues_barra_lung: String(row[14]||'').trim() || '—',
+        ues_barra_alt:  String(row[15]||'').trim() || '—',
+        ues_manut:      String(row[16]||'').trim() || '—',
+        note: '', uv:'—', scad:'—', rev:'—', coll:'—', vita:'—',
+        peso:'—', pesotot:'—', agente:'—',
       });
     } else {
       // ── ESTINTORE / altri presidi standard ────────────────────────────────
@@ -6911,6 +6976,20 @@ function caricaPresidiManutenzione(){
 
   var tbody = document.getElementById('tbl-man-sem-body');
   if(!tbody) return;
+
+  // Svuota sempre il tbody (evita dati residui del cliente precedente)
+  tbody.innerHTML = '';
+
+  // Se non ci sono estintori ma solo REI/UES, mostra messaggio
+  if(presidi.length === 0){
+    tbody.innerHTML = '<tr><td colspan="20" style="text-align:center;padding:24px;color:#856404;font-size:13px">' +
+      (nREI > 0 ? '🚪 Questo cliente ha solo Porte REI/Uscite Sicurezza — nessun estintore da manutenere. Vai nella sezione Presidi → tab 🚪 Porte REI.' :
+                  '⚠️ Nessun presidio estintore trovato per questo cliente.') +
+      '</td></tr>';
+    if(cont) cont.style.display = 'block';
+    if(vuoto) vuoto.style.display = 'none';
+    return;
+  }
 
   var oggi = new Date().toISOString().split('T')[0];
   var dataEl = document.getElementById('man-sem-data');
