@@ -2651,11 +2651,23 @@ tr:hover td{background:#fafafa}
       </div>
     </div>
 
-    <!-- Selezione cliente + data + tecnico + tipo operazione -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;align-items:end">
+    <!-- Selezione cliente + tipo presidio + data + tecnico + tipo operazione -->
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;align-items:end">
       <div class="fgg">
         <label>👥 Cliente *</label>
         <select id="man-sem-cli" onchange="caricaPresidiManutenzione()" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-weight:700;color:var(--blue)"><option value="">— Seleziona cliente —</option><option value="CLI-001">AZIENDA DE PALO GROUP SRL</option><option value="CLI-002">CONDOMINIO VIA PALOMBAIO,136 BITONTO</option><option value="CLI-004">NUOVO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-005">VECCHIO MUSEO DIOCESANO DI BITONTO</option><option value="CLI-006">PISCINA PIAZZA EUROPA BARI</option><option value="CLI-008">CONDOMINIO 1° TRAV. PROLUNG. VIA DAMASCELLI 3/5</option><option value="CLI-009">PARROCCHIA SAN SILVESTRO</option></select>
+      </div>
+      <div class="fgg">
+        <label>🔥 Tipo presidio</label>
+        <select id="man-sem-tipo-pres" onchange="cambiaTipoPresidioManutenzione()" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-weight:700;color:#C0392B">
+          <option value="EST">🧯 Estintori</option>
+          <option value="REI">🚪 Porte REI</option>
+          <option value="UES">🚨 Uscite Sicurezza</option>
+          <option value="IDR">🚿 Idranti</option>
+          <option value="NSP">🌀 Naspi</option>
+          <option value="EM">💡 Luci emergenza</option>
+          <option value="RIV">💨 Rivelatori fumo</option>
+        </select>
       </div>
       <div class="fgg">
         <label>📅 Data intervento *</label>
@@ -2664,7 +2676,7 @@ tr:hover td{background:#fafafa}
       <div class="fgg">
         <label>⚙️ Tipo operazione</label>
         <select id="man-sem-tipo" style="padding:8px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:8px;background:#fff">
-          <option value="Controllo periodico att.4.5">Controllo periodico att.4.5 (semestrale)</option>
+          <option value="Controllo periodico att.4.5" selected>Controllo periodico att.4.5 (semestrale)</option>
           <option value="Sorveglianza att.4.4">Sorveglianza att.4.4</option>
           <option value="Revisione programmata att.4.6">Revisione programmata att.4.6</option>
           <option value="Collaudo bombola att.4.7">Collaudo bombola att.4.7</option>
@@ -6943,6 +6955,12 @@ function calcolaProssimaScadDaTipoAtt(dataStr, tipoAtt){
 // Alias usato altrove
 function calcolaProssimaScad(dataStr){ return calcolaProssimaScadDaTipoAtt(dataStr,'4.5'); }
 
+function cambiaTipoPresidioManutenzione(){
+  // Ricarica la scheda con il nuovo tipo presidio selezionato
+  caricaPresidiManutenzione();
+}
+window.cambiaTipoPresidioManutenzione = cambiaTipoPresidioManutenzione;
+
 function caricaPresidiManutenzione(){
   var sel = document.getElementById('man-sem-cli');
   var cliId = sel ? sel.value : '';
@@ -6953,54 +6971,74 @@ function caricaPresidiManutenzione(){
   var cli = CLI_DATA.find(function(c){ return c.id===cliId; });
   if(!cli){ return; }
 
-  // Solo presidi estintori (EST, IDR, NSP, ecc.) — Porte REI hanno scheda dedicata
+  // Tipo presidio selezionato (default EST)
+  var tipoPres = (document.getElementById('man-sem-tipo-pres') || {value:'EST'}).value || 'EST';
+
+  // Tutti i presidi del cliente
   var tuttiPresidi = PRESIDI_DATA.filter(function(p){ return cliMatch(p, cli); });
-  var presidi = tuttiPresidi.filter(function(p){ return p.tipo !== 'REI' && p.tipo !== 'UES'; });
-  var nREI = tuttiPresidi.filter(function(p){ return p.tipo === 'REI' || p.tipo === 'UES'; }).length;
 
+  // Presidi del tipo selezionato
+  var presidiTipo = tuttiPresidi.filter(function(p){ return p.tipo === tipoPres; });
+
+  // Aggiorna contatore e nome
   document.getElementById('man-sem-nome-cli').textContent = cli.rs;
-  document.getElementById('man-sem-count').textContent = presidi.length + ' presid' + (presidi.length===1?'io':'i');
+  var tipInfo = TIPI.find(function(t){ return t.id === tipoPres; }) || {ic:'🔥', n: tipoPres};
+  document.getElementById('man-sem-count').textContent = presidiTipo.length + ' ' + tipInfo.n + (presidiTipo.length===1?'':'');
 
-  // ── Conta per tipo ────────────────────────────────────────────────────────
-  var presidiREI = tuttiPresidi.filter(function(p){ return p.tipo === 'REI'; });
-  var presidiUES = tuttiPresidi.filter(function(p){ return p.tipo === 'UES'; });
-  var nUES = presidiUES.length;
-  var nEST = presidi.length;
-  var nREIonly = presidiREI.length;
+  // Aggiorna i tab per mostrare tutti i tipi disponibili
+  var tipiDisponibili = {};
+  tuttiPresidi.forEach(function(p){ tipiDisponibili[p.tipo] = (tipiDisponibili[p.tipo]||0)+1; });
 
-  // ── Tab cliccabili ────────────────────────────────────────────────────────
   var tabsManEl = document.getElementById('man-sem-tabs');
   if(tabsManEl){
     var tabsHtml = '';
-    if(nEST > 0){
-      tabsHtml += '<button data-man-tipo="EST" style="padding:6px 14px;border-radius:20px;border:1.5px solid #7B1C1C;background:#FDECEA;color:#7B1C1C;font-size:12px;font-weight:700;cursor:pointer">🧯 Estintori (' + nEST + ')</button>';
-    }
-    if(nREIonly > 0){
-      tabsHtml += '<button data-man-tipo="REI" style="padding:6px 14px;border-radius:20px;border:1.5px solid #8B5E00;background:#FFF3CD;color:#664D00;font-size:12px;font-weight:700;cursor:pointer">🚪 Porte REI (' + nREIonly + ')</button>';
-    }
-    if(nUES > 0){
-      tabsHtml += '<button data-man-tipo="UES" style="padding:6px 14px;border-radius:20px;border:1.5px solid #1B5E20;background:#E8F5E9;color:#1B5E20;font-size:12px;font-weight:700;cursor:pointer">🚨 Uscite Sicurezza (' + nUES + ')</button>';
-    }
+    Object.keys(tipiDisponibili).forEach(function(t){
+      var ti = TIPI.find(function(x){ return x.id===t; }) || {ic:'📋', n:t, bg:'#f5f5f5', c:'#ccc', tc:'#333'};
+      var isActive = t === tipoPres;
+      tabsHtml += '<button data-man-tipo="' + t + '" style="padding:6px 14px;border-radius:20px;border:1.5px solid ' +
+        (isActive ? (ti.c||'#333') : '#ddd') + ';background:' +
+        (isActive ? (ti.bg||'#f5f5f5') : '#f5f5f5') + ';color:' +
+        (isActive ? (ti.tc||'#333') : '#555') + ';font-size:12px;font-weight:700;cursor:pointer' +
+        (isActive ? ';outline:3px solid #1A4F8A' : '') + '">' +
+        ti.ic + ' ' + ti.n + ' (' + tipiDisponibili[t] + ')</button>';
+    });
     tabsManEl.innerHTML = tabsHtml;
-
-    // Aggancia eventi click
     tabsManEl.querySelectorAll('button[data-man-tipo]').forEach(function(btn){
       btn.addEventListener('click', function(){
-        var tipo = this.getAttribute('data-man-tipo');
-        // Evidenzia tab attivo
-        tabsManEl.querySelectorAll('button').forEach(function(b){ b.style.outline=''; });
-        this.style.outline = '3px solid #1A4F8A';
-        // Carica scheda corretta
-        if(tipo === 'EST') renderSchedaEstintori(presidi, dataInt, cli);
-        else if(tipo === 'REI') renderSchedaREI(presidiREI, dataInt, cli);
-        else if(tipo === 'UES') renderSchedaUES(presidiUES, dataInt, cli);
+        var tipoSel = document.getElementById('man-sem-tipo-pres');
+        if(tipoSel) tipoSel.value = this.getAttribute('data-man-tipo');
+        caricaPresidiManutenzione();
       });
     });
-
-    // Attiva primo tab disponibile
-    var primoBtn = tabsManEl.querySelector('button[data-man-tipo]');
-    if(primoBtn){ primoBtn.style.outline = '3px solid #1A4F8A'; }
   }
+
+  var oggi = new Date().toISOString().split('T')[0];
+  var dataEl = document.getElementById('man-sem-data');
+  var dataInt = (dataEl && dataEl.value) ? dataEl.value : oggi;
+
+  var tbody = document.getElementById('tbl-man-sem-body');
+  if(tbody) tbody.innerHTML = '';
+
+  if(presidiTipo.length === 0){
+    if(tbody) tbody.innerHTML = '<tr><td colspan="25" style="text-align:center;padding:24px;color:#555;font-size:13px">⚠️ Nessun presidio di tipo ' + tipInfo.ic + ' ' + tipInfo.n + ' trovato per questo cliente.</td></tr>';
+    if(cont) cont.style.display = 'block';
+    if(vuoto) vuoto.style.display = 'none';
+    return;
+  }
+
+  // Carica scheda in base al tipo
+  if(tipoPres === 'REI'){
+    renderSchedaREI(presidiTipo, dataInt, cli);
+  } else if(tipoPres === 'UES'){
+    renderSchedaUES(presidiTipo, dataInt, cli);
+  } else {
+    renderSchedaEstintori(presidiTipo, dataInt, cli);
+  }
+
+  if(cont)  cont.style.display = 'block';
+  if(vuoto) vuoto.style.display = 'none';
+}
+
 
   // Avviso Porte REI se presenti
   var avvisoREI = document.getElementById('man-sem-avviso-rei');
@@ -7024,30 +7062,6 @@ function caricaPresidiManutenzione(){
   // Svuota sempre il tbody
   tbody.innerHTML = '';
 
-  var oggi = new Date().toISOString().split('T')[0];
-  var dataEl = document.getElementById('man-sem-data');
-  var dataInt = (dataEl && dataEl.value) ? dataEl.value : oggi;
-
-  // Se non ci sono estintori, mostra la scheda del primo tipo disponibile
-  if(presidi.length === 0){
-    if(presidiREI.length > 0){
-      renderSchedaREI(presidiREI, dataInt, cli);
-    } else if(presidiUES.length > 0){
-      renderSchedaUES(presidiUES, dataInt, cli);
-    } else {
-      tbody.innerHTML = '<tr><td colspan="20" style="text-align:center;padding:24px;color:#555;font-size:13px">⚠️ Nessun presidio trovato per questo cliente.</td></tr>';
-    }
-    if(cont) cont.style.display = 'block';
-    if(vuoto) vuoto.style.display = 'none';
-    return;
-  }
-
-  // Carica scheda estintori di default
-  renderSchedaEstintori(presidi, dataInt, cli);
-
-  if(cont)  cont.style.display = 'block';
-  if(vuoto) vuoto.style.display = 'none';
-}
 
 // ── SCHEDA ESTINTORI ──────────────────────────────────────────────────────────
 function renderSchedaEstintori(presidi, dataInt, cli){
