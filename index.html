@@ -2679,11 +2679,14 @@ tr:hover td{background:#fafafa}
       <div class="fgg">
         <label>⚙️ Tipo operazione</label>
         <select id="man-sem-tipo" style="padding:8px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:8px;background:#fff">
-          <option value="Controllo periodico att.4.5" selected>Controllo periodico att.4.5 (semestrale)</option>
+          <option value="Controllo periodico" selected>Controllo periodico (semestrale)</option>
+          <option value="Controllo periodico att.4.5">Controllo periodico att.4.5 — Estintori (semestrale)</option>
           <option value="Sorveglianza att.4.4">Sorveglianza att.4.4</option>
           <option value="Revisione programmata att.4.6">Revisione programmata att.4.6</option>
           <option value="Collaudo bombola att.4.7">Collaudo bombola att.4.7</option>
           <option value="Manutenzione straordinaria att.4.8">Manutenzione straordinaria att.4.8</option>
+          <option value="Controllo periodico Porte REI">Controllo periodico Porte REI (UNI EN 1634)</option>
+          <option value="Controllo periodico Uscite Sicurezza">Controllo periodico Uscite Sicurezza (UNI EN 179/1125)</option>
         </select>
       </div>
       <div class="fgg">
@@ -7116,7 +7119,7 @@ function renderSchedaREI(presidiREI, dataInt, cli){
   var tblWrap = document.querySelector('#tbl-man-sem');
   if(!tbody) return;
 
-  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:100px">N°/Posizione</th><th style="width:70px">Tipo REI</th><th style="width:50px">Ante</th><th style="width:70px">Costruttore</th><th style="width:52px">Anno</th><th style="width:80px">Matricola</th><th style="width:100px">Mann. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Chiudiporta</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:80px">N°/Pos.</th><th style="width:70px">Tipo REI</th><th style="width:40px">Ante</th><th style="width:70px">Costruttore</th><th style="width:60px">Anno</th><th style="width:80px">Matricola</th><th style="width:110px">Mann. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Chiudiporta</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
 
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
@@ -7170,7 +7173,7 @@ function renderSchedaUES(presidiUES, dataInt, cli){
   var thead = document.querySelector('#tbl-man-sem thead tr');
   if(!tbody) return;
 
-  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:80px">N°/Pos.</th><th style="width:80px">Dispositivo</th><th style="width:50px">Tipo</th><th style="width:40px">Ante</th><th style="width:70px">Costruttore</th><th style="width:50px">Anno</th><th style="width:80px">Ubicazione</th><th style="width:96px">Mann. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Integrità</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:60px">Alt.Barra</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:60px">N°/Pos.</th><th style="width:90px">Dispositivo</th><th style="width:50px">Tipo</th><th style="width:35px">Ante</th><th style="width:70px">Costruttore</th><th style="width:60px">Anno</th><th style="width:80px">Ubicazione</th><th style="width:110px">Mann. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Integrità</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:60px">Alt.Barra</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
 
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
@@ -7303,8 +7306,9 @@ function avviaStampa(tipo) {
   }
   var dataEl = document.getElementById('man-sem-data');
   if (!dataEl || !dataEl.value) {
-    notifica('❌ Inserisci la data intervento');
-    return;
+    // Imposta data odierna se mancante
+    if(dataEl) dataEl.value = new Date().toISOString().split('T')[0];
+    else { notifica('❌ Inserisci la data intervento'); return; }
   }
   // Tipo presidio corrente
   var tipoPres = (document.getElementById('man-sem-tipo-pres') || {value:'EST'}).value || 'EST';
@@ -8570,6 +8574,7 @@ function _buildHTMLSchedaREI(){
     '</tr></thead><tbody>';
 
   var rows = document.querySelectorAll('#tbl-man-sem-body tr[id^="man-row-rei-"]');
+  if(!rows.length) rows = document.querySelectorAll('#tbl-man-sem-body tr'); // fallback
   var nConf=0, nNC=0, nNE=0;
   rows.forEach(function(row, i){
     var chk = row.querySelector('.man-chk');
@@ -8720,6 +8725,7 @@ function _buildHTMLSchedaUES(){
     '</tr></thead><tbody>';
 
   var rows = document.querySelectorAll('#tbl-man-sem-body tr[id^="man-row-ues-"]');
+  if(!rows.length) rows = document.querySelectorAll('#tbl-man-sem-body tr'); // fallback
   var nConf=0, nNC=0, nNE=0;
   rows.forEach(function(row, i){
     var chk = row.querySelector('.man-chk');
