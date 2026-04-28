@@ -7313,25 +7313,20 @@ function avviaStampa(tipo) {
   // Tipo presidio corrente
   var tipoPres = (document.getElementById('man-sem-tipo-pres') || {value:'EST'}).value || 'EST';
 
-  // Per anteprima non salvare — apri direttamente senza ritardo
-  if(tipo === 'anteprima'){
-    if(tipoPres === 'REI')       apriAnteprimaSchedaREI();
-    else if(tipoPres === 'UES')  apriAnteprimaSchedaUES();
-    else                         apriAnteprimaScheda();
-    return;
-  }
-
   // Salva prima, poi avvia la stampa dopo 400ms
   salvaManutenzioneCompleta();
   setTimeout(function() {
     if(tipoPres === 'REI'){
-      if(tipo === 'word') stampaSchedaREIWord();
+      if(tipo === 'anteprima') apriAnteprimaSchedaREI();
+      else if(tipo === 'word') stampaSchedaREIWord();
       else if(tipo === 'pdf')  stampaSchedaREIPDF();
     } else if(tipoPres === 'UES'){
-      if(tipo === 'word') stampaSchedaUESWord();
+      if(tipo === 'anteprima') apriAnteprimaSchedaUES();
+      else if(tipo === 'word') stampaSchedaUESWord();
       else if(tipo === 'pdf')  stampaSchedaUESPDF();
     } else {
-      if (tipo === 'word')    stampaManutenzioneWord();
+      if (tipo === 'anteprima')    apriAnteprimaScheda();
+      else if (tipo === 'word')    stampaManutenzioneWord();
       else if (tipo === 'pdf')     stampaManutenzioneWordPDF();
     }
   }, 400);
@@ -8664,11 +8659,19 @@ function _buildHTMLSchedaREI(){
 function apriAnteprimaSchedaREI(){
   var html = _buildHTMLSchedaREI();
   if(!html) return;
-  var modal = document.getElementById('mAnteprima');
-  if(!modal){ notifica('❌ Modal anteprima non trovato'); return; }
-  var cont = document.getElementById('anteprima-content');
-  if(cont) cont.innerHTML = html;
-  openM('mAnteprima');
+  var inner = document.getElementById('anteprima-scheda-inner');
+  if(!inner){ notifica('❌ Modal anteprima non trovato'); return; }
+  inner.innerHTML = html;
+  inner.querySelectorAll('table').forEach(function(t){ t.style.borderCollapse='collapse'; t.style.width='100%'; });
+  inner.querySelectorAll('td,th').forEach(function(c){ if(!c.style.padding) c.style.padding='3px 5px'; });
+  // Aggiorna bottoni Word/PDF nel modal per puntare a REI
+  var btnW = document.querySelector('#mAnteprimaScheda .btn.grn');
+  var btnP = document.querySelector('#mAnteprimaScheda .btn[style*="C0392B"]');
+  if(btnW){ btnW.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaSchedaREIWord,100); }; }
+  if(btnP){ btnP.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaSchedaREIPDF,100); }; }
+  var pan = document.getElementById('pannello-testi-modificabili');
+  if(pan) pan.style.display='none';
+  openM('mAnteprimaScheda');
 }
 window.apriAnteprimaSchedaREI = apriAnteprimaSchedaREI;
 
@@ -8802,11 +8805,19 @@ function _buildHTMLSchedaUES(){
 function apriAnteprimaSchedaUES(){
   var html = _buildHTMLSchedaUES();
   if(!html) return;
-  var modal = document.getElementById('mAnteprima');
-  if(!modal){ notifica('❌ Modal anteprima non trovato'); return; }
-  var cont = document.getElementById('anteprima-content');
-  if(cont) cont.innerHTML = html;
-  openM('mAnteprima');
+  var inner = document.getElementById('anteprima-scheda-inner');
+  if(!inner){ notifica('❌ Modal anteprima non trovato'); return; }
+  inner.innerHTML = html;
+  inner.querySelectorAll('table').forEach(function(t){ t.style.borderCollapse='collapse'; t.style.width='100%'; });
+  inner.querySelectorAll('td,th').forEach(function(c){ if(!c.style.padding) c.style.padding='3px 5px'; });
+  // Aggiorna bottoni Word/PDF nel modal per puntare a UES
+  var btnW = document.querySelector('#mAnteprimaScheda .btn.grn');
+  var btnP = document.querySelector('#mAnteprimaScheda .btn[style*="C0392B"]');
+  if(btnW){ btnW.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaSchedaUESWord,100); }; }
+  if(btnP){ btnP.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaSchedaUESPDF,100); }; }
+  var pan = document.getElementById('pannello-testi-modificabili');
+  if(pan) pan.style.display='none';
+  openM('mAnteprimaScheda');
 }
 window.apriAnteprimaSchedaUES = apriAnteprimaSchedaUES;
 
@@ -8878,6 +8889,11 @@ function apriAnteprimaScheda(){
   // Chiudi il pannello ad ogni riapertura anteprima
   var _pan = document.getElementById('pannello-testi-modificabili');
   if(_pan) _pan.style.display = 'none';
+  // Ripristina bottoni Word/PDF per estintori
+  var _btnW = document.querySelector('#mAnteprimaScheda .btn.grn');
+  var _btnP = document.querySelector('#mAnteprimaScheda .btn[style*="C0392B"]');
+  if(_btnW){ _btnW.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaManutenzioneWord,100); }; }
+  if(_btnP){ _btnP.onclick = function(){ closeM('mAnteprimaScheda'); setTimeout(stampaManutenzioneWordPDF,100); }; }
   openM('mAnteprimaScheda');
 }
 
