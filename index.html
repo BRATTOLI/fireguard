@@ -7124,7 +7124,7 @@ function renderSchedaREI(presidiREI, dataInt, cli){
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
   tbody.innerHTML = presidiREI.map(function(p, idx){
-    return '<tr id="man-row-rei-'+idx+'">' +
+    return '<tr id="man-row-rei-'+idx+'" data-cod="'+(p.cod||'')+'" data-tipo="REI" data-cli="'+(cli?cli.rs:'')+'">' +
       '<td><input type="checkbox" class="man-chk" checked=""></td>' +
       '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
       '<td><input type="text" class="man-ubi" value="'+(p.ubi||'')+'" style="'+inpCss+'"></td>' +
@@ -7178,7 +7178,7 @@ function renderSchedaUES(presidiUES, dataInt, cli){
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
   tbody.innerHTML = presidiUES.map(function(p, idx){
-    return '<tr id="man-row-ues-'+idx+'">' +
+    return '<tr id="man-row-ues-'+idx+'" data-cod="'+(p.cod||'')+'" data-tipo="UES" data-cli="'+(cli?cli.rs:'')+'">' +
       '<td><input type="checkbox" class="man-chk" checked=""></td>' +
       '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
       '<td><input type="text" value="'+(p.matr||'')+'" style="'+inpCss+'"></td>' +
@@ -7313,20 +7313,25 @@ function avviaStampa(tipo) {
   // Tipo presidio corrente
   var tipoPres = (document.getElementById('man-sem-tipo-pres') || {value:'EST'}).value || 'EST';
 
+  // Per anteprima non salvare — apri direttamente senza ritardo
+  if(tipo === 'anteprima'){
+    if(tipoPres === 'REI')       apriAnteprimaSchedaREI();
+    else if(tipoPres === 'UES')  apriAnteprimaSchedaUES();
+    else                         apriAnteprimaScheda();
+    return;
+  }
+
   // Salva prima, poi avvia la stampa dopo 400ms
   salvaManutenzioneCompleta();
   setTimeout(function() {
     if(tipoPres === 'REI'){
-      if(tipo === 'anteprima') apriAnteprimaSchedaREI();
-      else if(tipo === 'word') stampaSchedaREIWord();
+      if(tipo === 'word') stampaSchedaREIWord();
       else if(tipo === 'pdf')  stampaSchedaREIPDF();
     } else if(tipoPres === 'UES'){
-      if(tipo === 'anteprima') apriAnteprimaSchedaUES();
-      else if(tipo === 'word') stampaSchedaUESWord();
+      if(tipo === 'word') stampaSchedaUESWord();
       else if(tipo === 'pdf')  stampaSchedaUESPDF();
     } else {
-      if (tipo === 'anteprima')    apriAnteprimaScheda();
-      else if (tipo === 'word')    stampaManutenzioneWord();
+      if (tipo === 'word')    stampaManutenzioneWord();
       else if (tipo === 'pdf')     stampaManutenzioneWordPDF();
     }
   }, 400);
@@ -8588,6 +8593,8 @@ function _buildHTMLSchedaREI(){
     if(esitoVal==='ok') nConf++; else if(esitoVal==='nc') nNC++; else nNE++;
     var bg = i%2===0 ? '#fff' : '#fafafa';
     var nota = row.querySelector('.man-note'); var notaTxt = nota ? nota.value||'' : '';
+    var dataManEl = row.querySelector('.man-sem-data'); var dataManRaw = dataManEl ? dataManEl.value : '';
+    var dataManFmt = dataManRaw ? fromISO(dataManRaw) : dataInt;
     html += '<tr style="background:'+bg+'">' +
       '<td style="'+tdS+'">'+(i+1)+'</td>' +
       '<td style="'+tdL+'">'+g('man-ubi')+'</td>' +
@@ -8596,7 +8603,7 @@ function _buildHTMLSchedaREI(){
       '<td style="'+tdL+'">'+g('man-costr')+'</td>' +
       '<td style="'+tdS+'">'+g('man-anno')+'</td>' +
       '<td style="'+tdS+'">'+g('man-matr')+'</td>' +
-      '<td style="'+tdS+'">'+g('man-sem-data')+'</td>' +
+      '<td style="'+tdS+'">'+dataManFmt+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-viteria')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-cerniere')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-ossidaz')+'</td>' +
@@ -8739,6 +8746,8 @@ function _buildHTMLSchedaUES(){
     if(esitoVal==='ok') nConf++; else if(esitoVal==='nc') nNC++; else nNE++;
     var bg = i%2===0 ? '#fff' : '#fafafa';
     var nota = row.querySelector('.man-note'); var notaTxt = nota ? nota.value||'' : '';
+    var dataManEl = row.querySelector('.man-sem-data'); var dataManRaw = dataManEl ? dataManEl.value : '';
+    var dataManFmt = dataManRaw ? fromISO(dataManRaw) : dataInt;
     // Prima cella: N° dalla prima input del row
     var inputs = row.querySelectorAll('td');
     var numUES = inputs[2] ? (inputs[2].querySelector('input')||{value:i+1}).value : i+1;
@@ -8750,7 +8759,7 @@ function _buildHTMLSchedaUES(){
       '<td style="'+tdL+'">'+g('man-costr')+'</td>' +
       '<td style="'+tdS+'">'+g('man-anno')+'</td>' +
       '<td style="'+tdL+'">'+g('man-ubi')+'</td>' +
-      '<td style="'+tdS+'">'+g('man-sem-data')+'</td>' +
+      '<td style="'+tdS+'">'+dataManFmt+'</td>' +
       '<td style="'+tdS+'">'+gs('ues-viteria')+'</td>' +
       '<td style="'+tdS+'">'+gs('ues-cerniere')+'</td>' +
       '<td style="'+tdS+'">'+gs('ues-ossidaz')+'</td>' +
