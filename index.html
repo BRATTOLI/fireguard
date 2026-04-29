@@ -8856,8 +8856,12 @@ function _buildHTMLSchedaREI(){
     'D.M. 1/9/2021 — UNI 11473 — UNI 9723 — EN 16034');
 
   // Tabella REI
-  var vthREI = 'background:#1A4F8A;color:#fff;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;text-align:left;padding:4px 2px;border:1px solid #999;font-size:5.5pt;font-weight:bold;vertical-align:bottom;height:85px;';
+  var vthREI = 'background:#1A4F8A;color:#fff;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;text-align:center;padding:4px 2px;border:1px solid #999;font-size:5.5pt;font-weight:bold;vertical-align:middle;height:85px;cursor:text;outline:none;';
   var hthREI = 'background:#1A4F8A;color:#fff;padding:4px 3px;border:1px solid #999;font-size:6pt;font-weight:bold;text-align:center;vertical-align:middle;';
+  // Helper: usa etichetta personalizzata se salvata, altrimenti quella di default
+  var _lR = window._labelREI || {};
+  var _idxR = 0;
+  var getLR = function(def){ var v = _lR[_idxR]; _idxR++; return (v !== undefined && v !== '') ? v : def; };
   html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6pt;margin-bottom:6px">' +
     '<colgroup>'+
     '<col style="width:2.5%"><col style="width:9%"><col style="width:4%"><col style="width:3%">'+
@@ -8870,24 +8874,24 @@ function _buildHTMLSchedaREI(){
     '<thead><tr>' +
     '<th style="'+hthREI+'">N°</th>' +
     '<th style="'+hthREI+'">Posizione / N° Porta</th>' +
-    '<th style="'+vthREI+'">Compartiment. / Tipo REI</th>' +
-    '<th style="'+vthREI+'">Ante</th>' +
-    '<th style="'+vthREI+'">Viteria — assenza ruggine</th>' +
-    '<th style="'+vthREI+'">Perni e cerniere lubrificate</th>' +
-    '<th style="'+vthREI+'">Ossidazione meccanismi</th>' +
-    '<th style="'+vthREI+'">Stato verniciatura</th>' +
+    '<th style="'+vthREI+'">'+getLR('Compartiment. / Tipo REI')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Ante')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Viteria — assenza ruggine')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Perni e cerniere lubrificate')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Ossidazione meccanismi')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Stato verniciatura')+'</th>' +
     '<th style="'+hthREI+'">Costruttore</th>' +
-    '<th style="'+vthREI+'">Anno costr.</th>' +
-    '<th style="'+vthREI+'">Guarnizioni termoespandenti</th>' +
-    '<th style="'+vthREI+'">Guarnizioni di battuta</th>' +
-    '<th style="'+vthREI+'">Chiudiporta EN 1154</th>' +
-    '<th style="'+vthREI+'">Coordinatore chiusura EN 1158</th>' +
-    '<th style="'+vthREI+'">Gioco porta-telaio (3÷6mm)</th>' +
+    '<th style="'+vthREI+'">'+getLR('Anno costr.')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Guarnizioni termoespandenti')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Guarnizioni di battuta')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Chiudiporta EN 1154')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Coordinatore chiusura EN 1158')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Gioco porta-telaio (3÷6mm)')+'</th>' +
     '<th style="'+hthREI+'">Matricola</th>' +
-    '<th style="'+vthREI+'">Integrità meccanica</th>' +
-    '<th style="'+vthREI+'">Din. Libera (N)</th>' +
-    '<th style="'+vthREI+'">Din. Pressione (N)</th>' +
-    '<th style="'+vthREI+'">Rientro scrocchi</th>' +
+    '<th style="'+vthREI+'">'+getLR('Integrità meccanica')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Din. Libera (N)')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Din. Pressione (N)')+'</th>' +
+    '<th style="'+vthREI+'">'+getLR('Rientro scrocchi')+'</th>' +
     '<th style="'+hthREI+'">Manutenzione eseguita</th>' +
     '<th style="'+hthREI+'">Esito</th>' +
     '<th style="'+hthREI+'">Note</th>' +
@@ -8980,6 +8984,68 @@ function _buildHTMLSchedaREI(){
   return html;
 }
 
+
+// ── CELLE INTESTAZIONE MODIFICABILI ──────────────────────────────────────────
+// Storage persistente delle etichette personalizzate per REI e UES
+window._labelREI = JSON.parse(localStorage.getItem('fg_labelsREI') || 'null') || null;
+window._labelUES = JSON.parse(localStorage.getItem('fg_labelsUES') || 'null') || null;
+
+function abilitaCelleModificabili() {
+  var cont = document.getElementById('anteprima-scheda-inner');
+  if(!cont) return;
+  var ths = cont.querySelectorAll('th');
+  var vertThs = [];
+  ths.forEach(function(th) {
+    var style = th.getAttribute('style') || '';
+    if(style.indexOf('writing-mode') >= 0 || style.indexOf('vertical-rl') >= 0) {
+      vertThs.push(th);
+    }
+  });
+
+  // Determina tipo (REI o UES) dal colore di sfondo
+  var isUES = vertThs.length > 0 && (vertThs[0].getAttribute('style')||'').indexOf('1B5E20') >= 0;
+  var storage = isUES ? window._labelUES : window._labelREI;
+  var storageKey = isUES ? 'fg_labelsUES' : 'fg_labelsREI';
+
+  vertThs.forEach(function(th, idx) {
+    // Ripristina eventuale etichetta personalizzata salvata
+    if(storage && storage[idx] !== undefined) th.textContent = storage[idx];
+
+    th.setAttribute('contenteditable', 'true');
+    th.setAttribute('spellcheck', 'false');
+    th.title = '✏️ Clicca per modificare — la modifica viene salvata automaticamente';
+    th.style.cursor = 'text';
+    th.addEventListener('focus', function(){ this.style.outline = '2px solid #ffc107'; this.style.background = '#1565C0'; });
+    th.addEventListener('blur', function(){
+      this.style.outline = 'none';
+      this.style.background = isUES ? '#1B5E20' : '#1A4F8A';
+      // Salva tutte le etichette aggiornate
+      var labels = {};
+      vertThs.forEach(function(t, i){ labels[i] = t.textContent; });
+      if(isUES) window._labelUES = labels; else window._labelREI = labels;
+      try { localStorage.setItem(storageKey, JSON.stringify(labels)); } catch(e){}
+    });
+    th.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ e.preventDefault(); this.blur(); }
+    });
+  });
+
+  // Mostra tooltip indicativo solo la prima volta
+  if(!localStorage.getItem('fg_labelTip')) {
+    notifica('✏️ Puoi cliccare sulle intestazioni blu per modificarne il testo');
+    localStorage.setItem('fg_labelTip', '1');
+  }
+}
+window.abilitaCelleModificabili = abilitaCelleModificabili;
+
+function resetEtichetteIntest() {
+  if(!confirm('Ripristinare le descrizioni originali delle colonne?')) return;
+  window._labelREI = null; window._labelUES = null;
+  try { localStorage.removeItem('fg_labelsREI'); localStorage.removeItem('fg_labelsUES'); } catch(e){}
+  notifica('✅ Intestazioni ripristinate — riapri l\'anteprima per vedere le modifiche');
+}
+window.resetEtichetteIntest = resetEtichetteIntest;
+
 function apriAnteprimaSchedaREI(){
   var html = _buildHTMLSchedaREI();
   if(!html) return;
@@ -8994,6 +9060,7 @@ function apriAnteprimaSchedaREI(){
   btns.forEach(function(b){ if(b.style.background==='rgb(192, 57, 43)') b.setAttribute('onclick',"closeM('mAnteprimaScheda'); setTimeout(stampaSchedaREIPDF,100)"); });
   resetBtnSalvaAnteprima();
   openM('mAnteprimaScheda');
+  setTimeout(abilitaCelleModificabili, 100);
 }
 window.apriAnteprimaSchedaREI = apriAnteprimaSchedaREI;
 
@@ -9037,8 +9104,11 @@ function _buildHTMLSchedaUES(){
     'SCHEDA DI CONTROLLO USCITE DI SICUREZZA — DISPOSITIVI DI APERTURA',
     'UNI EN 1125 / UNI EN 179 — D.M. 1/9/2021');
 
-  var vthUES = 'background:#1B5E20;color:#fff;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;text-align:left;padding:4px 2px;border:1px solid #999;font-size:5.5pt;font-weight:bold;vertical-align:bottom;height:85px;';
+  var vthUES = 'background:#1B5E20;color:#fff;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;text-align:center;padding:4px 2px;border:1px solid #999;font-size:5.5pt;font-weight:bold;vertical-align:middle;height:85px;cursor:text;outline:none;';
   var hthUES = 'background:#1B5E20;color:#fff;padding:4px 3px;border:1px solid #999;font-size:6pt;font-weight:bold;text-align:center;vertical-align:middle;';
+  var _lU = window._labelUES || {};
+  var _idxU = 0;
+  var getLU = function(def){ var v = _lU[_idxU]; _idxU++; return (v !== undefined && v !== '') ? v : def; };
   html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6pt;margin-bottom:6px">' +
     '<colgroup>'+
     '<col style="width:2.5%"><col style="width:9%"><col style="width:6%"><col style="width:4%">'+
@@ -9052,22 +9122,22 @@ function _buildHTMLSchedaUES(){
     '<th style="'+hthUES+'">N°</th>' +
     '<th style="'+hthUES+'">N°/Posizione</th>' +
     '<th style="'+hthUES+'">Dispositivo (UNI EN 1125/179)</th>' +
-    '<th style="'+vthUES+'">A=Antipanico E=Emerg. N°Ante</th>' +
+    '<th style="'+vthUES+'">'+getLU('A=Antipanico E=Emerg. N°Ante')+'</th>' +
     '<th style="'+hthUES+'">Costruttore</th>' +
-    '<th style="'+vthUES+'">Anno costr.</th>' +
+    '<th style="'+vthUES+'">'+getLU('Anno costr.')+'</th>' +
     '<th style="'+hthUES+'">Ubicazione</th>' +
     '<th style="'+hthUES+'">Mann. eseguita</th>' +
-    '<th style="'+vthUES+'">Viteria — assenza ruggine</th>' +
-    '<th style="'+vthUES+'">Perni e cerniere lubrificate</th>' +
-    '<th style="'+vthUES+'">Ossidazione meccanismi</th>' +
-    '<th style="'+vthUES+'">Stato verniciatura</th>' +
-    '<th style="'+vthUES+'">Marcatura CE originale</th>' +
-    '<th style="'+vthUES+'">Integrità meccanica</th>' +
-    '<th style="'+vthUES+'">Prova Din. Libera (N)</th>' +
-    '<th style="'+vthUES+'">Prova Din. Pressione (N)</th>' +
-    '<th style="'+vthUES+'">Rientro scrocchi</th>' +
-    '<th style="'+vthUES+'">Lunghezza barra ≥60%</th>' +
-    '<th style="'+vthUES+'">Altezza barra 900÷1100mm</th>' +
+    '<th style="'+vthUES+'">'+getLU('Viteria — assenza ruggine')+'</th>' +
+    '<th style="'+vthUES+'">'+getLU('Perni e cerniere lubrificate')+'</th>' +
+    '<th style="'+vthUES+'">'+getLU('Ossidazione meccanismi')+'</th>' +
+    '<th style="'+vthUES+'">'+getLU('Stato verniciatura')+'</th>' +
+    '<th style="'+vthUES+'">'+getLU('Marcatura CE originale')+'</th>' +
+    '<th style="'+vthUES+'">'+getLU('Integrità meccanica')+'</th>' +
+    '<th style="'+vthUES+'">'+getLU('Prova Din. Libera (N)')+'</th>' +
+    '<th style="'+vthUES+'">'+getLU('Prova Din. Pressione (N)')+'</th>' +
+    '<th style="'+vthUES+'">'+getLU('Rientro scrocchi')+'</th>' +
+    '<th style="'+vthUES+'">'+getLU('Lunghezza barra ≥60%')+'</th>' +
+    '<th style="'+vthUES+'">'+getLU('Altezza barra 900÷1100mm')+'</th>' +
     '<th style="'+hthUES+'">Manutenzione eseguita</th>' +
     '<th style="'+hthUES+'">Esito</th>' +
     '<th style="'+hthUES+'">Note</th>' +
@@ -9158,6 +9228,7 @@ function apriAnteprimaSchedaUES(){
   btns.forEach(function(b){ if(b.style.background==='rgb(192, 57, 43)') b.setAttribute('onclick',"closeM('mAnteprimaScheda'); setTimeout(stampaSchedaUESPDF,100)"); });
   resetBtnSalvaAnteprima();
   openM('mAnteprimaScheda');
+  setTimeout(abilitaCelleModificabili, 100);
 }
 window.apriAnteprimaSchedaUES = apriAnteprimaSchedaUES;
 
@@ -10170,6 +10241,7 @@ function ripristinaSnapshot(){ /* rimosso */ }
         <div style="width:1px;height:28px;background:#ddd;margin:0 4px"></div>
         <button class="btn grn" style="font-size:12px;padding:7px 14px" onclick="closeM('mAnteprimaScheda'); setTimeout(stampaManutenzioneWord,100)">📄 Scarica Word</button>
         <button class="btn" style="font-size:12px;padding:7px 14px;background:#fff3cd;color:#856404;border-color:#ffc107" onclick="toggleTestiModificabili()">✏️ Modifica testi</button>
+        <button class="btn" style="font-size:12px;padding:7px 14px;background:#f0f0f0;color:#555;border-color:#ccc" onclick="resetEtichetteIntest()" title="Ripristina le descrizioni originali delle colonne">↺ Reset intestazioni</button>
         <button class="btn" style="font-size:12px;padding:7px 14px;background:#C0392B;color:#fff;border-color:#C0392B" onclick="closeM('mAnteprimaScheda'); setTimeout(stampaManutenzioneWordPDF,100)">📑 Scarica PDF</button>
         <button onclick="closeM('mAnteprimaScheda')" style="background:#f5f5f5;border:none;border-radius:8px;width:32px;height:32px;font-size:16px;cursor:pointer">✕</button>
       </div>
