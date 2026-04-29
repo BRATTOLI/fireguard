@@ -4419,7 +4419,7 @@ function apriStoricoCliente(cliId){
 
 // ── RISTAMPA PDF DA STORICO ──────────────────────────────────────────────────
 // Ricostruisce e scarica il PDF di una scheda già salvata partendo dai dati in REG_DATA
-function ristampaSchedaStorico(sessId, isREI, isUES) {
+function ristampaSchedaStorico(sessId) {
   var righe = REG_DATA.filter(function(r){ return r.sessId === sessId; });
   if(!righe.length){ notifica('⚠️ Nessun intervento trovato per questa sessione'); return; }
 
@@ -4430,6 +4430,14 @@ function ristampaSchedaStorico(sessId, isREI, isUES) {
   var dataInt = r0.d || '';
   var tecnico = r0.tec || (DITTA||{}).rs || '';
   var nomeBase = (cli.rs||'Cliente').replace(/[^a-zA-Z0-9]/g,'_');
+
+  // Determina tipo dai presidi in PRESIDI_DATA o dal tipo salvato nel record
+  var _presR0 = PRESIDI_DATA.find(function(p){ return p.cod===r0.cod; });
+  var _tipoPres = _presR0 ? (_presR0.tipo||'').toUpperCase() : '';
+  var _tipoR = (r0.tipo||'').toUpperCase();
+  var _opR   = (r0.op||'').toLowerCase();
+  var isREI = _tipoPres==='REI' || _tipoR.includes('REI') || _opR.includes('porta') || _opR.includes('rei');
+  var isUES = _tipoPres==='UES' || _tipoR.includes('UES') || _opR.includes('uscita') || _opR.includes('ues');
 
   if(isREI){
     // Ricostruisce HTML scheda REI dai dati storico
@@ -4606,7 +4614,9 @@ function renderStoricoCliente(){
     return toISO(dB).localeCompare(toISO(dA));
   });
 
+  window._sessChiavi = window._sessChiavi || [];
   contenuto.innerHTML = chiavi.map(function(key, dateIdx){
+    window._sessChiavi[dateIdx] = key;
     var righe = sessioni[key];
     var d     = righe[0].d; // data display (dd/mm/yyyy)
     var nOk  = righe.filter(function(r){ return r.esito==='ok'; }).length;
@@ -4697,7 +4707,7 @@ function renderStoricoCliente(){
       +badge
       +'<span style="font-size:12px;color:var(--text3);margin-left:6px" id="arr-'+idTab+'">▼</span>'
       +'</div>'
-      +'<button data-sessid="'+key+'" data-isrei="'+(_isREI?'1':'0')+'" data-isues="'+(_isUES?'1':'0')+'" onclick="ristampaSchedaStorico(this.dataset.sessid,this.dataset.isrei==='1',this.dataset.isues==='1')" style="background:#e8f5e9;border:1.5px solid #a5d6a7;color:#1a7a3c;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;flex-shrink:0;margin-right:6px">📑 PDF</button>'
+      +'<button onclick="ristampaSchedaStorico(window._sessChiavi['+dateIdx+'])" style="background:#e8f5e9;border:1.5px solid #a5d6a7;color:#1a7a3c;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;flex-shrink:0;margin-right:6px">📑 PDF</button>'
       +'<button data-deldata="'+d+'" data-sessid="'+key+'" onclick="eliminaScheda(this.dataset.deldata, this.dataset.sessid)" style="background:#fff0f0;border:1.5px solid #f5c6cb;color:#9b1c1c;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;flex-shrink:0">🗑️ Elimina</button>'
       +'</div>'
       // Tabella presidi — parte sempre CHIUSA, si apre solo al click
