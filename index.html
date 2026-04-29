@@ -7398,7 +7398,7 @@ function renderSchedaREI(presidiREI, dataInt, cli){
   var tblWrap = document.querySelector('#tbl-man-sem');
   if(!tbody) return;
 
-  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:80px">N°/Pos.</th><th style="width:70px">Tipo REI</th><th style="width:40px">Ante</th><th style="width:70px">Costruttore</th><th style="width:70px">Anno</th><th style="width:80px">Matricola</th><th style="width:130px">Man. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Chiudiporta</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:80px">N°/Pos.</th><th style="width:70px">Tipo REI</th><th style="width:40px">Ante</th><th style="width:70px">Costruttore</th><th style="width:70px">Anno</th><th style="width:80px">Matricola</th><th style="width:130px">Man. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Chiudiporta</th><th style="width:60px">Coord.chius.</th><th style="width:55px">Gioco(mm)</th><th style="width:60px">Guar.term.</th><th style="width:60px">Guar.batt.</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:50px">Integr.</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
 
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
@@ -7419,9 +7419,14 @@ function renderSchedaREI(presidiREI, dataInt, cli){
       '<td><select class="rei-vernic" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
       '<td><select class="rei-marcace" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
       '<td><select class="rei-chiudiport" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="rei-coord" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="\\\\">\\</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><input type="text" class="rei-gioco" value="'+(p.rei_gioco||'')+'" placeholder="3÷6mm" style="'+inpCss+';text-align:center"></td>' +
+      '<td><select class="rei-guar-term" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="rei-guar-batt" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
       '<td><input type="text" class="rei-din-lib" value="'+(p.rei_din_libera||'')+'" placeholder="Newton" style="'+inpCss+';text-align:center"></td>' +
       '<td><input type="text" class="rei-din-pr" value="'+(p.rei_din_press||'')+'" placeholder="Newton" style="'+inpCss+';text-align:center"></td>' +
       '<td><select class="rei-scrocchi" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="rei-integrita" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
       '<td><input type="text" class="rei-manut" value="'+(p.rei_manut||'NESSUNA')+'" style="'+inpCss+'"></td>' +
       '<td><select class="man-esito" style="'+inpCss+'"><option value="ok"'+(p.esito!=='nc'?' selected':'')+'>C. — Conforme</option><option value="nc"'+(p.esito==='nc'?' selected':'')+'>N.C. — Non conforme</option><option value="nd">N.E. — Non accessibile</option></select></td>' +
       '<td><input type="text" class="man-note" placeholder="Note..." style="'+inpCss+'"></td>' +
@@ -7452,7 +7457,7 @@ function renderSchedaUES(presidiUES, dataInt, cli){
   var thead = document.querySelector('#tbl-man-sem thead tr');
   if(!tbody) return;
 
-  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:60px">N°/Pos.</th><th style="width:90px">Dispositivo</th><th style="width:50px">Tipo</th><th style="width:35px">Ante</th><th style="width:70px">Costruttore</th><th style="width:70px">Anno</th><th style="width:80px">Ubicazione</th><th style="width:130px">Man. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Integrità</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:60px">Alt.Barra</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:60px">N°/Pos.</th><th style="width:90px">Dispositivo</th><th style="width:50px">Tipo</th><th style="width:35px">Ante</th><th style="width:70px">Costruttore</th><th style="width:70px">Anno</th><th style="width:80px">Ubicazione</th><th style="width:130px">Man. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Integrità</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:60px">Lun.Barra≥60%</th><th style="width:60px">Alt.Barra(mm)</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
 
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
@@ -7477,6 +7482,7 @@ function renderSchedaUES(presidiUES, dataInt, cli){
       '<td><input type="text" class="ues-din-lib" value="'+(p.ues_din_libera||'')+'" placeholder="Newton" style="'+inpCss+';text-align:center"></td>' +
       '<td><input type="text" class="ues-din-pr" value="'+(p.ues_din_press||'')+'" placeholder="Newton" style="'+inpCss+';text-align:center"></td>' +
       '<td><select class="ues-scrocchi" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="\\">\\</option><option value="N.E.">N.E.</option></select></td>' +
+      '<td><select class="ues-barra-lun" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
       '<td><input type="text" class="ues-barra-alt" value="'+(p.ues_barra_alt||'')+'" placeholder="mm" style="'+inpCss+';text-align:center"></td>' +
       '<td><input type="text" class="ues-manut" value="'+(p.ues_manut||'NESSUNA')+'" style="'+inpCss+'"></td>' +
       '<td><select class="man-esito" style="'+inpCss+'"><option value="ok"'+(p.esito!=='nc'?' selected':'')+'>C. — Conforme</option><option value="nc"'+(p.esito==='nc'?' selected':'')+'>N.C. — Non conforme</option><option value="nd">N.E. — Non accessibile</option></select></td>' +
@@ -8850,35 +8856,41 @@ function _buildHTMLSchedaREI(){
     'D.M. 1/9/2021 — UNI 11473 — UNI 9723 — EN 16034');
 
   // Tabella REI
-  html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6pt;margin-bottom:8px">' +
+  var vthREI = 'background:#1A4F8A;color:#fff;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;text-align:left;padding:4px 2px;border:1px solid #999;font-size:5.5pt;font-weight:bold;vertical-align:bottom;height:85px;';
+  var hthREI = 'background:#1A4F8A;color:#fff;padding:4px 3px;border:1px solid #999;font-size:6pt;font-weight:bold;text-align:center;vertical-align:middle;';
+  html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6pt;margin-bottom:6px">' +
     '<colgroup>'+
-    '<col style="width:2%"><col style="width:8%"><col style="width:5%"><col style="width:3%">'+
-    '<col style="width:7%"><col style="width:4%"><col style="width:6%"><col style="width:5%">'+
+    '<col style="width:2.5%"><col style="width:9%"><col style="width:4%"><col style="width:3%">'+
     '<col style="width:3%"><col style="width:3%"><col style="width:3%"><col style="width:3%">'+
-    '<col style="width:3%"><col style="width:4%"><col style="width:4%"><col style="width:4%">'+
-    '<col style="width:3%"><col style="width:9%"><col style="width:5%"><col style="width:7%">'+
+    '<col style="width:6%"><col style="width:3.5%"><col style="width:3%"><col style="width:3%">'+
+    '<col style="width:3%"><col style="width:3%"><col style="width:3%"><col style="width:5%">'+
+    '<col style="width:3%"><col style="width:3.5%"><col style="width:3.5%"><col style="width:3%">'+
+    '<col style="width:9%"><col style="width:5%"><col style="width:7%">'+
     '</colgroup>'+
     '<thead><tr>' +
-    '<th style="'+thS+'">N°</th>' +
-    '<th style="'+thS+'">Posizione</th>' +
-    '<th style="'+thS+'">Compart.</th>' +
-    '<th style="'+thS+'">Ante</th>' +
-    '<th style="'+thS+'">Costruttore</th>' +
-    '<th style="'+thS+'">Anno</th>' +
-    '<th style="'+thS+'">Matricola</th>' +
-    '<th style="'+thS+'">Mann.</th>' +
-    '<th style="'+thS+'">Vit.</th>' +
-    '<th style="'+thS+'">Cer.</th>' +
-    '<th style="'+thS+'">Oss.</th>' +
-    '<th style="'+thS+'">Ver.</th>' +
-    '<th style="'+thS+'">M.CE</th>' +
-    '<th style="'+thS+'">Chiudi</th>' +
-    '<th style="'+thS+'">D.Lib</th>' +
-    '<th style="'+thS+'">D.Pr.</th>' +
-    '<th style="'+thS+'">Scr.</th>' +
-    '<th style="'+thS+'">Manutenzione</th>' +
-    '<th style="'+thS+'">Esito</th>' +
-    '<th style="'+thS+'">Note</th>' +
+    '<th style="'+hthREI+'">N°</th>' +
+    '<th style="'+hthREI+'">Posizione / N° Porta</th>' +
+    '<th style="'+vthREI+'">Compartiment. / Tipo REI</th>' +
+    '<th style="'+vthREI+'">Ante</th>' +
+    '<th style="'+vthREI+'">Viteria — assenza ruggine</th>' +
+    '<th style="'+vthREI+'">Perni e cerniere lubrificate</th>' +
+    '<th style="'+vthREI+'">Ossidazione meccanismi</th>' +
+    '<th style="'+vthREI+'">Stato verniciatura</th>' +
+    '<th style="'+hthREI+'">Costruttore</th>' +
+    '<th style="'+vthREI+'">Anno costr.</th>' +
+    '<th style="'+vthREI+'">Guarnizioni termoespandenti</th>' +
+    '<th style="'+vthREI+'">Guarnizioni di battuta</th>' +
+    '<th style="'+vthREI+'">Chiudiporta EN 1154</th>' +
+    '<th style="'+vthREI+'">Coordinatore chiusura EN 1158</th>' +
+    '<th style="'+vthREI+'">Gioco porta-telaio (3÷6mm)</th>' +
+    '<th style="'+hthREI+'">Matricola</th>' +
+    '<th style="'+vthREI+'">Integrità meccanica</th>' +
+    '<th style="'+vthREI+'">Din. Libera (N)</th>' +
+    '<th style="'+vthREI+'">Din. Pressione (N)</th>' +
+    '<th style="'+vthREI+'">Rientro scrocchi</th>' +
+    '<th style="'+hthREI+'">Manutenzione eseguita</th>' +
+    '<th style="'+hthREI+'">Esito</th>' +
+    '<th style="'+hthREI+'">Note</th>' +
     '</tr></thead><tbody>';
 
   var rows = document.querySelectorAll('#tbl-man-sem-body tr[id^="man-row-rei-"]');
@@ -8901,16 +8913,19 @@ function _buildHTMLSchedaREI(){
       '<td style="'+tdL+'">'+g('man-ubi')+'</td>' +
       '<td style="'+tdS+'">'+g('rei-tipo')+'</td>' +
       '<td style="'+tdS+'">'+g('rei-ante')+'</td>' +
-      '<td style="'+tdL+'">'+g('man-costr')+'</td>' +
-      '<td style="'+tdS+'">'+g('man-anno')+'</td>' +
-      '<td style="'+tdS+'">'+g('man-matr')+'</td>' +
-      '<td style="'+tdS+'">'+g('man-sem-data')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-viteria')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-cerniere')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-ossidaz')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-vernic')+'</td>' +
-      '<td style="'+tdS+'">'+gs('rei-marcace')+'</td>' +
+      '<td style="'+tdL+'">'+g('man-costr')+'</td>' +
+      '<td style="'+tdS+'">'+g('man-anno')+'</td>' +
+      '<td style="'+tdS+'">'+gs('rei-guar-term')+'</td>' +
+      '<td style="'+tdS+'">'+gs('rei-guar-batt')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-chiudiport')+'</td>' +
+      '<td style="'+tdS+'">'+gs('rei-coord')+'</td>' +
+      '<td style="'+tdS+'">'+g('rei-gioco')+'</td>' +
+      '<td style="'+tdS+'">'+g('man-matr')+'</td>' +
+      '<td style="'+tdS+'">'+gs('rei-integrita')+'</td>' +
       '<td style="'+tdS+'">'+g('rei-din-lib')+'</td>' +
       '<td style="'+tdS+'">'+g('rei-din-pr')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-scrocchi')+'</td>' +
@@ -9022,28 +9037,40 @@ function _buildHTMLSchedaUES(){
     'SCHEDA DI CONTROLLO USCITE DI SICUREZZA — DISPOSITIVI DI APERTURA',
     'UNI EN 1125 / UNI EN 179 — D.M. 1/9/2021');
 
-  html += '<table style="border-collapse:collapse;width:100%;font-size:7pt;margin-bottom:10px">' +
+  var vthUES = 'background:#1B5E20;color:#fff;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;text-align:left;padding:4px 2px;border:1px solid #999;font-size:5.5pt;font-weight:bold;vertical-align:bottom;height:85px;';
+  var hthUES = 'background:#1B5E20;color:#fff;padding:4px 3px;border:1px solid #999;font-size:6pt;font-weight:bold;text-align:center;vertical-align:middle;';
+  html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6pt;margin-bottom:6px">' +
+    '<colgroup>'+
+    '<col style="width:2.5%"><col style="width:9%"><col style="width:6%"><col style="width:4%">'+
+    '<col style="width:6%"><col style="width:3.5%"><col style="width:8%"><col style="width:5%">'+
+    '<col style="width:3%"><col style="width:3%"><col style="width:3%"><col style="width:3%">'+
+    '<col style="width:3%"><col style="width:3%"><col style="width:3.5%"><col style="width:3.5%">'+
+    '<col style="width:3.5%"><col style="width:3%"><col style="width:3%"><col style="width:9%">'+
+    '<col style="width:5%"><col style="width:8%">'+
+    '</colgroup>'+
     '<thead><tr>' +
-    '<th style="'+thS+'width:22px">N°</th>' +
-    '<th style="'+thS+'">N°/Posizione</th>' +
-    '<th style="'+thS+'">Dispositivo</th>' +
-    '<th style="'+thS+'width:50px">A/E — Ante</th>' +
-    '<th style="'+thS+'">Costruttore</th>' +
-    '<th style="'+thS+'width:36px">Anno</th>' +
-    '<th style="'+thS+'">Ubicazione</th>' +
-    '<th style="'+thS+'width:50px">Mann. eseguita</th>' +
-    '<th style="'+thS+'width:28px">Viter.</th>' +
-    '<th style="'+thS+'width:28px">Cern.</th>' +
-    '<th style="'+thS+'width:28px">Ossid.</th>' +
-    '<th style="'+thS+'width:28px">Vernic.</th>' +
-    '<th style="'+thS+'width:28px">Marc.CE</th>' +
-    '<th style="'+thS+'width:28px">Integr.</th>' +
-    '<th style="'+thS+'width:36px">Din.Lib (N)</th>' +
-    '<th style="'+thS+'width:36px">Din.Pr (N)</th>' +
-    '<th style="'+thS+'width:36px">Alt.Barra</th>' +
-    '<th style="'+thS+'">Manutenzione</th>' +
-    '<th style="'+thS+'width:55px">Esito</th>' +
-    '<th style="'+thS+'">Note</th>' +
+    '<th style="'+hthUES+'">N°</th>' +
+    '<th style="'+hthUES+'">N°/Posizione</th>' +
+    '<th style="'+hthUES+'">Dispositivo (UNI EN 1125/179)</th>' +
+    '<th style="'+vthUES+'">A=Antipanico E=Emerg. N°Ante</th>' +
+    '<th style="'+hthUES+'">Costruttore</th>' +
+    '<th style="'+vthUES+'">Anno costr.</th>' +
+    '<th style="'+hthUES+'">Ubicazione</th>' +
+    '<th style="'+hthUES+'">Mann. eseguita</th>' +
+    '<th style="'+vthUES+'">Viteria — assenza ruggine</th>' +
+    '<th style="'+vthUES+'">Perni e cerniere lubrificate</th>' +
+    '<th style="'+vthUES+'">Ossidazione meccanismi</th>' +
+    '<th style="'+vthUES+'">Stato verniciatura</th>' +
+    '<th style="'+vthUES+'">Marcatura CE originale</th>' +
+    '<th style="'+vthUES+'">Integrità meccanica</th>' +
+    '<th style="'+vthUES+'">Prova Din. Libera (N)</th>' +
+    '<th style="'+vthUES+'">Prova Din. Pressione (N)</th>' +
+    '<th style="'+vthUES+'">Rientro scrocchi</th>' +
+    '<th style="'+vthUES+'">Lunghezza barra ≥60%</th>' +
+    '<th style="'+vthUES+'">Altezza barra 900÷1100mm</th>' +
+    '<th style="'+hthUES+'">Manutenzione eseguita</th>' +
+    '<th style="'+hthUES+'">Esito</th>' +
+    '<th style="'+hthUES+'">Note</th>' +
     '</tr></thead><tbody>';
 
   var rows = document.querySelectorAll('#tbl-man-sem-body tr[id^="man-row-ues-"]');
@@ -9081,6 +9108,8 @@ function _buildHTMLSchedaUES(){
       '<td style="'+tdS+'">'+gs('ues-integrita')+'</td>' +
       '<td style="'+tdS+'">'+g('ues-din-lib')+'</td>' +
       '<td style="'+tdS+'">'+g('ues-din-pr')+'</td>' +
+      '<td style="'+tdS+'">'+gs('ues-scrocchi')+'</td>' +
+      '<td style="'+tdS+'">'+gs('ues-barra-lun')+'</td>' +
       '<td style="'+tdS+'">'+g('ues-barra-alt')+'</td>' +
       '<td style="'+tdL+'">'+g('ues-manut')+'</td>' +
       '<td style="'+tdS+';color:'+esitoColor+';font-weight:bold">'+esitoTxt+'</td>' +
