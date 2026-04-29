@@ -7313,8 +7313,9 @@ function avviaStampa(tipo) {
   // Tipo presidio corrente
   var tipoPres = (document.getElementById('man-sem-tipo-pres') || {value:'EST'}).value || 'EST';
 
-  // Salva prima, poi avvia la stampa dopo 400ms
-  salvaManutenzioneCompleta();
+  // NON salva automaticamente: il salvataggio avviene solo tramite
+  // il bottone "💾 Salva nel registro" nel modal anteprima.
+  // Apre direttamente l'anteprima o scarica Word/PDF dal form corrente.
   setTimeout(function() {
     if(tipoPres === 'REI'){
       if(tipo === 'anteprima') apriAnteprimaSchedaREI();
@@ -7416,7 +7417,8 @@ function salvaManutenzioneCompleta(){
     // Aggiungi al registro — cliId per matching affidabile
     // Controlla duplicato: stessa data + stesso presidio già presente
     var dataFmt = fromISO(dataInt);
-    var cliObjR = CLI_DATA.find(function(c){return c.rs===cliN||(c.rs||"").trim()===(cliN||"").trim();});
+    // Fix: usa sempre il cliId dal dropdown (affidabile), non il nome dal dataset della riga
+    var cliObjR = CLI_DATA.find(function(c){return c.id===cliId;}) || CLI_DATA.find(function(c){return c.rs===cliN||(c.rs||"").trim()===(cliN||"").trim();});
     var giàPresente = REG_DATA.some(function(r){
       return r.cod === cod && r.d === dataFmt && (r.cliId === cliId || r.cli === cliN || (r.cli||"").trim() === (cliN||"").trim());
     });
@@ -8323,11 +8325,7 @@ function tgStampa(){
 // ─── NAV ─────────────────────────────────────────────────────────────────────
 var _sezioneAttiva='';
 function S(id){
-  if(_sezioneAttiva==='registro'){
-    var rows=document.querySelectorAll('#tbl-man-sem-body tr'),hasDati=false;
-    rows.forEach(function(row){var chk=row.querySelector('.chk-pres'),dataEl=row.querySelector('.man-data-int');if(chk&&chk.checked&&dataEl&&dataEl.value)hasDati=true;});
-    if(hasDati) salvaManutenzioneCompleta();
-  }
+  // Salvataggio automatico rimosso: il salvataggio avviene solo tramite bottone esplicito nell'anteprima
   if(_sezioneAttiva==='targhette') tgSalva(); // salva quando esci dalla sezione
   _sezioneAttiva=id;
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
@@ -8677,6 +8675,7 @@ function apriAnteprimaSchedaREI(){
   if(btnW) btnW.setAttribute('onclick', "closeM('mAnteprimaScheda'); setTimeout(stampaSchedaREIWord,100)");
   var btns = modal.querySelectorAll('button.btn');
   btns.forEach(function(b){ if(b.style.background==='rgb(192, 57, 43)') b.setAttribute('onclick',"closeM('mAnteprimaScheda'); setTimeout(stampaSchedaREIPDF,100)"); });
+  resetBtnSalvaAnteprima();
   openM('mAnteprimaScheda');
 }
 window.apriAnteprimaSchedaREI = apriAnteprimaSchedaREI;
@@ -8826,6 +8825,7 @@ function apriAnteprimaSchedaUES(){
   if(btnW) btnW.setAttribute('onclick', "closeM('mAnteprimaScheda'); setTimeout(stampaSchedaUESWord,100)");
   var btns = modal.querySelectorAll('button.btn');
   btns.forEach(function(b){ if(b.style.background==='rgb(192, 57, 43)') b.setAttribute('onclick',"closeM('mAnteprimaScheda'); setTimeout(stampaSchedaUESPDF,100)"); });
+  resetBtnSalvaAnteprima();
   openM('mAnteprimaScheda');
 }
 window.apriAnteprimaSchedaUES = apriAnteprimaSchedaUES;
@@ -8847,6 +8847,28 @@ function stampaSchedaUESPDF(){
   window.scaricaDocLandscape = origFn;
 }
 window.stampaSchedaUESPDF = stampaSchedaUESPDF;
+
+// ─── SALVA DA ANTEPRIMA ──────────────────────────────────────────────────────
+// Chiamata dal bottone "Salva nel registro" nel modal anteprima.
+// Esegue il salvataggio esplicito e mostra feedback visivo.
+function salvaDaAnteprima(){
+  salvaManutenzioneCompleta();
+  // Feedback visivo: nasconde il bottone, mostra "Salvato!"
+  var btn = document.getElementById('btn-salva-registro');
+  var lbl = document.getElementById('lbl-salva-ok');
+  if(btn){ btn.style.display = 'none'; }
+  if(lbl){ lbl.style.display = 'inline'; }
+  notifica('✅ Intervento salvato nel registro!');
+}
+window.salvaDaAnteprima = salvaDaAnteprima;
+
+// Quando il modal anteprima viene aperto, resetta lo stato del bottone Salva
+function resetBtnSalvaAnteprima(){
+  var btn = document.getElementById('btn-salva-registro');
+  var lbl = document.getElementById('lbl-salva-ok');
+  if(btn){ btn.style.display = ''; }
+  if(lbl){ lbl.style.display = 'none'; }
+}
 
 function apriAnteprimaScheda(){
   // Genera l'HTML della scheda (stesso di stampaManutenzioneWord) ma lo mette nel modal
@@ -8901,6 +8923,7 @@ function apriAnteprimaScheda(){
   // Chiudi il pannello ad ogni riapertura anteprima
   var _pan = document.getElementById('pannello-testi-modificabili');
   if(_pan) _pan.style.display = 'none';
+  resetBtnSalvaAnteprima();
   openM('mAnteprimaScheda');
 }
 
@@ -9811,6 +9834,9 @@ function ripristinaSnapshot(){ /* rimosso */ }
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:2px solid #eee;flex-shrink:0">
       <span style="font-size:15px;font-weight:800">👁️ Anteprima scheda manutenzione</span>
       <div style="display:flex;gap:8px;align-items:center">
+        <button id="btn-salva-registro" class="btn" style="font-size:12px;padding:7px 16px;background:#1a7a3c;color:#fff;border-color:#1a7a3c;font-weight:700" onclick="salvaDaAnteprima()">💾 Salva nel registro</button>
+        <span id="lbl-salva-ok" style="display:none;font-size:12px;color:#1a7a3c;font-weight:700;padding:7px 4px">✅ Salvato!</span>
+        <div style="width:1px;height:28px;background:#ddd;margin:0 4px"></div>
         <button class="btn grn" style="font-size:12px;padding:7px 14px" onclick="closeM('mAnteprimaScheda'); setTimeout(stampaManutenzioneWord,100)">📄 Scarica Word</button>
         <button class="btn" style="font-size:12px;padding:7px 14px;background:#fff3cd;color:#856404;border-color:#ffc107" onclick="toggleTestiModificabili()">✏️ Modifica testi</button>
         <button class="btn" style="font-size:12px;padding:7px 14px;background:#C0392B;color:#fff;border-color:#C0392B" onclick="closeM('mAnteprimaScheda'); setTimeout(stampaManutenzioneWordPDF,100)">📑 Scarica PDF</button>
