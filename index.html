@@ -8580,7 +8580,7 @@ function _buildHTMLSchedaREI(){
     var chk = row.querySelector('.man-chk');
     if(chk && !chk.checked) return;
     var g = function(cls){ var el=row.querySelector('.'+cls); return el?el.value||'—':'—'; };
-    var gs = function(cls){ var el=row.querySelector('.'+cls); return el?el.options[el.selectedIndex].text||'—':'—'; };
+    var gs = function(cls){ var el=row.querySelector('.'+cls); if(!el||el.selectedIndex<0||!el.options[el.selectedIndex]) return '—'; return el.options[el.selectedIndex].text||'—'; };
     var esito = row.querySelector('.man-esito');
     var esitoVal = esito ? esito.value : 'ok';
     var esitoTxt = esitoVal==='nc' ? 'N.C.' : esitoVal==='nd' ? 'N.E.' : 'C.';
@@ -8739,7 +8739,7 @@ function _buildHTMLSchedaUES(){
     var chk = row.querySelector('.man-chk');
     if(chk && !chk.checked) return;
     var g = function(cls){ var el=row.querySelector('.'+cls); return el?el.value||'—':'—'; };
-    var gs = function(cls){ var el=row.querySelector('.'+cls); return el?el.options[el.selectedIndex].text||'—':'—'; };
+    var gs = function(cls){ var el=row.querySelector('.'+cls); if(!el||el.selectedIndex<0||!el.options[el.selectedIndex]) return '—'; return el.options[el.selectedIndex].text||'—'; };
     var esito = row.querySelector('.man-esito');
     var esitoVal = esito ? esito.value : 'ok';
     var esitoTxt = esitoVal==='nc' ? 'N.C.' : esitoVal==='nd' ? 'N.E.' : 'C.';
