@@ -4417,6 +4417,153 @@ function apriStoricoCliente(cliId){
   if(m){ openM('mStoricoCli'); }
 }
 
+// ── RISTAMPA PDF DA STORICO ──────────────────────────────────────────────────
+// Ricostruisce e scarica il PDF di una scheda già salvata partendo dai dati in REG_DATA
+function ristampaSchedaStorico(sessId, isREI, isUES) {
+  var righe = REG_DATA.filter(function(r){ return r.sessId === sessId; });
+  if(!righe.length){ notifica('⚠️ Nessun intervento trovato per questa sessione'); return; }
+
+  var r0    = righe[0];
+  var cli   = CLI_DATA.find(function(c){ return c.id===r0.cliId || c.rs===r0.cli; });
+  if(!cli){ notifica('❌ Cliente non trovato'); return; }
+
+  var dataInt = r0.d || '';
+  var tecnico = r0.tec || (DITTA||{}).rs || '';
+  var nomeBase = (cli.rs||'Cliente').replace(/[^a-zA-Z0-9]/g,'_');
+
+  if(isREI){
+    // Ricostruisce HTML scheda REI dai dati storico
+    var html = _intestazioneDocTipo(cli, dataInt, tecnico,
+      'SCHEDA DI CONTROLLO PORTE REI — PORTE TAGLIAFUOCO',
+      'D.M. 1/9/2021 — UNI 11473 — UNI 9723 — EN 16034');
+    var thS='padding:4px;border:1px solid #ccc;background:#1A4F8A;color:#fff;font-size:7.5pt;text-align:center;font-weight:bold;';
+    var tdS='padding:3px 4px;border:1px solid #ddd;font-size:7.5pt;vertical-align:middle;text-align:center;';
+    var tdL='padding:3px 6px;border:1px solid #ddd;font-size:7.5pt;vertical-align:middle;';
+    html += '<table style="border-collapse:collapse;width:100%;margin-bottom:10px"><thead><tr>'+
+      '<th style="'+thS+'width:3%">N°</th>'+
+      '<th style="'+thS+'width:10%">Posizione</th>'+
+      '<th style="'+thS+'width:8%">Compartiment.</th>'+
+      '<th style="'+thS+'width:5%">Ante</th>'+
+      '<th style="'+thS+'width:10%">Costruttore</th>'+
+      '<th style="'+thS+'width:5%">Anno</th>'+
+      '<th style="'+thS+'width:8%">Matricola</th>'+
+      '<th style="'+thS+'width:10%">Mann. eseguita</th>'+
+      '<th style="'+thS+'width:4%">Viter.</th>'+
+      '<th style="'+thS+'width:4%">Cern.</th>'+
+      '<th style="'+thS+'width:4%">Ossid.</th>'+
+      '<th style="'+thS+'width:4%">Vern.</th>'+
+      '<th style="'+thS+'width:5%">Marc.CE</th>'+
+      '<th style="'+thS+'width:7%">Chiudiporta</th>'+
+      '<th style="'+thS+'width:5%">Manutenzione</th>'+
+      '<th style="'+thS+'width:7%">Esito</th>'+
+      '<th style="'+thS+'">Note</th>'+
+      '</tr></thead><tbody>';
+    var nConf=0,nNC=0,nNE=0;
+    righe.forEach(function(r,i){
+      var pres = PRESIDI_DATA.find(function(p){return p.cod===r.cod;})||{};
+      var esV  = r.esito==='ok'?'C.':r.esito==='nc'?'N.C.':'N.E.';
+      var esC  = r.esito==='ok'?'#1a7a3a':r.esito==='nc'?'#C0392B':'#856404';
+      if(r.esito==='ok')nConf++;else if(r.esito==='nc')nNC++;else nNE++;
+      html += '<tr style="background:'+(i%2?'#fafafa':'#fff')+'">' +
+        '<td style="'+tdS+'">'+(i+1)+'</td>'+
+        '<td style="'+tdL+'">'+(r.ubi||pres.ubi||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(pres.rei_tipo||'REI 120')+'</td>'+
+        '<td style="'+tdS+'">'+(pres.rei_ante||'1')+'</td>'+
+        '<td style="'+tdL+'">'+(r.costr||pres.costr||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.annop||pres.annop||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.matr||pres.matr||'—')+'</td>'+
+        '<td style="'+tdS+'">'+r.d+'</td>'+
+        '<td style="'+tdS+'">P.</td><td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">P.</td><td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">—</td><td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdL+'">'+(r.op||'—')+'</td>'+
+        '<td style="'+tdS+';color:'+esC+';font-weight:bold">'+esV+'</td>'+
+        '<td style="'+tdL+'">'+(r.note||'')+'</td>'+
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    var tot=nConf+nNC+nNE;
+    html += '<table style="border-collapse:collapse;width:100%;margin-bottom:10px"><tr>'+
+      '<td style="padding:5px;background:#1A4F8A;color:#fff;font-weight:bold;font-size:8pt;border:1px solid #ccc">Totale porte verificate</td>'+
+      '<td style="padding:5px;background:#1A4F8A;color:#fff;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+tot+'</td>'+
+      '<td style="padding:5px;background:#e8f5e9;color:#1a7a3a;font-weight:bold;font-size:8pt;border:1px solid #ccc">✅ Conformi</td>'+
+      '<td style="padding:5px;background:#e8f5e9;color:#1a7a3a;font-weight:bold;text-align:center;border:1px solid #ccc">'+nConf+'</td>'+
+      '<td style="padding:5px;background:#fdecea;color:#C0392B;font-weight:bold;font-size:8pt;border:1px solid #ccc">❌ Non conformi</td>'+
+      '<td style="padding:5px;background:#fdecea;color:#C0392B;font-weight:bold;text-align:center;border:1px solid #ccc">'+nNC+'</td>'+
+      '<td style="padding:5px;background:#fff3cd;color:#856404;font-weight:bold;font-size:8pt;border:1px solid #ccc">N.E. Non accessibili</td>'+
+      '<td style="padding:5px;background:#fff3cd;color:#856404;font-weight:bold;text-align:center;border:1px solid #ccc">'+nNE+'</td>'+
+      '</tr></table>';
+    html += (function(tec){
+    return '<table style="border-collapse:collapse;width:100%;margin-top:10px"><tr>'+
+      '<td style="width:50%;padding:10px;border:1px solid #ccc;text-align:center;font-size:8pt">'+
+        '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>'+
+        (typeof TIMBRO_B64!=="undefined"&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>')+
+        '<div style="border-top:1px solid #999;margin-top:4px;padding-top:4px;font-size:8pt">'+tec+'</div>'+
+      '</td>'+
+      '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>'+
+      '</tr></table>';
+  })(tecnico);
+    scaricaSchemaLandscapePDF(html, 'Scheda_Porte_REI_'+nomeBase+'_'+dataInt.replace(/\//g,'-'));
+  } else if(isUES){
+    notifica('ℹ️ Ristampa UES: funzionalità in arrivo. Usa il modulo manutenzione per ora.');
+  } else {
+    // Estintori — ricostruisce tabella standard
+    var html = _intestazioneDocTipo(cli, dataInt, tecnico,
+      'SCHEDA DI MANUTENZIONE ESTINTORI',
+      'D.M. 1/9/2021 — UNI 9994-1:2024');
+    var thS='padding:4px;border:1px solid #ccc;background:#1A4F8A;color:#fff;font-size:7pt;text-align:center;font-weight:bold;';
+    var tdS='padding:3px 4px;border:1px solid #ddd;font-size:7pt;vertical-align:middle;text-align:center;';
+    var tdL='padding:3px 6px;border:1px solid #ddd;font-size:7pt;vertical-align:middle;';
+    html += '<table style="border-collapse:collapse;width:100%;margin-bottom:10px"><thead><tr>'+
+      '<th style="'+thS+'">N°</th><th style="'+thS+'">Cod.</th><th style="'+thS+'">Ubicazione</th>'+
+      '<th style="'+thS+'">Agente</th><th style="'+thS+'">Kg</th><th style="'+thS+'">Costruttore</th>'+
+      '<th style="'+thS+'">Anno</th><th style="'+thS+'">Matricola</th><th style="'+thS+'">Tipo att.</th>'+
+      '<th style="'+thS+'">Mann. eseguita</th><th style="'+thS+'">Prox. mann.</th>'+
+      '<th style="'+thS+'">Rev. eff.</th><th style="'+thS+'">Collaudo</th><th style="'+thS+'">Fine vita</th>'+
+      '<th style="'+thS+'">Esito</th><th style="'+thS+'">Note</th>'+
+      '</tr></thead><tbody>';
+    var nConf=0,nNC=0,nNE=0;
+    righe.forEach(function(r,i){
+      var pres=PRESIDI_DATA.find(function(p){return p.cod===r.cod;})||{};
+      var esV=r.esito==='ok'?'C.':r.esito==='nc'?'N.C.':'N.E.';
+      var esC=r.esito==='ok'?'#1a7a3a':r.esito==='nc'?'#C0392B':'#856404';
+      if(r.esito==='ok')nConf++;else if(r.esito==='nc')nNC++;else nNE++;
+      html+='<tr style="background:'+(i%2?'#fafafa':'#fff')+'">'+
+        '<td style="'+tdS+'">'+(i+1)+'</td>'+
+        '<td style="'+tdS+'">'+(r.cod||'—')+'</td>'+
+        '<td style="'+tdL+'">'+(r.ubi||pres.ubi||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.agente||pres.agente||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.peso||pres.peso||'—')+'</td>'+
+        '<td style="'+tdL+'">'+(r.costr||pres.costr||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.annop||pres.annop||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.matr||pres.matr||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.op||'—')+'</td>'+
+        '<td style="'+tdS+'">'+r.d+'</td>'+
+        '<td style="'+tdS+'">'+(r.prox||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.revEff||pres.rev||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.collEff||pres.coll||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.vita||pres.vita||'—')+'</td>'+
+        '<td style="'+tdS+';color:'+esC+';font-weight:bold">'+esV+'</td>'+
+        '<td style="'+tdL+'">'+(r.note||'')+'</td>'+
+        '</tr>';
+    });
+    html+='</tbody></table>';
+    html += (function(tec){
+    return '<table style="border-collapse:collapse;width:100%;margin-top:10px"><tr>'+
+      '<td style="width:50%;padding:10px;border:1px solid #ccc;text-align:center;font-size:8pt">'+
+        '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>'+
+        (typeof TIMBRO_B64!=="undefined"&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>')+
+        '<div style="border-top:1px solid #999;margin-top:4px;padding-top:4px;font-size:8pt">'+tec+'</div>'+
+      '</td>'+
+      '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>'+
+      '</tr></table>';
+  })(tecnico);
+    scaricaSchemaLandscapePDF(html, 'Scheda_Estintori_'+nomeBase+'_'+dataInt.replace(/\//g,'-'));
+  }
+  notifica('✅ PDF scheda scaricato!');
+}
+window.ristampaSchedaStorico = ristampaSchedaStorico;
+
 function renderStoricoCliente(){
   var cliId  = window._storicoCliId;
   var search = (document.getElementById('storico-cli-search').value||'').toLowerCase();
@@ -4472,39 +4619,70 @@ function renderStoricoCliente(){
                 '<span class="st s-ok">Tutti conformi</span>';
 
     var idTab = 'sess-'+key.replace(/[^a-zA-Z0-9]/g,'-');
+    // Determina tipo presidio dalla prima riga della sessione
+    // Controlla tipo, operazione, cod presidio — REI e UES possono avere cod come IMP-REI o tipo salvato vario
+    var _r0 = righe[0];
+    var _tipoSess = (_r0.tipo||'').toUpperCase();
+    var _opSess   = (_r0.op||'').toLowerCase();
+    var _codSess  = (_r0.cod||'').toUpperCase();
+    // Cerca il presidio in PRESIDI_DATA per tipo affidabile
+    var _presR0   = PRESIDI_DATA.find(function(p){ return p.cod===_r0.cod; });
+    var _tipoPres = _presR0 ? (_presR0.tipo||'').toUpperCase() : '';
+    var _isREI = _tipoSess.includes('REI') || _tipoPres==='REI' || _codSess.includes('REI') ||
+                 _opSess.includes('porta') || _opSess.includes('rei');
+    var _isUES = _tipoSess.includes('UES') || _tipoPres==='UES' || _codSess.includes('UES') ||
+                 _opSess.includes('uscita') || _opSess.includes('ues');
+    var _isREIUES = _isREI || _isUES;
+
     var righeHtml = righe.map(function(r){
-      // Recupera dati mancanti dal presidio corrispondente (retrocompatibilità)
       var pres    = PRESIDI_DATA.find(function(p){ return p.cod === r.cod; }) || {};
       var ubi     = r.ubi     || pres.ubi     || '—';
-      var agente  = r.agente  || pres.agente  || '—';
-      var peso    = r.peso    || pres.peso    || '—';
       var costr   = r.costr   || pres.costr   || '—';
       var annop   = r.annop   || pres.annop   || '—';
       var matr    = r.matr    || pres.matr    || '—';
-      var revEff  = r.revEff  || pres.rev     || '—';
-      var revPross= r.revPross|| '—';
-      var collEff = r.collEff || pres.coll    || '—';
-      var vita    = r.vita    || pres.vita    || '—';
       var esCol = r.esito==='ok'?'s-ok':r.esito==='exp'?'s-warn':'s-exp';
       var esLbl = r.esito==='ok'?'✅ CONFORME':r.esito==='exp'?'⚠️ ANOMALIA':'❌ N.C.';
-      return '<tr>'
-        +'<td style="font-size:11px;white-space:nowrap"><b>'+r.cod+'</b></td>'
-        +'<td style="font-size:11px">'+ubi+'</td>'
-        +'<td style="font-size:11px;white-space:nowrap">'+agente+'</td>'
-        +'<td style="font-size:11px;text-align:center">'+peso+'</td>'
-        +'<td style="font-size:11px">'+costr+'</td>'
-        +'<td style="font-size:11px;text-align:center">'+annop+'</td>'
-        +'<td style="font-size:11px">'+matr+'</td>'
-        +'<td style="font-size:11px;white-space:nowrap">'+(r.op||'')+'</td>'
-        +'<td style="font-size:11px;text-align:center;font-weight:bold">'+(r.d||'—')+'</td>'
-        +'<td style="font-size:11px;text-align:center">'+(r.prox||'—')+'</td>'
-        +'<td style="font-size:11px;text-align:center">'+revEff+'</td>'
-        +'<td style="font-size:11px;text-align:center">'+collEff+'</td>'
-        +'<td style="font-size:11px;text-align:center">'+vita+'</td>'
-        +'<td style="font-size:11px;white-space:nowrap">'+(r.tec||'—')+'</td>'
-        +'<td><span class="st '+esCol+'">'+esLbl+'</span></td>'
-        +'<td style="font-size:11px">'+(r.note||'')+'</td>'
-        +'</tr>';
+      if(_isREIUES){
+        // Colonne REI/UES: Presidio, Posizione, Costruttore, Anno, Matricola, Tipo att., Mann. eseguita, Prox. mann., Tecnico, Esito, Note
+        return '<tr>'
+          +'<td style="font-size:11px;white-space:nowrap"><b>'+r.cod+'</b></td>'
+          +'<td style="font-size:11px">'+ubi+'</td>'
+          +'<td style="font-size:11px">'+costr+'</td>'
+          +'<td style="font-size:11px;text-align:center">'+annop+'</td>'
+          +'<td style="font-size:11px">'+matr+'</td>'
+          +'<td style="font-size:11px;white-space:nowrap">'+(r.op||'')+'</td>'
+          +'<td style="font-size:11px;text-align:center;font-weight:bold">'+(r.d||'—')+'</td>'
+          +'<td style="font-size:11px;text-align:center">'+(r.prox||'—')+'</td>'
+          +'<td style="font-size:11px;white-space:nowrap">'+(r.tec||'—')+'</td>'
+          +'<td><span class="st '+esCol+'">'+esLbl+'</span></td>'
+          +'<td style="font-size:11px">'+(r.note||'')+'</td>'
+          +'</tr>';
+      } else {
+        // Colonne EST: Presidio, Posizione, Tipo agente, Kg, Costruttore, Anno, Matricola, Tipo att., Mann. eseguita, Prox. mann., Rev. eff., Collaudo, Fine vita, Tecnico, Esito, Note
+        var agente  = r.agente  || pres.agente  || '—';
+        var peso    = r.peso    || pres.peso    || '—';
+        var revEff  = r.revEff  || pres.rev     || '—';
+        var collEff = r.collEff || pres.coll    || '—';
+        var vita    = r.vita    || pres.vita    || '—';
+        return '<tr>'
+          +'<td style="font-size:11px;white-space:nowrap"><b>'+r.cod+'</b></td>'
+          +'<td style="font-size:11px">'+ubi+'</td>'
+          +'<td style="font-size:11px;white-space:nowrap">'+agente+'</td>'
+          +'<td style="font-size:11px;text-align:center">'+peso+'</td>'
+          +'<td style="font-size:11px">'+costr+'</td>'
+          +'<td style="font-size:11px;text-align:center">'+annop+'</td>'
+          +'<td style="font-size:11px">'+matr+'</td>'
+          +'<td style="font-size:11px;white-space:nowrap">'+(r.op||'')+'</td>'
+          +'<td style="font-size:11px;text-align:center;font-weight:bold">'+(r.d||'—')+'</td>'
+          +'<td style="font-size:11px;text-align:center">'+(r.prox||'—')+'</td>'
+          +'<td style="font-size:11px;text-align:center">'+revEff+'</td>'
+          +'<td style="font-size:11px;text-align:center">'+collEff+'</td>'
+          +'<td style="font-size:11px;text-align:center">'+vita+'</td>'
+          +'<td style="font-size:11px;white-space:nowrap">'+(r.tec||'—')+'</td>'
+          +'<td><span class="st '+esCol+'">'+esLbl+'</span></td>'
+          +'<td style="font-size:11px">'+(r.note||'')+'</td>'
+          +'</tr>';
+      }
     }).join('');
 
     var dataId = d.replace(/\//g,'-');
@@ -4513,17 +4691,20 @@ function renderStoricoCliente(){
       +'<div style="cursor:pointer;display:flex;align-items:center;gap:10px;flex:1" data-sess="'+idTab+'" onclick="toggleSessione(this.dataset.sess)">'
       +'<span style="font-size:18px">📋</span>'
       +'<div style="flex:1">'
-      +'<div style="font-weight:700;font-size:14px;color:var(--text)">Scheda semestrale — '+d+'</div>'
+      +'<div style="font-weight:700;font-size:14px;color:var(--text)">'+(_isREI?'🚪 Scheda Porte REI — ':_isUES?'🚪 Scheda Uscite Sicurezza — ':'🧯 Scheda Estintori — ')+d+'</div>'
       +'<div style="font-size:12px;color:var(--text2);margin-top:2px">'+righe.length+' presidi | '+op+' | '+tec+'</div>'
       +'</div>'
       +badge
       +'<span style="font-size:12px;color:var(--text3);margin-left:6px" id="arr-'+idTab+'">▼</span>'
       +'</div>'
+      +'<button data-sessid="'+key+'" data-isrei="'+(_isREI?'1':'0')+'" data-isues="'+(_isUES?'1':'0')+'" onclick="ristampaSchedaStorico(this.dataset.sessid,this.dataset.isrei==='1',this.dataset.isues==='1')" style="background:#e8f5e9;border:1.5px solid #a5d6a7;color:#1a7a3c;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;flex-shrink:0;margin-right:6px">📑 PDF</button>'
       +'<button data-deldata="'+d+'" data-sessid="'+key+'" onclick="eliminaScheda(this.dataset.deldata, this.dataset.sessid)" style="background:#fff0f0;border:1.5px solid #f5c6cb;color:#9b1c1c;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;flex-shrink:0">🗑️ Elimina</button>'
       +'</div>'
       // Tabella presidi — parte sempre CHIUSA, si apre solo al click
       +'<div id="'+idTab+'" style="display:none;overflow-x:auto">'
-      +'<table style="min-width:1100px;font-size:11px"><thead><tr>'+'<th style="white-space:nowrap">Presidio</th>'+'<th>Posizione</th>'+'<th>Tipo agente</th>'+'<th style="white-space:nowrap">Kg</th>'+'<th style="white-space:nowrap">Costruttore</th>'+'<th style="white-space:nowrap">Anno</th>'+'<th>Matricola</th>'+'<th>Tipo att.</th>'+'<th style="white-space:nowrap">Mann. eseguita</th>'+'<th style="white-space:nowrap">Prox. mann.</th>'+'<th style="white-space:nowrap">Rev. eff.</th>'+'<th>Collaudo</th>'+'<th style="white-space:nowrap">Fine vita</th>'+'<th>Tecnico</th>'+'<th>Esito</th>'+'<th>Note</th>'+'</tr></thead>'
+      +(_isREIUES ?
+        '<table style="min-width:800px;font-size:11px"><thead><tr><th style="white-space:nowrap">Presidio</th><th>Posizione</th><th>Costruttore</th><th style="white-space:nowrap">Anno</th><th>Matricola</th><th>Tipo att.</th><th style="white-space:nowrap">Mann. eseguita</th><th style="white-space:nowrap">Prox. mann.</th><th>Tecnico</th><th>Esito</th><th>Note</th></tr></thead>' :
+        '<table style="min-width:1100px;font-size:11px"><thead><tr><th style="white-space:nowrap">Presidio</th><th>Posizione</th><th>Tipo agente</th><th style="white-space:nowrap">Kg</th><th style="white-space:nowrap">Costruttore</th><th style="white-space:nowrap">Anno</th><th>Matricola</th><th>Tipo att.</th><th style="white-space:nowrap">Mann. eseguita</th><th style="white-space:nowrap">Prox. mann.</th><th style="white-space:nowrap">Rev. eff.</th><th>Collaudo</th><th style="white-space:nowrap">Fine vita</th><th>Tecnico</th><th>Esito</th><th>Note</th></tr></thead>')
       +'<tbody>'+righeHtml+'</tbody></table>'
       +'</div>'
       +'</div>';
@@ -8496,11 +8677,13 @@ function scaricaSchemaLandscapePDF(html, nomeFile){
     '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
     '<title>'+nomeFile+'</title>'+
     '<style>'+
-    '@page{size:A4 landscape;margin:1cm 1.2cm 1cm 1.2cm;}'+
-    'body{font-family:Arial,sans-serif;font-size:8.5pt;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
-    'table{border-collapse:collapse;width:100%;}'+
+    '@page{size:A4 landscape;margin:0.8cm 1cm 0.8cm 1cm;}'+
+    'body{font-family:Arial,sans-serif;font-size:7.5pt;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
+    'table{border-collapse:collapse;width:100%;table-layout:fixed;}'+
     'p{margin:1px 0;padding:0;}'+
-    'td,th{padding:3px 5px;}'+
+    'td,th{padding:2px 4px;overflow:hidden;word-break:break-word;}'+
+    'h2{font-size:11pt!important;}'+
+    'h3{font-size:9pt!important;}'+
     '@media print{'+
     '  body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
     '  .no-print{display:none!important;}'+
