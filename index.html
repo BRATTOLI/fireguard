@@ -8660,11 +8660,16 @@ function _buildHTMLSchedaREI(){
 function apriAnteprimaSchedaREI(){
   var html = _buildHTMLSchedaREI();
   if(!html) return;
-  var modal = document.getElementById('mAnteprima');
+  var modal = document.getElementById('mAnteprimaScheda');
   if(!modal){ notifica('❌ Modal anteprima non trovato'); return; }
-  var cont = document.getElementById('anteprima-content');
+  var cont = document.getElementById('anteprima-scheda-inner');
   if(cont) cont.innerHTML = html;
-  openM('mAnteprima');
+  // Aggiorna i pulsanti Word/PDF per usare le funzioni REI
+  var btnW = modal.querySelector('button.btn.grn');
+  if(btnW) btnW.setAttribute('onclick', "closeM('mAnteprimaScheda'); setTimeout(stampaSchedaREIWord,100)");
+  var btns = modal.querySelectorAll('button.btn');
+  btns.forEach(function(b){ if(b.style.background==='rgb(192, 57, 43)') b.setAttribute('onclick',"closeM('mAnteprimaScheda'); setTimeout(stampaSchedaREIPDF,100)"); });
+  openM('mAnteprimaScheda');
 }
 window.apriAnteprimaSchedaREI = apriAnteprimaSchedaREI;
 
@@ -8804,11 +8809,16 @@ function _buildHTMLSchedaUES(){
 function apriAnteprimaSchedaUES(){
   var html = _buildHTMLSchedaUES();
   if(!html) return;
-  var modal = document.getElementById('mAnteprima');
+  var modal = document.getElementById('mAnteprimaScheda');
   if(!modal){ notifica('❌ Modal anteprima non trovato'); return; }
-  var cont = document.getElementById('anteprima-content');
+  var cont = document.getElementById('anteprima-scheda-inner');
   if(cont) cont.innerHTML = html;
-  openM('mAnteprima');
+  // Aggiorna i pulsanti Word/PDF per usare le funzioni UES
+  var btnW = modal.querySelector('button.btn.grn');
+  if(btnW) btnW.setAttribute('onclick', "closeM('mAnteprimaScheda'); setTimeout(stampaSchedaUESWord,100)");
+  var btns = modal.querySelectorAll('button.btn');
+  btns.forEach(function(b){ if(b.style.background==='rgb(192, 57, 43)') b.setAttribute('onclick',"closeM('mAnteprimaScheda'); setTimeout(stampaSchedaUESPDF,100)"); });
+  openM('mAnteprimaScheda');
 }
 window.apriAnteprimaSchedaUES = apriAnteprimaSchedaUES;
 
