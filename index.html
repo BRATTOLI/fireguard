@@ -7371,14 +7371,22 @@ function salvaManutenzioneCompleta(){
 
     if(!dataInt) return;
 
-    var tipoOpLbl = {
-      '4.4':'Sorveglianza att.4.4',
-      '4.5':'Controllo periodico att.4.5',
-      '4.6':'Revisione programmata att.4.6',
-      '4.7':'Collaudo bombola att.4.7',
-      '4.8':'Manutenzione straordinaria att.4.8',
-      '4.1':'Primo impianto att.4.1'
-    }[tipoAtt] || 'Controllo att.'+tipoAtt;
+    // Per REI e UES usa il dropdown tipo operazione; per estintori usa il codice att.x
+    var _tipoOpSel = document.getElementById('man-sem-tipo');
+    var _tipoOpDropdown = _tipoOpSel ? _tipoOpSel.value : '';
+    var tipoOpLbl;
+    if(tipo === 'REI' || tipo === 'UES') {
+      tipoOpLbl = _tipoOpDropdown || (tipo === 'REI' ? 'Controllo periodico Porte REI' : 'Controllo periodico Uscite Sicurezza');
+    } else {
+      tipoOpLbl = {
+        '4.4':'Sorveglianza att.4.4',
+        '4.5':'Controllo periodico att.4.5',
+        '4.6':'Revisione programmata att.4.6',
+        '4.7':'Collaudo bombola att.4.7',
+        '4.8':'Manutenzione straordinaria att.4.8',
+        '4.1':'Primo impianto att.4.1'
+      }[tipoAtt] || (_tipoOpDropdown || 'Controllo att.'+tipoAtt);
+    }
 
     var t = TIPI.find(function(x){ return x.id===tipo; })||TIPI[0];
     var norma = tipo==='EST'?'UNI 9994-1:2024':tipo==='REI'?'UNI EN 1634':tipo==='IDR'||tipo==='NSP'?'UNI 10779':tipo==='EM'?'UNI EN 50172':tipo==='RIV'||tipo==='CEN'?'UNI 11224':tipo==='SPK'?'UNI EN 12845':'D.M. 1/9/2021';
@@ -7766,10 +7774,10 @@ function stampaManutenzioneWord(){
     var peso     = (row.querySelector('.man-peso')||{value:'—'}).value;
     var pesotot  = (row.querySelector('.man-pesotot')||{value:'—'}).value;
     var costr    = (row.querySelector('.man-costr')||{value:'—'}).value;
-    var annop    = (row.querySelector('.man-annop')||{value:'—'}).value;
+    var annop    = (row.querySelector('.man-annop')||row.querySelector('.man-anno')||{value:'—'}).value;
     var matr     = (row.querySelector('.man-matr')||{value:'—'}).value;
-    var dataV    = fromISO((row.querySelector('.man-data-int')||{value:''}).value);
-    var dataP    = fromISO((row.querySelector('.man-data-prox')||{value:''}).value);
+    var dataV    = fromISO((row.querySelector('.man-data-int')||row.querySelector('.man-sem-data')||{value:''}).value);
+    var dataP    = fromISO((row.querySelector('.man-data-prox')||row.querySelector('.man-prox-data')||{value:''}).value);
     var revEff   = (row.querySelector('.man-rev-eff')||{value:'—'}).value;
     var revPross = (row.querySelector('.man-rev-prox')||{value:'—'}).value;
     var collEff  = (row.querySelector('.man-coll-eff')||{value:'—'}).value;
@@ -7899,7 +7907,7 @@ function stampaManutenzioneWord(){
   html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-top:8px">' +
     '<tr>' +
     '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">' +
-    '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato<br><span style="font-size:7.5pt">(D.M. 37/08 — UNI 9994-1:2024)</span></div>' +
+    '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>' +
     (typeof TIMBRO_B64!=='undefined' && TIMBRO_B64 ? '<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>' : '<div style="height:80px"></div>') +
     '<b>'+DITTA.rs+'</b><br><span style="font-size:8pt">'+tecnico+(DITTA.dm37?' — Abit. '+DITTA.dm37:'')+'</span>' +
     '</td>' +
@@ -8648,7 +8656,7 @@ function _buildHTMLSchedaREI(){
   // Firme
   html += '<table style="border-collapse:collapse;width:100%"><tr>' +
     '<td style="width:50%;padding:10px;border:1px solid #ccc;text-align:center;font-size:8pt">' +
-      '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato<br><span style="font-size:7.5pt">(D.M. 37/08 — UNI 9994-1:2024)</span></div>' +
+      '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>' +
       (typeof TIMBRO_B64!=='undefined'&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>') +
     '</td>' +
     '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>' +
@@ -8797,7 +8805,7 @@ function _buildHTMLSchedaUES(){
 
   html += '<table style="border-collapse:collapse;width:100%"><tr>' +
     '<td style="width:50%;padding:10px;border:1px solid #ccc;text-align:center;font-size:8pt">' +
-      '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato<br><span style="font-size:7.5pt">(D.M. 37/08 — UNI 9994-1:2024)</span></div>' +
+      '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>' +
       (typeof TIMBRO_B64!=='undefined'&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>') +
     '</td>' +
     '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>' +
@@ -9157,7 +9165,7 @@ function esportaWord(tipo, cliId){
       html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-top:8px">' +
         '<tr>' +
         '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">' +
-        '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato<br><span style="font-size:7.5pt">(D.M. 37/08 — UNI 9994-1:2024)</span></div>' +
+        '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>' +
         (typeof TIMBRO_B64!=='undefined'&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>') +
         '<b>'+DITTA.rs+'</b><br><span style="font-size:8pt">'+tecnico+(DITTA.dm37?' — Abit. '+DITTA.dm37:'')+'</span>' +
         '</td>' +
