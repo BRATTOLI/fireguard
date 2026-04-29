@@ -8647,7 +8647,10 @@ function _buildHTMLSchedaREI(){
 
   // Firme
   html += '<table style="border-collapse:collapse;width:100%"><tr>' +
-    '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Timbro e firma Tecnico manutentore abilitato<br>(D.M. 37/08 — UNI 9994-1:2024)</td>' +
+    '<td style="width:50%;padding:10px;border:1px solid #ccc;text-align:center;font-size:8pt">' +
+      '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato<br><span style="font-size:7.5pt">(D.M. 37/08 — UNI 9994-1:2024)</span></div>' +
+      (typeof TIMBRO_B64!=='undefined'&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>') +
+    '</td>' +
     '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>' +
     '</tr></table>';
 
@@ -8676,7 +8679,12 @@ function stampaSchedaREIWord(){
 window.stampaSchedaREIWord = stampaSchedaREIWord;
 
 function stampaSchedaREIPDF(){
-  stampaSchedaREIWord(); // usa Word per ora
+  var cli = CLI_DATA.find(function(c){ return c.id===(document.getElementById('man-sem-cli')||{value:''}).value; });
+  var nomeFile = 'Scheda_Porte_REI_' + (cli?cli.rs.replace(/[^a-zA-Z0-9]/g,'_'):'Cliente');
+  var origFn = window.scaricaDocLandscape;
+  window.scaricaDocLandscape = function(html, nome){ scaricaSchemaLandscapePDF(html, nome); };
+  stampaSchedaREIWord();
+  window.scaricaDocLandscape = origFn;
 }
 window.stampaSchedaREIPDF = stampaSchedaREIPDF;
 
@@ -8783,7 +8791,10 @@ function _buildHTMLSchedaUES(){
     '</div>';
 
   html += '<table style="border-collapse:collapse;width:100%"><tr>' +
-    '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Timbro e firma Tecnico manutentore abilitato</td>' +
+    '<td style="width:50%;padding:10px;border:1px solid #ccc;text-align:center;font-size:8pt">' +
+      '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato<br><span style="font-size:7.5pt">(D.M. 37/08 — UNI 9994-1:2024)</span></div>' +
+      (typeof TIMBRO_B64!=='undefined'&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>') +
+    '</td>' +
     '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>' +
     '</tr></table>';
 
@@ -8812,7 +8823,10 @@ function stampaSchedaUESWord(){
 window.stampaSchedaUESWord = stampaSchedaUESWord;
 
 function stampaSchedaUESPDF(){
+  var origFn = window.scaricaDocLandscape;
+  window.scaricaDocLandscape = function(html, nome){ scaricaSchemaLandscapePDF(html, nome); };
   stampaSchedaUESWord();
+  window.scaricaDocLandscape = origFn;
 }
 window.stampaSchedaUESPDF = stampaSchedaUESPDF;
 
