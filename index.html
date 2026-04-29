@@ -4444,34 +4444,44 @@ function ristampaSchedaStorico(sessId) {
     var html = _intestazioneDocTipo(cli, dataInt, tecnico,
       'SCHEDA DI CONTROLLO PORTE REI — PORTE TAGLIAFUOCO',
       'D.M. 1/9/2021 — UNI 11473 — UNI 9723 — EN 16034');
-    var thS='padding:4px;border:1px solid #ccc;background:#1A4F8A;color:#fff;font-size:7.5pt;text-align:center;font-weight:bold;';
-    var tdS='padding:3px 4px;border:1px solid #ddd;font-size:7.5pt;vertical-align:middle;text-align:center;';
-    var tdL='padding:3px 6px;border:1px solid #ddd;font-size:7.5pt;vertical-align:middle;';
-    html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6pt;margin-bottom:8px">'+
+    var vthR='background:#1A4F8A;color:#fff;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;text-align:center;padding:4px 2px;border:1px solid #999;font-size:5.5pt;font-weight:bold;vertical-align:middle;height:85px;';
+    var hthR='background:#1A4F8A;color:#fff;padding:4px 3px;border:1px solid #999;font-size:6pt;font-weight:bold;text-align:center;vertical-align:middle;';
+    var tdS='padding:3px 4px;border:1px solid #ddd;font-size:6pt;vertical-align:middle;text-align:center;';
+    var tdL='padding:3px 4px;border:1px solid #ddd;font-size:6pt;vertical-align:middle;';
+    var _lR=window._labelREI||{}; var _iR=0; var gLR=function(d){var v=_lR[_iR];_iR++;return(v!==undefined&&v!=='')?v:d;};
+    html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6pt;margin-bottom:6px">'+
       '<colgroup>'+
-      '<col style="width:2%"><col style="width:8%"><col style="width:6%"><col style="width:3%">'+
-      '<col style="width:7%"><col style="width:4%"><col style="width:6%"><col style="width:6%">'+
+      '<col style="width:2.5%"><col style="width:9%"><col style="width:4%"><col style="width:3%">'+
       '<col style="width:3%"><col style="width:3%"><col style="width:3%"><col style="width:3%">'+
-      '<col style="width:4%"><col style="width:5%"><col style="width:8%"><col style="width:5%"><col style="width:9%">'+
+      '<col style="width:6%"><col style="width:3.5%"><col style="width:3%"><col style="width:3%">'+
+      '<col style="width:3%"><col style="width:3%"><col style="width:3%"><col style="width:5%">'+
+      '<col style="width:3%"><col style="width:3.5%"><col style="width:3.5%"><col style="width:3%">'+
+      '<col style="width:9%"><col style="width:5%"><col style="width:7%">'+
       '</colgroup>'+
       '<thead><tr>'+
-      '<th style="'+thS+'">N°</th>'+
-      '<th style="'+thS+'">Posizione</th>'+
-      '<th style="'+thS+'">Compart.</th>'+
-      '<th style="'+thS+'">Ante</th>'+
-      '<th style="'+thS+'">Costruttore</th>'+
-      '<th style="'+thS+'">Anno</th>'+
-      '<th style="'+thS+'">Matricola</th>'+
-      '<th style="'+thS+'">Mann.</th>'+
-      '<th style="'+thS+'">Vit.</th>'+
-      '<th style="'+thS+'">Cer.</th>'+
-      '<th style="'+thS+'">Oss.</th>'+
-      '<th style="'+thS+'">Ver.</th>'+
-      '<th style="'+thS+'">M.CE</th>'+
-      '<th style="'+thS+'">Chiudi</th>'+
-      '<th style="'+thS+'">Manutenzione</th>'+
-      '<th style="'+thS+'">Esito</th>'+
-      '<th style="'+thS+'">Note</th>'+
+      '<th style="'+hthR+'">N°</th>'+
+      '<th style="'+hthR+'">Posizione / N° Porta</th>'+
+      '<th style="'+vthR+'">'+ gLR('Compartiment. / Tipo REI') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Ante') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Viteria — assenza ruggine') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Perni e cerniere lubrificate') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Ossidazione meccanismi') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Stato verniciatura') +'</th>'+
+      '<th style="'+hthR+'">Costruttore</th>'+
+      '<th style="'+vthR+'">'+ gLR('Anno costr.') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Guarnizioni termoespandenti') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Guarnizioni di battuta') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Chiudiporta EN 1154') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Coordinatore chiusura EN 1158') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Gioco porta-telaio (3÷6mm)') +'</th>'+
+      '<th style="'+hthR+'">Matricola</th>'+
+      '<th style="'+vthR+'">'+ gLR('Integrità meccanica') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Din. Libera (N)') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Din. Pressione (N)') +'</th>'+
+      '<th style="'+vthR+'">'+ gLR('Rientro scrocchi') +'</th>'+
+      '<th style="'+hthR+'">Manutenzione eseguita</th>'+
+      '<th style="'+hthR+'">Esito</th>'+
+      '<th style="'+hthR+'">Note</th>'+
       '</tr></thead><tbody>';
     var nConf=0,nNC=0,nNE=0;
     righe.forEach(function(r,i){
@@ -4484,13 +4494,22 @@ function ristampaSchedaStorico(sessId) {
         '<td style="'+tdL+'">'+(r.ubi||pres.ubi||'—')+'</td>'+
         '<td style="'+tdS+'">'+(pres.rei_tipo||'REI 120')+'</td>'+
         '<td style="'+tdS+'">'+(pres.rei_ante||'1')+'</td>'+
+        '<td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">P.</td>'+
         '<td style="'+tdL+'">'+(r.costr||pres.costr||'—')+'</td>'+
         '<td style="'+tdS+'">'+(r.annop||pres.annop||'—')+'</td>'+
+        '<td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">—</td>'+
         '<td style="'+tdS+'">'+(r.matr||pres.matr||'—')+'</td>'+
-        '<td style="'+tdS+'">'+r.d+'</td>'+
-        '<td style="'+tdS+'">P.</td><td style="'+tdS+'">P.</td>'+
-        '<td style="'+tdS+'">P.</td><td style="'+tdS+'">P.</td>'+
-        '<td style="'+tdS+'">—</td><td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">'+(pres.rei_din_libera||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(pres.rei_din_press||'—')+'</td>'+
+        '<td style="'+tdS+'">P.</td>'+
         '<td style="'+tdL+'">'+(r.op||'—')+'</td>'+
         '<td style="'+tdS+';color:'+esC+';font-weight:bold">'+esV+'</td>'+
         '<td style="'+tdL+'">'+(r.note||'')+'</td>'+
@@ -4524,29 +4543,43 @@ function ristampaSchedaStorico(sessId) {
     var html = _intestazioneDocTipo(cli, dataInt, tecnico,
       'SCHEDA DI CONTROLLO USCITE DI SICUREZZA — DISPOSITIVI DI APERTURA',
       'UNI EN 1125 / UNI EN 179 — D.M. 1/9/2021');
-    var thS='padding:4px;border:1px solid #999;background:#1B5E20;color:#fff;font-size:7pt;text-align:center;font-weight:bold;';
-    var tdS='padding:3px 4px;border:1px solid #ddd;font-size:7pt;vertical-align:middle;text-align:center;';
-    var tdL='padding:3px 4px;border:1px solid #ddd;font-size:7pt;vertical-align:middle;';
-    html += '<table style="border-collapse:collapse;width:100%;margin-bottom:10px"><thead><tr>'+
-      '<th style="'+thS+'width:3%">N°</th>'+
-      '<th style="'+thS+'width:8%">Posizione</th>'+
-      '<th style="'+thS+'width:8%">Dispositivo</th>'+
-      '<th style="'+thS+'width:5%">A/E-Ante</th>'+
-      '<th style="'+thS+'width:8%">Costruttore</th>'+
-      '<th style="'+thS+'width:4%">Anno</th>'+
-      '<th style="'+thS+'width:7%">Matricola</th>'+
-      '<th style="'+thS+'width:7%">Mann. eseguita</th>'+
-      '<th style="'+thS+'width:4%">Viter.</th>'+
-      '<th style="'+thS+'width:4%">Cern.</th>'+
-      '<th style="'+thS+'width:4%">Ossid.</th>'+
-      '<th style="'+thS+'width:4%">Vern.</th>'+
-      '<th style="'+thS+'width:4%">M.CE</th>'+
-      '<th style="'+thS+'width:4%">Integr.</th>'+
-      '<th style="'+thS+'width:5%">D.Lib(N)</th>'+
-      '<th style="'+thS+'width:5%">D.Pr.(N)</th>'+
-      '<th style="'+thS+'width:5%">Alt.Barra</th>'+
-      '<th style="'+thS+'width:6%">Esito</th>'+
-      '<th style="'+thS+'">Note</th>'+
+    var vthU='background:#1B5E20;color:#fff;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;text-align:center;padding:4px 2px;border:1px solid #999;font-size:5.5pt;font-weight:bold;vertical-align:middle;height:85px;';
+    var hthU='background:#1B5E20;color:#fff;padding:4px 3px;border:1px solid #999;font-size:6pt;font-weight:bold;text-align:center;vertical-align:middle;';
+    var tdS='padding:3px 4px;border:1px solid #ddd;font-size:6pt;vertical-align:middle;text-align:center;';
+    var tdL='padding:3px 4px;border:1px solid #ddd;font-size:6pt;vertical-align:middle;';
+    var _lU=window._labelUES||{}; var _iU=0; var gLU=function(d){var v=_lU[_iU];_iU++;return(v!==undefined&&v!=='')?v:d;};
+    html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6pt;margin-bottom:6px">'+
+      '<colgroup>'+
+      '<col style="width:2.5%"><col style="width:9%"><col style="width:6%"><col style="width:4%">'+
+      '<col style="width:6%"><col style="width:3.5%"><col style="width:8%"><col style="width:5%">'+
+      '<col style="width:3%"><col style="width:3%"><col style="width:3%"><col style="width:3%">'+
+      '<col style="width:3%"><col style="width:3%"><col style="width:3.5%"><col style="width:3.5%">'+
+      '<col style="width:3%"><col style="width:3%"><col style="width:3%"><col style="width:9%">'+
+      '<col style="width:5%"><col style="width:8%">'+
+      '</colgroup>'+
+      '<thead><tr>'+
+      '<th style="'+hthU+'">N°</th>'+
+      '<th style="'+hthU+'">N°/Posizione</th>'+
+      '<th style="'+hthU+'">Dispositivo</th>'+
+      '<th style="'+vthU+'">'+ gLU('A=Antipanico E=Emerg. N°Ante') +'</th>'+
+      '<th style="'+hthU+'">Costruttore</th>'+
+      '<th style="'+vthU+'">'+ gLU('Anno costr.') +'</th>'+
+      '<th style="'+hthU+'">Ubicazione</th>'+
+      '<th style="'+hthU+'">Mann. eseguita</th>'+
+      '<th style="'+vthU+'">'+ gLU('Viteria — assenza ruggine') +'</th>'+
+      '<th style="'+vthU+'">'+ gLU('Perni e cerniere lubrificate') +'</th>'+
+      '<th style="'+vthU+'">'+ gLU('Ossidazione meccanismi') +'</th>'+
+      '<th style="'+vthU+'">'+ gLU('Stato verniciatura') +'</th>'+
+      '<th style="'+vthU+'">'+ gLU('Marcatura CE originale') +'</th>'+
+      '<th style="'+vthU+'">'+ gLU('Integrità meccanica') +'</th>'+
+      '<th style="'+vthU+'">'+ gLU('Prova Din. Libera (N)') +'</th>'+
+      '<th style="'+vthU+'">'+ gLU('Prova Din. Pressione (N)') +'</th>'+
+      '<th style="'+vthU+'">'+ gLU('Rientro scrocchi') +'</th>'+
+      '<th style="'+vthU+'">'+ gLU('Lunghezza barra ≥60%') +'</th>'+
+      '<th style="'+vthU+'">'+ gLU('Altezza barra 900÷1100mm') +'</th>'+
+      '<th style="'+hthU+'">Manutenzione eseguita</th>'+
+      '<th style="'+hthU+'">Esito</th>'+
+      '<th style="'+hthU+'">Note</th>'+
       '</tr></thead><tbody>';
     var nConf=0,nNC=0,nNE=0;
     righe.forEach(function(r,i){
@@ -4566,8 +4599,11 @@ function ristampaSchedaStorico(sessId) {
         '<td style="'+tdS+'">P.</td><td style="'+tdS+'">P.</td>'+
         '<td style="'+tdS+'">P.</td><td style="'+tdS+'">P.</td>'+
         '<td style="'+tdS+'">—</td><td style="'+tdS+'">P.</td>'+
-        '<td style="'+tdS+'">—</td><td style="'+tdS+'">—</td>'+
         '<td style="'+tdS+'">—</td>'+
+        '<td style="'+tdS+'">—</td>'+
+        '<td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">—</td>'+
+        '<td style="'+tdS+'">'+( pres.ues_barra_alt||'—')+'</td>'+
         '<td style="'+tdS+';color:'+esC+';font-weight:bold">'+esV+'</td>'+
         '<td style="'+tdL+'">'+(r.note||'')+'</td>'+
         '</tr>';
