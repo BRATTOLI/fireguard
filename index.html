@@ -9878,6 +9878,19 @@ function scheduleAutoSave() {
     }, 2000);
 }
 
+// Rimuove ricorsivamente tutti i campi undefined (Firestore non li accetta)
+function _cleanUndef(obj) {
+    if (Array.isArray(obj)) return obj.map(_cleanUndef);
+    if (obj !== null && typeof obj === 'object') {
+        var out = {};
+        Object.keys(obj).forEach(function(k) {
+            if (obj[k] !== undefined) out[k] = _cleanUndef(obj[k]);
+        });
+        return out;
+    }
+    return obj;
+}
+
 function eseguiSalvatagioCloud() {
     if (!_autoSaveAbilitato) return;
     _staSalvando = true;
@@ -9885,9 +9898,9 @@ function eseguiSalvatagioCloud() {
 
     var migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
 
-    var clienti  = typeof CLI_DATA     !== 'undefined' ? CLI_DATA     : [];
-    var presidi  = typeof PRESIDI_DATA !== 'undefined' ? PRESIDI_DATA : [];
-    var registro = typeof REG_DATA     !== 'undefined' ? REG_DATA     : [];
+    var clienti  = _cleanUndef(typeof CLI_DATA     !== 'undefined' ? CLI_DATA     : []);
+    var presidi  = _cleanUndef(typeof PRESIDI_DATA !== 'undefined' ? PRESIDI_DATA : []);
+    var registro = _cleanUndef(typeof REG_DATA     !== 'undefined' ? REG_DATA     : []);
 
     if (migratoFlag) {
         // ── MODALITÀ COLLEZIONI SEPARATE ───────────────────────────────────
