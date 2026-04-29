@@ -4513,7 +4513,79 @@ function ristampaSchedaStorico(sessId) {
   })(tecnico);
     scaricaSchemaLandscapePDF(html, 'Scheda_Porte_REI_'+nomeBase+'_'+dataInt.replace(/\//g,'-'));
   } else if(isUES){
-    notifica('ℹ️ Ristampa UES: funzionalità in arrivo. Usa il modulo manutenzione per ora.');
+    // Ricostruisce HTML scheda UES dai dati storico
+    var html = _intestazioneDocTipo(cli, dataInt, tecnico,
+      'SCHEDA DI CONTROLLO USCITE DI SICUREZZA — DISPOSITIVI DI APERTURA',
+      'UNI EN 1125 / UNI EN 179 — D.M. 1/9/2021');
+    var thS='padding:4px;border:1px solid #999;background:#1B5E20;color:#fff;font-size:7pt;text-align:center;font-weight:bold;';
+    var tdS='padding:3px 4px;border:1px solid #ddd;font-size:7pt;vertical-align:middle;text-align:center;';
+    var tdL='padding:3px 4px;border:1px solid #ddd;font-size:7pt;vertical-align:middle;';
+    html += '<table style="border-collapse:collapse;width:100%;margin-bottom:10px"><thead><tr>'+
+      '<th style="'+thS+'width:3%">N°</th>'+
+      '<th style="'+thS+'width:8%">Posizione</th>'+
+      '<th style="'+thS+'width:8%">Dispositivo</th>'+
+      '<th style="'+thS+'width:5%">A/E-Ante</th>'+
+      '<th style="'+thS+'width:8%">Costruttore</th>'+
+      '<th style="'+thS+'width:4%">Anno</th>'+
+      '<th style="'+thS+'width:7%">Matricola</th>'+
+      '<th style="'+thS+'width:7%">Mann. eseguita</th>'+
+      '<th style="'+thS+'width:4%">Viter.</th>'+
+      '<th style="'+thS+'width:4%">Cern.</th>'+
+      '<th style="'+thS+'width:4%">Ossid.</th>'+
+      '<th style="'+thS+'width:4%">Vern.</th>'+
+      '<th style="'+thS+'width:4%">M.CE</th>'+
+      '<th style="'+thS+'width:4%">Integr.</th>'+
+      '<th style="'+thS+'width:5%">D.Lib(N)</th>'+
+      '<th style="'+thS+'width:5%">D.Pr.(N)</th>'+
+      '<th style="'+thS+'width:5%">Alt.Barra</th>'+
+      '<th style="'+thS+'width:6%">Esito</th>'+
+      '<th style="'+thS+'">Note</th>'+
+      '</tr></thead><tbody>';
+    var nConf=0,nNC=0,nNE=0;
+    righe.forEach(function(r,i){
+      var pres=PRESIDI_DATA.find(function(p){return p.cod===r.cod;})||{};
+      var esV=r.esito==='ok'?'C.':r.esito==='nc'?'N.C.':'N.E.';
+      var esC=r.esito==='ok'?'#1a7a3a':r.esito==='nc'?'#C0392B':'#856404';
+      if(r.esito==='ok')nConf++;else if(r.esito==='nc')nNC++;else nNE++;
+      html+='<tr style="background:'+(i%2?'#fafafa':'#fff')+'">'+
+        '<td style="'+tdS+'">'+(i+1)+'</td>'+
+        '<td style="'+tdL+'">'+(r.ubi||pres.ubi||'—')+'</td>'+
+        '<td style="'+tdL+'">'+(pres.ues_dispositivo||'Maniglioni')+'</td>'+
+        '<td style="'+tdS+'">'+(pres.ues_tipo||'—')+' / '+(pres.ues_ante||'1')+'</td>'+
+        '<td style="'+tdL+'">'+(r.costr||pres.costr||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.annop||pres.annop||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.matr||pres.matr||'—')+'</td>'+
+        '<td style="'+tdS+'">'+r.d+'</td>'+
+        '<td style="'+tdS+'">P.</td><td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">P.</td><td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">—</td><td style="'+tdS+'">P.</td>'+
+        '<td style="'+tdS+'">—</td><td style="'+tdS+'">—</td>'+
+        '<td style="'+tdS+'">—</td>'+
+        '<td style="'+tdS+';color:'+esC+';font-weight:bold">'+esV+'</td>'+
+        '<td style="'+tdL+'">'+(r.note||'')+'</td>'+
+        '</tr>';
+    });
+    html+='</tbody></table>';
+    var tot=nConf+nNC+nNE;
+    html+='<table style="border-collapse:collapse;width:100%;margin-bottom:10px"><tr>'+
+      '<td style="padding:5px;background:#1B5E20;color:#fff;font-weight:bold;font-size:8pt;border:1px solid #ccc">Totale uscite verificate</td>'+
+      '<td style="padding:5px;background:#1B5E20;color:#fff;font-weight:bold;text-align:center;border:1px solid #ccc">'+tot+'</td>'+
+      '<td style="padding:5px;background:#e8f5e9;color:#1a7a3a;font-weight:bold;font-size:8pt;border:1px solid #ccc">✅ Conformi</td>'+
+      '<td style="padding:5px;background:#e8f5e9;color:#1a7a3a;font-weight:bold;text-align:center;border:1px solid #ccc">'+nConf+'</td>'+
+      '<td style="padding:5px;background:#fdecea;color:#C0392B;font-weight:bold;font-size:8pt;border:1px solid #ccc">❌ Non conformi</td>'+
+      '<td style="padding:5px;background:#fdecea;color:#C0392B;font-weight:bold;text-align:center;border:1px solid #ccc">'+nNC+'</td>'+
+      '<td style="padding:5px;background:#fff3cd;color:#856404;font-weight:bold;font-size:8pt;border:1px solid #ccc">N.E. Non accessibili</td>'+
+      '<td style="padding:5px;background:#fff3cd;color:#856404;font-weight:bold;text-align:center;border:1px solid #ccc">'+nNE+'</td>'+
+      '</tr></table>';
+    html += '<table style="border-collapse:collapse;width:100%;margin-top:10px"><tr>'+
+      '<td style="width:50%;padding:10px;border:1px solid #ccc;text-align:center;font-size:8pt">'+
+        '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>'+
+        (typeof TIMBRO_B64!=="undefined"&&TIMBRO_B64?'<div><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto" /></div>':'<div style="height:80px"></div>')+
+        '<div style="border-top:1px solid #999;margin-top:4px;font-size:8pt">'+tecnico+'</div>'+
+      '</td>'+
+      '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>'+
+      '</tr></table>';
+    scaricaSchemaLandscapePDF(html, 'Scheda_UES_'+nomeBase+'_'+dataInt.replace(/\//g,'-'));
   } else {
     // Estintori — ricostruisce tabella standard
     var html = _intestazioneDocTipo(cli, dataInt, tecnico,
@@ -8687,16 +8759,23 @@ function scaricaSchemaLandscapePDF(html, nomeFile){
     '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
     '<title>'+nomeFile+'</title>'+
     '<style>'+
-    '@page{size:A4 landscape;margin:0.8cm 1cm 0.8cm 1cm;}'+
-    'body{font-family:Arial,sans-serif;font-size:7.5pt;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
-    'table{border-collapse:collapse;width:100%;table-layout:fixed;}'+
-    'p{margin:1px 0;padding:0;}'+
-    'td,th{padding:2px 4px;overflow:hidden;word-break:break-word;}'+
-    'h2{font-size:11pt!important;}'+
-    'h3{font-size:9pt!important;}'+
+    '@page{size:A4 landscape;margin:0.5cm 0.6cm 0.5cm 0.6cm;}'+
+    'body{font-family:Arial,sans-serif;font-size:6.5pt;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
+    'table{border-collapse:collapse;width:100%;table-layout:fixed;word-break:break-word;}'+
+    'p{margin:1px 0;padding:0;font-size:6.5pt;}'+
+    'td,th{padding:2px 3px;overflow:hidden;word-break:break-word;font-size:6.5pt;}'+
+    'h1,h2{font-size:10pt!important;margin:2px 0;}'+
+    'h3{font-size:8pt!important;margin:1px 0;}'+
+    'div{font-size:6.5pt;max-width:100%;}'+
+    'img{max-width:90px!important;max-height:60px!important;}'+
+    '*{box-sizing:border-box;}'+
+    'p{margin:0 0 1px 0!important;font-size:6.5pt!important;}'+
+    '.intes-logo{font-size:11pt!important;font-weight:bold;color:#C0392B;}'+
     '@media print{'+
     '  body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
     '  .no-print{display:none!important;}'+
+    '  table{page-break-inside:auto;}'+
+    '  tr{page-break-inside:avoid;}'+
     '}'+
     '</style></head>'+
     '<body>'+
