@@ -7083,7 +7083,7 @@ function renderSchedaEstintori(presidi, dataInt, cli){
       ['4.8','att.4.8 — Collaudo estintore CO2'],['4.9','att.4.9 — Verifica periodica'],
     ];
     var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
-    return '<tr id="man-row-'+idx+'" style="'+rowBg+'">' +
+    return '<tr id="man-row-'+idx+'" data-cod="'+p.cod+'" data-tipo="'+p.tipo+'" data-cli="'+(cli?cli.rs:'')+'" style="'+rowBg+'">' +
       '<td><input type="checkbox" class="man-chk" data-idx="'+idx+'" checked=""></td>' +
       '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
       '<td><input class="man-ubi" type="text" value="'+(p.ubi||'')+'\" style="'+inpCss+'"></td>' +
@@ -7124,7 +7124,7 @@ function renderSchedaREI(presidiREI, dataInt, cli){
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
   tbody.innerHTML = presidiREI.map(function(p, idx){
-    return '<tr id="man-row-rei-'+idx+'">' +
+    return '<tr id="man-row-rei-'+idx+'" data-cod="'+p.cod+'" data-tipo="REI" data-cli="'+(cli?cli.rs:'')+'">' +
       '<td><input type="checkbox" class="man-chk" checked=""></td>' +
       '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
       '<td><input type="text" class="man-ubi" value="'+(p.ubi||'')+'" style="'+inpCss+'"></td>' +
@@ -7178,7 +7178,7 @@ function renderSchedaUES(presidiUES, dataInt, cli){
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
   tbody.innerHTML = presidiUES.map(function(p, idx){
-    return '<tr id="man-row-ues-'+idx+'">' +
+    return '<tr id="man-row-ues-'+idx+'" data-cod="'+p.cod+'" data-tipo="UES" data-cli="'+(cli?cli.rs:'')+'">' +
       '<td><input type="checkbox" class="man-chk" checked=""></td>' +
       '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
       '<td><input type="text" value="'+(p.matr||'')+'" style="'+inpCss+'"></td>' +
@@ -7338,7 +7338,7 @@ function salvaManutenzioneCompleta(){
   var sel    = document.getElementById('man-sem-cli');
   var cliId  = sel ? sel.value : '';
   var cli    = CLI_DATA.find(function(c){ return c.id===cliId; });
-  if(!cli){ notifica('❌ Seleziona un cliente'); return; }
+  if(!cli){ notifica('❌ Seleziona un cliente'); return 0; }
 
   var tecnico= (document.getElementById('man-sem-tec')||{value:''}).value || DITTA.rs;
 
@@ -7357,14 +7357,14 @@ function salvaManutenzioneCompleta(){
     var cliN     = row.dataset.cli;
     var tipoAtt  = (row.querySelector('.man-tipo-att')||{value:'4.5'}).value;
     var dataInt  = (row.querySelector('.man-data-int')||row.querySelector('.man-sem-data')||{value:''}).value;
-    var dataProx = (row.querySelector('.man-data-prox')||{value:''}).value;
+    var dataProx = (row.querySelector('.man-data-prox')||row.querySelector('.man-prox-data')||{value:''}).value;
     var esito    = (row.querySelector('.man-esito')||{value:'ok'}).value;
     var note     = (row.querySelector('.man-note')||{value:''}).value;
     var revEff   = (row.querySelector('.man-rev-eff')||{value:''}).value;
     var revPross = (row.querySelector('.man-rev-prox')||{value:''}).value;
     var collEff  = (row.querySelector('.man-coll-eff')||{value:''}).value;
     var vita     = (row.querySelector('.man-vita')||{value:''}).value;
-    var annop    = (row.querySelector('.man-annop')||{value:''}).value;
+    var annop    = (row.querySelector('.man-annop')||row.querySelector('.man-anno')||{value:''}).value;
     var matr     = (row.querySelector('.man-matr')||{value:''}).value;
     var ubi      = (row.querySelector('.man-ubi')||{value:''}).value;
     var agente   = (row.querySelector('.man-agente')||{value:''}).value;
@@ -7466,8 +7466,8 @@ function salvaManutenzioneCompleta(){
         prox:  fromISO(dataProx),
         ubi:   ubi,
         agente:agente,
-        peso:  (row.querySelector('.man-peso')||{value:''}).value,
-        pesotot:(row.querySelector('.man-pesotot')||{value:''}).value,
+        peso:  (row.querySelector('.man-peso')||row.querySelector('.man-kg')||{value:''}).value,
+        pesotot:(row.querySelector('.man-pesotot')||row.querySelector('.man-kgtot')||{value:''}).value,
         costr: costr,
         annop: annop,
         matr:  matr,
@@ -7480,7 +7480,7 @@ function salvaManutenzioneCompleta(){
     }
   });
 
-  if(n===0){ notifica('⚠️ Nessuna riga selezionata o senza data'); return; }
+  if(n===0){ notifica('⚠️ Nessuna riga selezionata o senza data'); return 0; }
   REG_DATA.forEach(function(r,i){ r.n = REG_DATA.length - i; });
   renderPresidi(_filtroTipoAttivo);
   renderRegistro();
@@ -7491,6 +7491,7 @@ function salvaManutenzioneCompleta(){
   if(selQr&&selQr.value) disegnaQR('qrc-cli',testoQRCliente(selQr.value),140);
   else if(cliId) disegnaQR('qrc-cli',testoQRCliente(cliId),140);
   notifica('✅ '+n+' interventi salvati nello storico — QR Code aggiornati!');
+  return n;
 }
 
 function aggiornaTutteLeDate(nuovaData) {
@@ -8852,13 +8853,13 @@ window.stampaSchedaUESPDF = stampaSchedaUESPDF;
 // Chiamata dal bottone "Salva nel registro" nel modal anteprima.
 // Esegue il salvataggio esplicito e mostra feedback visivo.
 function salvaDaAnteprima(){
-  salvaManutenzioneCompleta();
+  var n = salvaManutenzioneCompleta();
+  if(!n || n === 0) return; // salvaManutenzioneCompleta ha già mostrato il messaggio di errore
   // Feedback visivo: nasconde il bottone, mostra "Salvato!"
   var btn = document.getElementById('btn-salva-registro');
   var lbl = document.getElementById('lbl-salva-ok');
   if(btn){ btn.style.display = 'none'; }
   if(lbl){ lbl.style.display = 'inline'; }
-  notifica('✅ Intervento salvato nel registro!');
 }
 window.salvaDaAnteprima = salvaDaAnteprima;
 
