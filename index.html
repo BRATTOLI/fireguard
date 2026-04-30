@@ -6722,6 +6722,19 @@ function elaboraExcel(file){
       window.ultimoImport = ultimoImport;
       window.xlHeaders = xlHeaders;
 
+      // ── Salva subito nel localStorage così non va perso se Firebase sovrascrive ──
+      try {
+        var _lsRaw = localStorage.getItem(LS_KEY);
+        var _lsObj = _lsRaw ? JSON.parse(_lsRaw) : {};
+        _lsObj.ultimoImport = {
+          nomeFile: ultimoImport.nomeFile, dataOra: ultimoImport.dataOra,
+          clienteRilevato: ultimoImport.clienteRilevato,
+          righe: ultimoImport.righe, headers: ultimoImport.headers,
+          importato: false
+        };
+        localStorage.setItem(LS_KEY, JSON.stringify(_lsObj));
+      } catch(e){ console.warn('Errore salvataggio ultimoImport:', e); }
+
       mostraPreviewExcel();
       notifica('✅ File letto: ' + xlDataRows.length + ' righe trovate');
     } catch(err){
@@ -7111,8 +7124,11 @@ function importaExcel(){
       ditta: DITTA, tecnici: TECNICI,
       ultimoImport: ultimoImport ? {
         nomeFile: ultimoImport.nomeFile, dataImport: ultimoImport.dataImport || ultimoImport.dataOra,
-        clienteRilevato: ultimoImport.clienteRilevato, righe: ultimoImport.righe,
-        headers: ultimoImport.headers, importato: ultimoImport.importato
+        dataOra: ultimoImport.dataOra,
+        clienteRilevato: ultimoImport.clienteRilevato,
+        righe: ultimoImport.righe,
+        headers: ultimoImport.headers,
+        importato: ultimoImport.importato
       } : null
     };
     localStorage.setItem(LS_KEY, JSON.stringify(_stato));
@@ -10095,9 +10111,11 @@ function caricaLS(){
     if(stato.ditta) Object.assign(DITTA, stato.ditta);
     if(Array.isArray(stato.tecnici)){ TECNICI.length=0; stato.tecnici.forEach(function(t){TECNICI.push(t);}); }
     // ── Ripristina ultimo import ───────────────────────────────────────────
-    if(stato.ultimoImport && stato.ultimoImport.importato){
+    if(stato.ultimoImport && (stato.ultimoImport.importato || (stato.ultimoImport.righe && stato.ultimoImport.righe.length))){
       ultimoImport = stato.ultimoImport;
+      window.ultimoImport = ultimoImport;
       xlHeaders = ultimoImport.headers || [];
+      window.xlHeaders = xlHeaders;
     }
 
     // Risalva subito pulito (così la prossima volta non riavremo i demo)
@@ -10649,6 +10667,18 @@ function avviaSincronizzazione() {
                 var _c = cloudData.clienti  || []; CLI_DATA.length = 0;     _c.forEach(function(x){ CLI_DATA.push(x); });
                 var _p = cloudData.presidi  || []; PRESIDI_DATA.length = 0; _p.forEach(function(x){ PRESIDI_DATA.push(x); });
                 var _r = cloudData.registro || []; REG_DATA.length = 0;     _r.forEach(function(x){ REG_DATA.push(x); });
+                // ── Ripristina ultimoImport dal localStorage (non viene salvato su Firebase) ──
+                if(!ultimoImport || !ultimoImport.righe || !ultimoImport.righe.length){
+                  try{
+                    var _lsSnap = localStorage.getItem(LS_KEY);
+                    if(_lsSnap){ var _lsObj2 = JSON.parse(_lsSnap);
+                      if(_lsObj2.ultimoImport && _lsObj2.ultimoImport.righe && _lsObj2.ultimoImport.righe.length){
+                        ultimoImport = _lsObj2.ultimoImport; window.ultimoImport = ultimoImport;
+                        xlHeaders = ultimoImport.headers || []; window.xlHeaders = xlHeaders;
+                      }
+                    }
+                  } catch(e){}
+                }
                 if (typeof renderClienti  === 'function') renderClienti();
                 if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
                 if (typeof renderRegistro === 'function') renderRegistro();
