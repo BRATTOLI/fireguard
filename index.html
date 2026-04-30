@@ -5196,28 +5196,41 @@ function salvaCliente(){
 
 // Elimina cliente e tutti i suoi presidi
 // ── Unisce un cliente duplicato in quello principale ─────────────────────────
+
 function mostraDialogoUnisci(cliIdDa){
   var da = CLI_DATA.find(function(c){ return c.id===cliIdDa; });
   if(!da){ notifica('Cliente non trovato'); return; }
-  var opzioni = CLI_DATA.filter(function(c){ return c.id!==cliIdDa; })
-    .sort(function(a,b){ return a.rs.localeCompare(b.rs,'it'); })
-    .map(function(c){ return '<option value="'+c.id+'">'+c.rs+' ('+c.id+')</option>'; }).join('');
-  var sel = '<select id="unisci-sel" style="width:100%;padding:6px;font-size:13px;margin-top:8px;border:1.5px solid #ffc107;border-radius:6px">'+
-    '<option value="">— Scegli il cliente destinazione —</option>'+opzioni+'</select>';
-  var msg = '🔀 Unisci "'+da.rs+'" ('+cliIdDa+') in:\n\n';
-  // Usa un div personalizzato invece di prompt
-  var div = document.createElement('div');
-  div.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.25);z-index:9999;min-width:380px;font-family:Arial';
-  div.innerHTML='<div style="font-weight:700;font-size:15px;margin-bottom:8px">🔀 Unisci cliente duplicato</div>'+
-    '<div style="font-size:13px;color:#555;margin-bottom:4px">Sposta tutti i presidi e interventi di:</div>'+
-    '<div style="font-weight:600;color:#1A4F8A;margin-bottom:8px">'+da.rs+' ('+cliIdDa+')</div>'+
-    '<div style="font-size:13px;color:#555;margin-bottom:4px">nel cliente:</div>'+
-    sel+
-    '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'+
-    '<button onclick="this.closest('div[style*=fixed]').remove()" style="padding:7px 16px;border:1.5px solid #ccc;border-radius:6px;cursor:pointer;background:#f5f5f5">Annulla</button>'+
-    '<button onclick="var s=document.getElementById('unisci-sel').value;if(!s){alert('Scegli un cliente');return;}this.closest('div[style*=fixed]').remove();unisciClienti(''+cliIdDa+'',s)" style="padding:7px 16px;border:none;border-radius:6px;cursor:pointer;background:#ffc107;font-weight:700">Unisci ▶</button>'+
+  var dest = CLI_DATA.filter(function(c){ return c.id!==cliIdDa; })
+    .sort(function(a,b){ return a.rs.localeCompare(b.rs,'it'); });
+  var opzioni = dest.map(function(c){
+    return '<option value="'+c.id+'">'+c.rs+' ('+c.id+')</option>';
+  }).join('');
+  // Rimuovi eventuali dialoghi precedenti
+  var old = document.getElementById('dlg-unisci');
+  if(old) old.remove();
+  var dlg = document.createElement('div');
+  dlg.id = 'dlg-unisci';
+  dlg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.3);z-index:9999;min-width:380px;font-family:Arial;font-size:14px';
+  dlg.innerHTML =
+    '<div style="font-weight:700;font-size:15px;margin-bottom:12px">&#128260; Unisci cliente duplicato</div>'+
+    '<div style="color:#555;margin-bottom:4px">Sposta tutti i presidi e interventi di:</div>'+
+    '<div style="font-weight:700;color:#1A4F8A;margin-bottom:10px">'+da.rs+' ('+cliIdDa+')</div>'+
+    '<div style="color:#555;margin-bottom:4px">nel cliente:</div>'+
+    '<select id="unisci-dest" style="width:100%;padding:7px;font-size:13px;border:1.5px solid #ffc107;border-radius:6px;margin-bottom:16px">'+
+    '<option value="">— Scegli il cliente destinazione —</option>'+opzioni+
+    '</select>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end">'+
+    '<button id="btn-unisci-annulla" style="padding:7px 16px;border:1.5px solid #ccc;border-radius:6px;cursor:pointer;background:#f5f5f5">Annulla</button>'+
+    '<button id="btn-unisci-ok" style="padding:7px 16px;border:none;border-radius:6px;cursor:pointer;background:#ffc107;font-weight:700">Unisci &#9658;</button>'+
     '</div>';
-  document.body.appendChild(div);
+  document.body.appendChild(dlg);
+  document.getElementById('btn-unisci-annulla').onclick = function(){ dlg.remove(); };
+  document.getElementById('btn-unisci-ok').onclick = function(){
+    var dest = document.getElementById('unisci-dest').value;
+    if(!dest){ alert('Scegli un cliente destinazione'); return; }
+    dlg.remove();
+    unisciClienti(cliIdDa, dest);
+  };
 }
 window.mostraDialogoUnisci = mostraDialogoUnisci;
 
