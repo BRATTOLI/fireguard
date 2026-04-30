@@ -7921,6 +7921,7 @@ function salvaManutenzioneCompleta(){
         REG_DATA[idx].vita  = vita;
         // Mantieni o assegna il sessId (retrocompatibilità: se mancante usa data+cli)
         if(!REG_DATA[idx].sessId) REG_DATA[idx].sessId = REG_DATA[idx].cliId + '_' + REG_DATA[idx].d.replace(/\//g,'');
+        REG_DATA[idx].noteScheda = (document.getElementById('man-sem-note')||{value:''}).value.trim();
       }
       n++;
     } else {
@@ -7948,7 +7949,8 @@ function salvaManutenzioneCompleta(){
         revEff:  revEff,
         revPross:revPross,
         collEff: collEff,
-        vita:  vita
+        vita:  vita,
+        noteScheda: (document.getElementById('man-sem-note')||{value:''}).value.trim()
       });
       n++;
     }
@@ -9651,6 +9653,7 @@ function esportaWord(tipo, cliId){
       html += '<table style="border-collapse:collapse;width:100%;font-size:8pt;margin-bottom:12px">' +
         '<thead><tr>' +
         '<th style="'+thSR+'width:28px">N°</th>' +
+        '<th style="'+thSR+'width:72px">Cod.</th>' +
         '<th style="'+thSR+'">Posizione / Ubicazione</th>' +
         '<th style="'+thSR+'width:58px">Tipo agente</th>' +
         '<th style="'+thSR+'width:32px">Kg</th>' +
@@ -9705,6 +9708,7 @@ function esportaWord(tipo, cliId){
 
         html += '<tr style="background:'+rowBg+'">' +
           '<td style="'+tdCR+'font-weight:bold">'+nRow+'</td>' +
+          '<td style="'+tdSR+'font-size:7pt;color:#555">'+r.cod+'</td>' +
           '<td style="'+tdSR+'">'+ubi+'</td>' +
           '<td style="'+tdCR+'font-size:7.5pt">'+agente+'</td>' +
           '<td style="'+tdCR+'">'+peso+'</td>' +
@@ -9763,8 +9767,9 @@ function esportaWord(tipo, cliId){
         html += '</tbody></table>';
       }
 
-      // Note generali
+      // Note generali — legge dal campo live se disponibile, altrimenti dal registro salvato
       var noteGeneraliValR = (document.getElementById('man-sem-note')||{value:''}).value.trim();
+      if(!noteGeneraliValR) noteGeneraliValR = righe.find(function(r){ return r.noteScheda; }) ? (righe.find(function(r){ return r.noteScheda; }).noteScheda||'') : '';
       html += '<table style="border-collapse:collapse;width:100%;font-size:8.5pt;margin-bottom:16px">' +
         '<tr><td style="'+tdSR+'background:#f5f5f5;font-weight:bold;width:18%">Note generali</td>' +
         '<td style="padding:6px 8px;border:1px solid #ccc;min-height:36px;font-size:8.5pt">'+(noteGeneraliValR||'&nbsp;')+'</td></tr></table>';
