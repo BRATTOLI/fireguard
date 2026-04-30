@@ -4506,6 +4506,7 @@ function ristampaSchedaStorico(sessId) {
       '<th style="'+vthR+'">'+ gLR('Din. Pressione (N)') +'</th>'+
       '<th style="'+vthR+'">'+ gLR('Rientro scrocchi') +'</th>'+
       '<th style="'+hthR+'">Manutenzione eseguita</th>'+
+      '<th style="'+hthR+'">Prox. scad. semest.</th>'+
       '<th style="'+hthR+'">Esito</th>'+
       '<th style="'+hthR+'">Note</th>'+
       '</tr></thead><tbody>';
@@ -7661,6 +7662,16 @@ function calcolaCollaudoAuto(annoProd, annoCollEff){
 
 // Data prossima scadenza manutenzione: +6 mesi da data intervento (att.4.4/4.5)
 // Per att.4.6 revisione: +5 anni; per att.4.7 collaudo: +10 anni
+// Aggiorna automaticamente la data scadenza semestrale REI quando cambia la data manutenzione
+function aggiornaProssREI(inputData){
+  var riga = inputData.closest('tr');
+  if(!riga) return;
+  var proxInput = riga.querySelector('.man-prox');
+  if(!proxInput) return;
+  proxInput.value = calcolaProssimaScadDaTipoAtt(inputData.value, '4.5');
+}
+window.aggiornaProssREI = aggiornaProssREI;
+
 function calcolaProssimaScadDaTipoAtt(dataStr, tipoAtt){
   if(!dataStr) return '';
   try{
@@ -7849,7 +7860,8 @@ function renderSchedaREI(presidiREI, dataInt, cli){
       '<td><input type="text" class="man-costr" value="'+(p.costr||'')+'" style="'+inpCss+'"></td>' +
       '<td><input type="number" class="man-anno" value="'+(p.annop||'')+'" style="'+inpCss+';text-align:center"></td>' +
       '<td><input type="text" class="man-matr" value="'+(p.matr||'')+'" style="'+inpCss+'"></td>' +
-      '<td><input type="date" class="man-sem-data" value="'+dataInt+'" style="'+inpCss+'"></td>' +
+      '<td><input type="date" class="man-sem-data" onchange="aggiornaProssREI(this)" value="'+dataInt+'" style="'+inpCss+'"></td>' +
+      '<td><input type="date" class="man-prox" value="'+calcolaProssimaScadDaTipoAtt(dataInt,"4.5")+'" style="'+inpCss+'"></td>' +
       '<td><select class="rei-viteria" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
       '<td><select class="rei-cerniere" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
       '<td><select class="rei-ossidaz" style="'+inpCss+'"><option value="P.">P.</option><option value="N.">N.</option><option value="N.E.">N.E.</option></select></td>' +
@@ -8079,7 +8091,8 @@ function salvaManutenzioneCompleta(){
     var cliN     = row.dataset.cli;
     var tipoAtt  = (row.querySelector('.man-tipo-att')||{value:'4.5'}).value;
     var dataInt  = (row.querySelector('.man-data-int')||row.querySelector('.man-sem-data')||{value:''}).value;
-    var dataProx = (row.querySelector('.man-data-prox')||row.querySelector('.man-prox-data')||{value:''}).value;
+    var dataProx = (row.querySelector('.man-prox')||row.querySelector('.man-data-prox')||row.querySelector('.man-prox-data')||{value:''}).value;
+    if(!dataProx) dataProx = calcolaProssimaScadDaTipoAtt((row.querySelector('.man-sem-data')||{value:''}).value,'4.5');
     var esito    = (row.querySelector('.man-esito')||{value:'ok'}).value;
     var note     = (row.querySelector('.man-note')||{value:''}).value;
     var revEff   = (row.querySelector('.man-rev-eff')||{value:''}).value;
@@ -9373,6 +9386,7 @@ function _buildHTMLSchedaREI(){
       '<td style="'+tdS+'">'+g('rei-din-pr')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-scrocchi')+'</td>' +
       '<td style="'+tdL+'">'+g('rei-manut')+'</td>' +
+      '<td style="'+tdS+'">'+g('man-prox')+'</td>' +
       '<td style="'+tdS+';color:'+esitoColor+';font-weight:bold">'+esitoTxt+'</td>' +
       '<td style="'+tdL+'">'+notaTxt+'</td>' +
       '</tr>';
