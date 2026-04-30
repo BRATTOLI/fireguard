@@ -6788,8 +6788,8 @@ function colValKg(row){
     return l === 'kg' || l === 'carica' || l === 'carica nominale' || l === 'kg carica';
   });
   if(candidates.length > 0) return String(row[candidates[0].idx]||'').trim() || '—';
-  // Fallback: cerca la prima colonna che contiene "kg" ma NON "totale"
-  const h = xlHeaders.find(h => h.label.toLowerCase().includes('kg') && !h.label.toLowerCase().includes('total'));
+  // Fallback: cerca la prima colonna che contiene "kg" ma NON "totale" e NON "kg/t"
+  const h = xlHeaders.find(h => { const l=h.label.toLowerCase(); return l.includes('kg') && !l.includes('total') && !l.includes('kg/t') && l!=='kgt'; });
   return h ? String(row[h.idx]||'').trim() || '—' : '—';
 }
 
@@ -6797,9 +6797,15 @@ function colValKg(row){
 function colValKgTot(row){
   const candidates = xlHeaders.filter(h => {
     const l = h.label.toLowerCase().trim();
-    return l.includes('totale') || l.includes('kg tot') || l.includes('peso tot') || l.includes('peso comp') || l === 'kg totale';
+    return l.includes('totale') || l.includes('kg tot') || l.includes('peso tot') ||
+           l.includes('peso comp') || l === 'kg totale' ||
+           l === 'kg/t.' || l === 'kg/t' || l === 'kg tot.' ||
+           l.includes('kg/t') || l === 'kgt' || l === 'kg tot';
   });
   if(candidates.length > 0) return String(row[candidates[0].idx]||'').trim() || '—';
+  // Fallback: seconda colonna che contiene "kg" (dopo quella della carica)
+  const kgCols = xlHeaders.filter(h => h.label.toLowerCase().includes('kg'));
+  if(kgCols.length >= 2) return String(row[kgCols[1].idx]||'').trim() || '—';
   return '—';
 }
 
