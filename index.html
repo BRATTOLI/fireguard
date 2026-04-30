@@ -7044,6 +7044,9 @@ function importaExcel(){
     clienteEsistente.presidi = (clienteEsistente.presidi || 0) + nuoviPresidi.length;
   }
 
+  // Blocca onSnapshot durante import per evitare sovrascrittura
+  _staSalvando = true;
+
   // Aggiungi presidi
   nuoviPresidi.forEach(function(p){ PRESIDI_DATA.push(p); });
 
@@ -7064,10 +7067,29 @@ function importaExcel(){
   buildDashboard();
   if(typeof aggiornaSezioneImportata === 'function') aggiornaSezioneImportata();
 
-  // Salva
-  salvaLS();
+  // Salva — prima cancella il debounce di salvaLS per evitare doppio save
   aggiornaLSBadge();
-  if(typeof eseguiSalvatagioCloud === 'function') eseguiSalvatagioCloud();
+  if(_autoSaveTimer) { clearTimeout(_autoSaveTimer); _autoSaveTimer = null; }
+  // Salva localStorage direttamente senza triggare scheduleAutoSave
+  try{
+    const _stato = {
+      versione: '3.2', salvato: new Date().toISOString(),
+      clienti: CLI_DATA, presidi: PRESIDI_DATA, registro: REG_DATA,
+      ditta: DITTA, tecnici: TECNICI,
+      ultimoImport: ultimoImport ? {
+        nomeFile: ultimoImport.nomeFile, dataImport: ultimoImport.dataImport || ultimoImport.dataOra,
+        clienteRilevato: ultimoImport.clienteRilevato, righe: ultimoImport.righe,
+        headers: ultimoImport.headers, importato: ultimoImport.importato
+      } : null
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(_stato));
+  } catch(e){ console.warn('Errore salvataggio LS post-import:', e); }
+  // Salva su cloud e rilascia il lock solo al termine
+  if(typeof eseguiSalvatagioCloud === 'function') {
+    eseguiSalvatagioCloud();
+  } else {
+    _staSalvando = false;
+  }
 
   const msg = clienteEsistente
     ? '✅ ' + nuoviPresidi.length + ' presidi aggiunti a: ' + clienteEsistente.rs
