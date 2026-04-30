@@ -7856,9 +7856,9 @@ function renderSchedaEstintori(presidi, dataInt, cli){
       '<td><input class="man-agente" type="text" value="'+agenteLbl+'" style="'+inpCss+'"></td>' +
       '<td><input class="man-peso" type="number" value="'+((p.peso&&p.peso!=='—')?p.peso:'')+'" style="'+inpCss+';text-align:center"></td>' +
       '<td><input class="man-pesotot" type="number" value="'+((p.pesotot&&p.pesotot!=='—')?p.pesotot:'')+'" style="'+inpCss+';text-align:center"><span style="font-size:9px;color:#aaa"> kg</span></td>' +
-      '<td><input class="man-costr" type="text" value="'+(p.costr||'')+'" style="'+inpCss+'"></td>' +
+      '<td><input class="man-costr" type="text" value="'+(p.costr||'')+'" style="'+inpCss+';text-align:center"></td>' +
       '<td><input class="man-anno" type="number" value="'+(p.annop||'')+'" min="1960" max="2099" style="'+inpCss+';text-align:center" onchange="ricalcolaRigaAuto('+idx+')"></td>' +
-      '<td><input class="man-matr" type="text" value="'+(p.matr||'')+'" style="'+inpCss+'"></td>' +
+      '<td><input class="man-matr" type="text" value="'+(p.matr||'')+'" style="'+inpCss+';text-align:center"></td>' +
       '<td><select class="man-tipo-att" style="'+inpCss+'">' + tipoAttOpts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===_defAttVal?' selected':'')+'>'+o[1]+'</option>'; }).join('') + '</select></td>' +
       '<td><input class="man-sem-data" type="date" value="'+dataInt+'" style="'+inpCss+'" onchange="aggiornaTutteLeDate(this.value)"></td>' +
       '<td><input class="man-prox-data" type="date" value="'+dataPross+'" style="'+inpCss+'"></td>' +
@@ -8153,14 +8153,19 @@ function salvaManutenzioneCompleta(){
     if(tipo === 'REI' || tipo === 'UES') {
       tipoOpLbl = _tipoOpDropdown || (tipo === 'REI' ? 'Controllo periodico Porte REI' : 'Controllo periodico Uscite Sicurezza');
     } else {
-      tipoOpLbl = {
-        '4.4':'Sorveglianza att.4.4',
-        '4.5':'Controllo periodico att.4.5',
-        '4.6':'Revisione programmata att.4.6',
-        '4.7':'Collaudo bombola att.4.7',
-        '4.8':'Manutenzione straordinaria att.4.8',
-        '4.1':'Primo impianto att.4.1'
-      }[tipoAtt] || (_tipoOpDropdown || 'Controllo att.'+tipoAtt);
+      // Per IDR/NSP usa direttamente il valore selezionato (non la mappa att.4.x)
+      if(tipo==='IDR'||tipo==='NSP'){
+        tipoOpLbl = tipoAtt || _tipoOpDropdown || 'Controllo periodico IDR/NSP';
+      } else {
+        tipoOpLbl = {
+          '4.4':'Sorveglianza att.4.4',
+          '4.5':'Controllo periodico att.4.5',
+          '4.6':'Revisione programmata att.4.6',
+          '4.7':'Collaudo bombola att.4.7',
+          '4.8':'Manutenzione straordinaria att.4.8',
+          '4.1':'Primo impianto att.4.1'
+        }[tipoAtt] || (_tipoOpDropdown || 'Controllo att.'+tipoAtt);
+      }
     }
 
     var t = TIPI.find(function(x){ return x.id===tipo; })||TIPI[0];
@@ -8477,11 +8482,18 @@ function stampaManutenzioneWord(){
   var tdS = 'padding:4px 6px;border:1px solid #ccc;font-size:8pt;vertical-align:middle;';
   var tdC = tdS + 'text-align:center;';
 
+  var _tipoPresAnteprima = (document.getElementById('man-sem-tipo-pres')||{value:'EST'}).value||'EST';
+  var _normaAnteprima = _tipoPresAnteprima==='IDR' ? 'UNI EN 671-3:2009 — D.M. 1/9/2021' :
+                        _tipoPresAnteprima==='NSP' ? 'UNI EN 671-1:2012 — D.M. 1/9/2021' :
+                        _tipoPresAnteprima==='REI' ? 'UNI EN 1634 — D.M. 1/9/2021' :
+                        _tipoPresAnteprima==='UES' ? 'UNI EN 179/1125 — D.M. 1/9/2021' :
+                        'UNI 9994-1:2024 — D.M. 1 Settembre 2021';
+
   var html = intestazioneDoc();
 
   // ── Titolo principale ─────────────────────────────────────────────────────
   html += '<h2 style="color:#C0392B;font-size:13pt;margin:0 0 2px 0;text-align:center">SCHEDA DI MANUTENZIONE PRESIDI ANTINCENDIO</h2>';
-  html += '<p style="font-size:8.5pt;color:#555;margin:0 0 10px 0;text-align:center">Norma UNI 9994-1:2024 — D.M. 1 Settembre 2021</p>';
+  html += '<p style="font-size:8.5pt;color:#555;margin:0 0 10px 0;text-align:center">Norma '+_normaAnteprima+'</p>';
 
   // ── Dati cliente + intervento ─────────────────────────────────────────────
   html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-bottom:12px">' +
@@ -8499,7 +8511,7 @@ function stampaManutenzioneWord(){
     '<td style="'+tdS+'background:#f5f5f5;font-weight:bold">Referente cliente</td>' +
     '<td style="'+tdS+'">'+(cli.ref||'—')+'</td>' +
     '<td style="'+tdS+'background:#f5f5f5;font-weight:bold">Norma applicata</td>' +
-    '<td style="'+tdS+'">UNI 9994-1:2024 — D.M. 1/9/2021</td>' +
+    '<td style="'+tdS+'">'+_normaAnteprima+'</td>' +
     '</tr></table>';
 
   // ── Tabella presidi — replica fedele scheda PDF ───────────────────────────
@@ -8705,7 +8717,7 @@ function stampaManutenzioneWord(){
 
   html += '</td></tr></table>';
 
-  html += '<p style="font-size:7pt;color:#aaa;margin-top:8px;text-align:center">Manutenzione eseguita secondo Norma UNI 9994-1:2024 — D.M. 1 Settembre 2021 — Una copia del presente verbale viene conservata nel registro digitale accessibile tramite QR Code</p>';
+  html += '<p style="font-size:7pt;color:#aaa;margin-top:8px;text-align:center">Manutenzione eseguita secondo Norma '+_normaAnteprima+' — Una copia del presente verbale viene conservata nel registro digitale accessibile tramite QR Code</p>';
   html += '<p style="font-size:7pt;color:#aaa;text-align:center">Generato da '+DITTA.sw+' — '+TODAY.toLocaleDateString("it-IT")+'</p>';
 
   var dataFileStr = (dataEl && dataEl.value) ? fromISO(dataEl.value).replace(/\//g,'-') : TODAY.toLocaleDateString('it-IT').replace(/\//g,'-');
