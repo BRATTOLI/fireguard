@@ -7308,7 +7308,8 @@ function importaExcel(){
       // ── ESTINTORE / altri presidi standard ────────────────────────────────
       // Salta se matricola già presente per questo cliente
       var _matrEst = (colVal(row,'matricol')||'').trim().toLowerCase();
-      if(_matrEst && _matrEst !== '—' && _matricoleEsistenti.has(_matrEst)){
+      // Per IDR/NSP le matricole sono spesso numeri semplici (1,2,3...) — non bloccare su duplicati
+      if(_matrEst && _matrEst !== '—' && _matricoleEsistenti.has(_matrEst) && tipoForzato!=='IDR' && tipoForzato!=='NSP'){
         _duplicatiSaltati++; contatore--; return;
       }
       nuoviPresidi.push({
