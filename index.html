@@ -5099,9 +5099,12 @@ function salvaCliente(){
       notifica('✅ Cliente "'+rs+'" aggiornato!');
     }
   } else {
-    // NUOVO cliente — usa il massimo ID esistente per evitare duplicati
-    const maxNum = CLI_DATA.reduce(function(m,c){ const n=parseInt((c.id||'').replace('CLI-',''))||0; return n>m?n:m; },0);
+    // NUOVO cliente — usa il massimo tra l'ID più alto in memoria e il contatore persistente
+    const maxInMemoria = CLI_DATA.reduce(function(m,c){ const n=parseInt((c.id||'').replace('CLI-',''))||0; return n>m?n:m; },0);
+    const maxPersistito = parseInt(localStorage.getItem('fg_max_cli_num')||'0')||0;
+    const maxNum = Math.max(maxInMemoria, maxPersistito);
     const nuovoId = 'CLI-'+String(maxNum+1).padStart(3,'0');
+    localStorage.setItem('fg_max_cli_num', String(maxNum+1));
     CLI_DATA.push({
       id: nuovoId, rs, stato,
       ind:        document.getElementById('mCli-ind').value.trim()   || '—',
@@ -5133,13 +5136,18 @@ function eliminaCliente(cliId){
   if(typeof salvaSnapshot==='function') salvaSnapshot('Prima di eliminare cliente');
   const cli = CLI_DATA.find(c=>c.id===cliId);
   if(!cli) return;
-  const nPres = PRESIDI_DATA.filter(p=>cliMatch(p, cli)).length;
+  const presidiDaEliminare = PRESIDI_DATA.filter(p=>cliMatch(p, cli));
+  const nPres = presidiDaEliminare.length;
   if(!confirm('\u26a0\ufe0f ATTENZIONE!\n\nEliminare il cliente "'+cli.rs+'" e tutti i suoi '+nPres+' presidi?\n\nQuesta operazione NON è reversibile.')) return;
   if(!confirm('\ud83d\udd34 SECONDA CONFERMA\n\nSei sicuro di voler eliminare il cliente "'+cli.rs+'" con '+nPres+' presidi?\n\nPremi OK per confermare definitivamente.')) return;
-  // Rimuovi cliente
+
+  // ── Blocca onSnapshot per evitare che Firebase ripristini i dati eliminati ──
+  _staSalvando = true;
+
+  // Rimuovi cliente da memoria
   const idx = CLI_DATA.findIndex(c=>c.id===cliId);
   if(idx>=0) CLI_DATA.splice(idx,1);
-  // Rimuovi presidi associati
+  // Rimuovi presidi associati da memoria
   for(let i=PRESIDI_DATA.length-1;i>=0;i--){
     if(PRESIDI_DATA[i].cli===cli.rs) PRESIDI_DATA.splice(i,1);
   }
@@ -5148,6 +5156,46 @@ function eliminaCliente(cliId){
   buildDashboard();
   salvaLS();
   notifica('🗑️ Cliente "'+cli.rs+'" eliminato con '+nPres+' presidi.');
+
+  // ── Elimina da Firestore (sia collezioni separate sia documento principale) ──
+  if(typeof db !== 'undefined' && db) {
+    var migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
+    var promesse = [];
+
+    if(migratoFlag) {
+      // Elimina da collezioni separate
+      promesse.push(db.collection('clienti').doc(cliId).delete());
+      presidiDaEliminare.forEach(function(p){
+        if(p.cod) promesse.push(db.collection('presidi').doc(p.cod).delete());
+      });
+    }
+
+    // Aggiorna sempre il documento principale (sovrascrive con i dati aggiornati)
+    var clienti  = _cleanUndef(CLI_DATA);
+    var presidi  = _cleanUndef(PRESIDI_DATA);
+    var registro = _cleanUndef(REG_DATA);
+    promesse.push(
+      db.collection('database').doc('principale').set({
+        clienti: clienti, presidi: presidi, registro: registro,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      })
+    );
+
+    Promise.all(promesse)
+      .then(function(){
+        _staSalvando = false;
+        setCloudStatus('ok');
+        console.log('🗑️ Cliente '+cliId+' eliminato da Firestore.');
+      })
+      .catch(function(err){
+        _staSalvando = false;
+        setCloudStatus('error');
+        console.error('Errore eliminazione Firestore:', err);
+        notifica('⚠️ Errore eliminazione cloud. Riprovare.');
+      });
+  } else {
+    _staSalvando = false;
+  }
 }
 
 function renderPresidi(filtroTipo){
@@ -6976,8 +7024,12 @@ function importaExcel(){
 
   // Crea cliente se non esiste
   if(!clienteEsistente){
-    const _maxCliNum = CLI_DATA.reduce(function(m,c){ const n=parseInt((c.id||'').replace('CLI-',''))||0; return n>m?n:m; }, 0);
+    const _maxCliNum = Math.max(
+      CLI_DATA.reduce(function(m,c){ const n=parseInt((c.id||'').replace('CLI-',''))||0; return n>m?n:m; }, 0),
+      parseInt(localStorage.getItem('fg_max_cli_num')||'0')||0
+    );
     const nuovoCliId = 'CLI-' + String(_maxCliNum + 1).padStart(3, '0');
+    localStorage.setItem('fg_max_cli_num', String(_maxCliNum + 1));
     CLI_DATA.push({
       id: nuovoCliId, rs: nomeCliente,
       ind:'—', ref:'—', tel:'—', cpi:'—',
@@ -10051,6 +10103,15 @@ if(_HTML_REGISTRO.length > REG_DATA.length){
 }
 // Salva subito nel localStorage così la prossima volta sono aggiornati
 if(dataSalvata !== undefined) salvaLS();
+
+// ── Inizializza contatore clienti — assicura che non si riusino ID già cancellati ──
+(function(){
+  var maxInMemoria = CLI_DATA.reduce(function(m,c){ var n=parseInt((c.id||'').replace('CLI-',''))||0; return n>m?n:m; }, 0);
+  var maxPersistito = parseInt(localStorage.getItem('fg_max_cli_num')||'0')||0;
+  var maxCorrente = Math.max(maxInMemoria, maxPersistito);
+  localStorage.setItem('fg_max_cli_num', String(maxCorrente));
+  console.log('📋 Contatore clienti inizializzato: max CLI =', maxCorrente);
+})();
 
 // Ricalcola fine vita su tutti i presidi esistenti (corregge dati vecchi/importati senza vita)
 ricalcolaFineVitaTutti();
