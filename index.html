@@ -6898,6 +6898,8 @@ function importaExcel(){
   // ── Processa righe Excel ──────────────────────────────────────────────────
   let contatore = maxNum; // parte da dove finiscono i presidi esistenti
   const nuoviPresidi = [];
+  // nuovoCliId calcolato anticipatamente (usato nel loop anche quando il cliente esiste già)
+  var nuovoCliId = null;
 
   ultimoImport.righe.forEach(function(row){
     // Salta righe non valide per file REI
@@ -7074,7 +7076,7 @@ function importaExcel(){
       CLI_DATA.reduce(function(m,c){ const n=parseInt((c.id||'').replace('CLI-',''))||0; return n>m?n:m; }, 0),
       parseInt(localStorage.getItem('fg_max_cli_num')||'0')||0
     );
-    const nuovoCliId = 'CLI-' + String(_maxCliNum + 1).padStart(3, '0');
+    nuovoCliId = 'CLI-' + String(_maxCliNum + 1).padStart(3, '0');
     localStorage.setItem('fg_max_cli_num', String(_maxCliNum + 1));
     CLI_DATA.push({
       id: nuovoCliId, rs: nomeCliente,
