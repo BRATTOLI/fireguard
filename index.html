@@ -4207,11 +4207,26 @@ function renderTipiGrid(id,onclick){
   </div>`).join('');
 }
 
+// ── Calcola il prossimo ID cliente libero — riutilizza i buchi lasciati dalle cancellazioni ──
+function prossimoCLI(){
+  var usati = CLI_DATA.map(function(c){ return parseInt((c.id||'').replace('CLI-',''))||0; })
+                      .filter(function(n){ return n > 0; })
+                      .sort(function(a,b){ return a-b; });
+  // Cerca il primo numero intero positivo non presente nella lista
+  var candidato = 1;
+  for(var i=0; i<usati.length; i++){
+    if(usati[i] === candidato) { candidato++; }
+    else if(usati[i] > candidato) { break; } // trovato buco
+  }
+  return 'CLI-' + String(candidato).padStart(3,'0');
+}
+
 function renderClienti(){
   const tb=document.getElementById('tbl-clienti');if(!tb)return;
   const ss={'ok':'s-ok','warn':'s-warn','exp':'s-exp'};
   const sl={'ok':'Attivo','warn':'CPI in scad.','exp':'Urgente'};
-  tb.innerHTML=CLI_DATA.map(c=>{
+  const _cliOrdinati = CLI_DATA.slice().sort(function(a,b){ return (a.rs||'').localeCompare(b.rs||'','it',{sensitivity:'base'}); });
+  tb.innerHTML=_cliOrdinati.map(c=>{
     const nPres = PRESIDI_DATA.filter(p=>p.cli===c.rs||(p.cli||"").trim()===(c.rs||"").trim()).length || c.presidi || 0;
     const interventi = REG_DATA.filter(r=> r.cliId===c.id || r.cli===c.rs || (r.cli||"").trim()===(c.rs||"").trim());
     const dateUniche = [...new Set(interventi.map(r=>r.d))];
@@ -5107,11 +5122,7 @@ function salvaCliente(){
     }
   } else {
     // NUOVO cliente — usa il massimo tra l'ID più alto in memoria e il contatore persistente
-    const maxInMemoria = CLI_DATA.reduce(function(m,c){ const n=parseInt((c.id||'').replace('CLI-',''))||0; return n>m?n:m; },0);
-    const maxPersistito = parseInt(localStorage.getItem('fg_max_cli_num')||'0')||0;
-    const maxNum = Math.max(maxInMemoria, maxPersistito);
-    const nuovoId = 'CLI-'+String(maxNum+1).padStart(3,'0');
-    localStorage.setItem('fg_max_cli_num', String(maxNum+1));
+    const nuovoId = prossimoCLI();
     CLI_DATA.push({
       id: nuovoId, rs, stato,
       ind:        document.getElementById('mCli-ind').value.trim()   || '—',
@@ -7072,12 +7083,7 @@ function importaExcel(){
 
   // Crea cliente se non esiste
   if(!clienteEsistente){
-    const _maxCliNum = Math.max(
-      CLI_DATA.reduce(function(m,c){ const n=parseInt((c.id||'').replace('CLI-',''))||0; return n>m?n:m; }, 0),
-      parseInt(localStorage.getItem('fg_max_cli_num')||'0')||0
-    );
-    nuovoCliId = 'CLI-' + String(_maxCliNum + 1).padStart(3, '0');
-    localStorage.setItem('fg_max_cli_num', String(_maxCliNum + 1));
+    nuovoCliId = prossimoCLI();
     CLI_DATA.push({
       id: nuovoCliId, rs: nomeCliente,
       ind:'—', ref:'—', tel:'—', cpi:'—',
@@ -10181,14 +10187,7 @@ if(_HTML_REGISTRO.length > REG_DATA.length){
 // Salva subito nel localStorage così la prossima volta sono aggiornati
 if(dataSalvata !== undefined) salvaLS();
 
-// ── Inizializza contatore clienti — assicura che non si riusino ID già cancellati ──
-(function(){
-  var maxInMemoria = CLI_DATA.reduce(function(m,c){ var n=parseInt((c.id||'').replace('CLI-',''))||0; return n>m?n:m; }, 0);
-  var maxPersistito = parseInt(localStorage.getItem('fg_max_cli_num')||'0')||0;
-  var maxCorrente = Math.max(maxInMemoria, maxPersistito);
-  localStorage.setItem('fg_max_cli_num', String(maxCorrente));
-  console.log('📋 Contatore clienti inizializzato: max CLI =', maxCorrente);
-})();
+// ── prossimoCLI() calcola dinamicamente il primo numero libero — nessun contatore persistente necessario ──
 
 // Ricalcola fine vita su tutti i presidi esistenti (corregge dati vecchi/importati senza vita)
 ricalcolaFineVitaTutti();
