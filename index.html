@@ -4247,6 +4247,7 @@ function renderClienti(){
       <td style="display:flex;gap:4px">
         <button class="btn sm pr" onclick="apriModificaCliente('${c.id}')">✏️ Modifica</button>
         <button class="btn sm" style="background:#fff0f0;border-color:#f5c6cb;color:#9b1c1c" onclick="eliminaCliente('${c.id}')">🗑️</button>
+        <button onclick="mostraDialogoUnisci('${c.id}')" title="Unisci in altro cliente" style="font-size:10px;padding:3px 7px;background:#fff3cd;border:1px solid #ffc107;color:#856404;border-radius:4px;cursor:pointer">🔀</button>
       </td>
     </tr>`;}).join('');
   aggiornaSelectClienti();
@@ -5194,6 +5195,89 @@ function salvaCliente(){
 }
 
 // Elimina cliente e tutti i suoi presidi
+// ── Unisce un cliente duplicato in quello principale ─────────────────────────
+function mostraDialogoUnisci(cliIdDa){
+  var da = CLI_DATA.find(function(c){ return c.id===cliIdDa; });
+  if(!da){ notifica('Cliente non trovato'); return; }
+  var opzioni = CLI_DATA.filter(function(c){ return c.id!==cliIdDa; })
+    .sort(function(a,b){ return a.rs.localeCompare(b.rs,'it'); })
+    .map(function(c){ return '<option value="'+c.id+'">'+c.rs+' ('+c.id+')</option>'; }).join('');
+  var sel = '<select id="unisci-sel" style="width:100%;padding:6px;font-size:13px;margin-top:8px;border:1.5px solid #ffc107;border-radius:6px">'+
+    '<option value="">— Scegli il cliente destinazione —</option>'+opzioni+'</select>';
+  var msg = '🔀 Unisci "'+da.rs+'" ('+cliIdDa+') in:\n\n';
+  // Usa un div personalizzato invece di prompt
+  var div = document.createElement('div');
+  div.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.25);z-index:9999;min-width:380px;font-family:Arial';
+  div.innerHTML='<div style="font-weight:700;font-size:15px;margin-bottom:8px">🔀 Unisci cliente duplicato</div>'+
+    '<div style="font-size:13px;color:#555;margin-bottom:4px">Sposta tutti i presidi e interventi di:</div>'+
+    '<div style="font-weight:600;color:#1A4F8A;margin-bottom:8px">'+da.rs+' ('+cliIdDa+')</div>'+
+    '<div style="font-size:13px;color:#555;margin-bottom:4px">nel cliente:</div>'+
+    sel+
+    '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'+
+    '<button onclick="this.closest('div[style*=fixed]').remove()" style="padding:7px 16px;border:1.5px solid #ccc;border-radius:6px;cursor:pointer;background:#f5f5f5">Annulla</button>'+
+    '<button onclick="var s=document.getElementById('unisci-sel').value;if(!s){alert('Scegli un cliente');return;}this.closest('div[style*=fixed]').remove();unisciClienti(''+cliIdDa+'',s)" style="padding:7px 16px;border:none;border-radius:6px;cursor:pointer;background:#ffc107;font-weight:700">Unisci ▶</button>'+
+    '</div>';
+  document.body.appendChild(div);
+}
+window.mostraDialogoUnisci = mostraDialogoUnisci;
+
+function unisciClienti(cliIdDa, cliIdA){
+  var da = CLI_DATA.find(function(c){ return c.id===cliIdDa; });
+  var a  = CLI_DATA.find(function(c){ return c.id===cliIdA; });
+  if(!da || !a){ notifica('❌ Cliente non trovato'); return; }
+  if(!confirm('Unire tutti i presidi e interventi di\n"'+da.rs+'" ('+cliIdDa+')\nin\n"'+a.rs+'" ('+cliIdA+')?\n\nIl cliente '+cliIdDa+' verrà eliminato.')) return;
+
+  _staSalvando = true;
+
+  // Sposta presidi
+  PRESIDI_DATA.forEach(function(p){
+    if(p.cli===da.rs || p.cliId===cliIdDa){
+      p.cli   = a.rs;
+      p.cliId = cliIdA;
+    }
+  });
+  // Sposta interventi registro
+  REG_DATA.forEach(function(r){
+    if(r.cli===da.rs || r.cliId===cliIdDa){
+      r.cli   = a.rs;
+      r.cliId = cliIdA;
+      if(r.sessId) r.sessId = r.sessId.replace(cliIdDa, cliIdA);
+    }
+  });
+  // Aggiorna contatore presidi cliente destinazione
+  a.presidi = PRESIDI_DATA.filter(function(p){ return p.cliId===cliIdA; }).length;
+  // Elimina cliente sorgente
+  var idx = CLI_DATA.findIndex(function(c){ return c.id===cliIdDa; });
+  if(idx>=0) CLI_DATA.splice(idx,1);
+
+  renderClienti(); renderPresidi(_filtroTipoAttivo); buildDashboard();
+  salvaLS();
+
+  // Salva su Firestore
+  if(typeof db !== 'undefined' && db){
+    var promesse = [];
+    var migratoFlag = localStorage.getItem('fg_migrato_collezioni')==='true';
+    if(migratoFlag){
+      promesse.push(db.collection('clienti').doc(cliIdDa).delete());
+      PRESIDI_DATA.filter(function(p){ return p.cliId===cliIdA; }).forEach(function(p){
+        if(p.cod) promesse.push(db.collection('presidi').doc(p.cod).set(p));
+      });
+    }
+    promesse.push(db.collection('database').doc('principale').set({
+      clienti: _cleanUndef(CLI_DATA), presidi: _cleanUndef(PRESIDI_DATA),
+      registro: _cleanUndef(REG_DATA),
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }));
+    Promise.all(promesse)
+      .then(function(){ _staSalvando=false; setCloudStatus('ok'); notifica('✅ Clienti uniti correttamente!'); })
+      .catch(function(e){ _staSalvando=false; setCloudStatus('error'); console.error(e); });
+  } else {
+    _staSalvando=false;
+    notifica('✅ Clienti uniti (solo locale)');
+  }
+}
+window.unisciClienti = unisciClienti;
+
 function eliminaCliente(cliId){
   if(typeof salvaSnapshot==='function') salvaSnapshot('Prima di eliminare cliente');
   const cli = CLI_DATA.find(c=>c.id===cliId);
