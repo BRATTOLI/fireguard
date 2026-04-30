@@ -2687,6 +2687,11 @@ tr:hover td{background:#fafafa}
           <option value="Manutenzione straordinaria att.4.8">Manutenzione straordinaria att.4.8</option>
           <option value="Controllo periodico Porte REI">Controllo periodico Porte REI (UNI EN 1634)</option>
           <option value="Controllo periodico Uscite Sicurezza">Controllo periodico Uscite Sicurezza (UNI EN 179/1125)</option>
+          <option disabled>─── Idranti / Naspi (UNI EN 671) ───</option>
+          <option value="Sorveglianza mensile IDR/NSP">Sorveglianza mensile IDR/NSP (UNI EN 671-3 art.3.1)</option>
+          <option value="Controllo periodico IDR/NSP">Controllo periodico IDR/NSP semestrale (UNI EN 671-3 art.3.2)</option>
+          <option value="Collaudo idrostatico IDR/NSP">Collaudo idrostatico IDR/NSP ogni 5 anni (UNI EN 671-3 art.3.3)</option>
+          <option value="Manutenzione straordinaria IDR/NSP">Manutenzione straordinaria / Fine vita IDR/NSP</option>
         </select>
       </div>
       <div class="fgg">
@@ -7824,11 +7829,25 @@ function renderSchedaEstintori(presidi, dataInt, cli){
     if(!p.agente || p.agente==='—' || p.agente==='') p.agente = _ultimoReg.agente || p.agente;
     var pesoLbl = (p.peso && p.peso!=='—') ? p.peso : '—';
     var rowBg = diff!==null&&diff<0 ? 'background:#fff5f5' : diff!==null&&diff<=30 ? 'background:#fffbf0' : '';
-    var tipoAttOpts = [
-      ['4.4','att.4.4 — Sorveglianza'],['4.5','att.4.5 — Controllo periodico (semestrale)'],
-      ['4.6','att.4.6 — Revisione programmata'],['4.7','att.4.7 — Collaudo bombola'],
-      ['4.8','att.4.8 — Collaudo estintore CO2'],['4.9','att.4.9 — Verifica periodica'],
-    ];
+    // Opzioni tipo attività in base al tipo presidio
+    var _tipoPresRow = p.tipo || '';
+    var tipoAttOpts;
+    if(_tipoPresRow === 'IDR' || _tipoPresRow === 'NSP'){
+      tipoAttOpts = [
+        ['Sorveglianza mensile IDR/NSP','Sorveglianza mensile (UNI EN 671-3 art.3.1)'],
+        ['Controllo periodico IDR/NSP','Controllo periodico semestrale (UNI EN 671-3 art.3.2)'],
+        ['Collaudo idrostatico IDR/NSP','Collaudo idrostatico 5 anni (UNI EN 671-3 art.3.3)'],
+        ['Manutenzione straordinaria IDR/NSP','Manutenzione straordinaria / Fine vita'],
+      ];
+    } else {
+      tipoAttOpts = [
+        ['4.4','att.4.4 — Sorveglianza'],['4.5','att.4.5 — Controllo periodico (semestrale)'],
+        ['4.6','att.4.6 — Revisione programmata'],['4.7','att.4.7 — Collaudo bombola'],
+        ['4.8','att.4.8 — Collaudo estintore CO2'],['4.9','att.4.9 — Verifica periodica'],
+      ];
+    }
+    // Valore default in base al tipo
+    var _defAttVal = (_tipoPresRow==='IDR'||_tipoPresRow==='NSP') ? 'Controllo periodico IDR/NSP' : '4.5';
     var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
     return '<tr id="man-row-'+idx+'" data-cod="'+p.cod+'" data-tipo="'+p.tipo+'" data-cli="'+(cli?cli.rs:'')+'" style="'+rowBg+'">' +
       '<td><input type="checkbox" class="man-chk" data-idx="'+idx+'" checked=""></td>' +
@@ -7840,7 +7859,7 @@ function renderSchedaEstintori(presidi, dataInt, cli){
       '<td><input class="man-costr" type="text" value="'+(p.costr||'')+'" style="'+inpCss+'"></td>' +
       '<td><input class="man-anno" type="number" value="'+(p.annop||'')+'" min="1960" max="2099" style="'+inpCss+';text-align:center" onchange="ricalcolaRigaAuto('+idx+')"></td>' +
       '<td><input class="man-matr" type="text" value="'+(p.matr||'')+'" style="'+inpCss+'"></td>' +
-      '<td><select class="man-tipo-att" style="'+inpCss+'">' + tipoAttOpts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]==='4.5'?' selected':'')+'>'+o[1]+'</option>'; }).join('') + '</select></td>' +
+      '<td><select class="man-tipo-att" style="'+inpCss+'">' + tipoAttOpts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===_defAttVal?' selected':'')+'>'+o[1]+'</option>'; }).join('') + '</select></td>' +
       '<td><input class="man-sem-data" type="date" value="'+dataInt+'" style="'+inpCss+'" onchange="aggiornaTutteLeDate(this.value)"></td>' +
       '<td><input class="man-prox-data" type="date" value="'+dataPross+'" style="'+inpCss+'"></td>' +
       '<td><input class="man-rev-eff" type="number" value="'+revEff+'" min="1980" max="2099" placeholder="2025" style="'+inpCss+';text-align:center" onchange="ricalcolaRevPross('+idx+')"></td>' +
@@ -8145,7 +8164,7 @@ function salvaManutenzioneCompleta(){
     }
 
     var t = TIPI.find(function(x){ return x.id===tipo; })||TIPI[0];
-    var norma = tipo==='EST'?'UNI 9994-1:2024':tipo==='REI'?'UNI EN 1634':tipo==='IDR'||tipo==='NSP'?'UNI 10779':tipo==='EM'?'UNI EN 50172':tipo==='RIV'||tipo==='CEN'?'UNI 11224':tipo==='SPK'?'UNI EN 12845':'D.M. 1/9/2021';
+    var norma = tipo==='EST'?'UNI 9994-1:2024':tipo==='REI'?'UNI EN 1634':tipo==='IDR'?'UNI EN 671-3:2009 — D.M. 1/9/2021':tipo==='NSP'?'UNI EN 671-1:2012 — D.M. 1/9/2021':tipo==='EM'?'UNI EN 50172':tipo==='RIV'||tipo==='CEN'?'UNI 11224':tipo==='SPK'?'UNI EN 12845':'D.M. 1/9/2021';
 
     // Aggiorna il presidio con tutti i nuovi dati
     var pres = PRESIDI_DATA.find(function(p){ return p.cod===cod; });
