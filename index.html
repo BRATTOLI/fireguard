@@ -7126,7 +7126,7 @@ function importaExcel(){
 
       // ── Salta se matricola già presente per questo cliente ────────────────
       if(matrREI && matrREI !== '—' && _matricoleEsistenti.has(matrREI.toLowerCase())){
-        _duplicatiSaltati++; contatore--; continue;
+        _duplicatiSaltati++; contatore--; return;
       }
       nuoviPresidi.push({
         cod:           cod,
@@ -7174,7 +7174,7 @@ function importaExcel(){
       var ubicazioneUES2 = String(row[21]||'').trim() || '—';
       // ── Salta se matricola già presente per questo cliente ────────────────
       if(numUES2 && _matricoleEsistenti.has(numUES2.toLowerCase())){
-        _duplicatiSaltati++; contatore--; continue;
+        _duplicatiSaltati++; contatore--; return;
       }
       nuoviPresidi.push({
         cod:            cod, tipo: 'UES', cli: nomeCliente,
