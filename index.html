@@ -9674,8 +9674,12 @@ function esportaWord(tipo, cliId){
       var nRow=0, nConf=0, nAnom=0, nNC=0, nND=0;
       var anomalieDettaglio = [];
 
-      // Ordina le righe per codice presidio (IMP001-001, IMP001-002, ...) — stesso ordine della scheda manutenzione
+      // Ordina le righe per numero progressivo presidio — stesso ordine della scheda manutenzione (dal primo all'ultimo)
       righe.sort(function(a,b){
+        // Prima prova per campo n (numero registro) crescente
+        var da = parseInt(a.n)||0, db = parseInt(b.n)||0;
+        if(da !== db) return da - db;
+        // Fallback: numero finale del codice presidio
         var na = parseInt((a.cod||'').split('-').pop())||0;
         var nb = parseInt((b.cod||'').split('-').pop())||0;
         return na - nb;
