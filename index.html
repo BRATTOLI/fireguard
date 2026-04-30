@@ -9445,8 +9445,23 @@ window.stampaSchedaUESPDF = stampaSchedaUESPDF;
 // Chiamata dal bottone "Salva nel registro" nel modal anteprima.
 // Esegue il salvataggio esplicito e mostra feedback visivo.
 function salvaDaAnteprima(){
+  // ── Cattura l'HTML esatto dell'anteprima e lo conserva nel registro ───────
+  var _inner = document.getElementById('anteprima-scheda-inner');
+  var _htmlConservato = _inner ? _inner.innerHTML : '';
+
   var n = salvaManutenzioneCompleta();
   if(!n || n === 0) return; // salvaManutenzioneCompleta ha già mostrato il messaggio di errore
+
+  // ── Associa l'HTML conservato a tutti i record della sessione appena salvata ──
+  if(_htmlConservato && REG_DATA.length > 0){
+    var _sessIdSalvato = REG_DATA[0].sessId;
+    if(_sessIdSalvato){
+      REG_DATA.forEach(function(r){
+        if(r.sessId === _sessIdSalvato) r.htmlConservato = _htmlConservato;
+      });
+      salvaLS();
+    }
+  }
   // Feedback visivo: nasconde il bottone, mostra "Salvato!"
   var btn = document.getElementById('btn-salva-registro');
   var lbl = document.getElementById('lbl-salva-ok');
@@ -9620,6 +9635,13 @@ function esportaWord(tipo, cliId){
     html = '';
     chiavi.forEach(function(key, sessIdx){
       var righe = sessioniR[key];
+      // ── Se esiste l'HTML conservato al momento del salvataggio, usalo direttamente ──
+      var _htmlConservato = righe[0] && righe[0].htmlConservato ? righe[0].htmlConservato : null;
+      if(_htmlConservato){
+        html += _htmlConservato;
+        if(sessIdx < chiavi.length - 1) html += '<div style="page-break-after:always"></div>';
+        return; // salta la rigenerazione
+      }
       var d     = righe[0].d;
       var tecnico = righe[0].tec || DITTA.rs;
       var cliObj  = CLI_DATA.find(function(c){ return c.id===(righe[0].cliId||cliId); }) ||
