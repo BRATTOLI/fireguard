@@ -2706,9 +2706,16 @@ tr:hover td{background:#fafafa}
           📋 Presidi di <span id="man-sem-nome-cli" style="color:var(--red)"></span>
           — <span id="man-sem-count" style="color:var(--blue)"></span>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <button class="btn sm grn" onclick="setEsitoTutti('ok')">✅ Tutti CONFORMI</button>
           <button class="btn sm amb" onclick="setEsitoTutti('anomalia')">⚠️ Tutti ANOMALIA</button>
+          <span style="display:flex;align-items:center;gap:4px;background:#f0f7ff;border:1.5px solid #b5d4f4;border-radius:8px;padding:4px 8px">
+            <span style="font-size:11px;font-weight:600;color:#0c3060">Kg:</span>
+            <input type="number" id="bulk-kg" placeholder="es. 6" min="0" step="0.5" style="width:52px;padding:3px 5px;font-size:11px;border:1px solid #b5d4f4;border-radius:5px;text-align:center">
+            <span style="font-size:11px;font-weight:600;color:#0c3060">KgTot:</span>
+            <input type="number" id="bulk-kgtot" placeholder="es. 9.5" min="0" step="0.5" style="width:58px;padding:3px 5px;font-size:11px;border:1px solid #b5d4f4;border-radius:5px;text-align:center">
+            <button class="btn sm blu" onclick="applicaKgATutti()" style="padding:3px 10px;font-size:11px">Applica a tutti ▶</button>
+          </span>
         </div>
       </div>
 
@@ -6794,6 +6801,26 @@ function colValKgTot(row){
   });
   if(candidates.length > 0) return String(row[candidates[0].idx]||'').trim() || '—';
   return '—';
+}
+
+// ── Applica Kg e KgTot a tutte le righe della scheda ────────────────────────
+function applicaKgATutti(){
+  var kg    = (document.getElementById('bulk-kg')||{value:''}).value.trim();
+  var kgtot = (document.getElementById('bulk-kgtot')||{value:''}).value.trim();
+  if(!kg && !kgtot){ notifica('⚠️ Inserisci almeno un valore Kg o KgTot'); return; }
+  var righe = document.querySelectorAll('#tbl-man-sem-body tr');
+  var n = 0;
+  righe.forEach(function(row){
+    if(kg){
+      var inp = row.querySelector('.man-peso');
+      if(inp && !inp.value) { inp.value = kg; n++; }
+    }
+    if(kgtot){
+      var inp2 = row.querySelector('.man-pesotot');
+      if(inp2 && !inp2.value) { inp2.value = kgtot; }
+    }
+  });
+  notifica('✅ Kg/KgTot applicati alle righe senza valore');
 }
 
 function importaExcel(){
