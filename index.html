@@ -4506,7 +4506,7 @@ function ristampaSchedaStorico(sessId) {
       '<th style="'+vthR+'">'+ gLR('Din. Pressione (N)') +'</th>'+
       '<th style="'+vthR+'">'+ gLR('Rientro scrocchi') +'</th>'+
       '<th style="'+hthR+'">Manutenzione eseguita</th>'+
-      '<th style="'+hthR+'">Prox. scad. semest.</th>'+
+      '<th style="'+vthR+'">Prox. scad. semest.</th>'+
       '<th style="'+hthR+'">Esito</th>'+
       '<th style="'+hthR+'">Note</th>'+
       '</tr></thead><tbody>';
@@ -4538,6 +4538,7 @@ function ristampaSchedaStorico(sessId) {
         '<td style="'+tdS+'">'+(pres.rei_din_press||'—')+'</td>'+
         '<td style="'+tdS+'">P.</td>'+
         '<td style="'+tdL+'">'+(r.op||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.prox||'—')+'</td>'+
         '<td style="'+tdS+';color:'+esC+';font-weight:bold">'+esV+'</td>'+
         '<td style="'+tdL+'">'+(r.note||'')+'</td>'+
         '</tr>';
@@ -4554,6 +4555,25 @@ function ristampaSchedaStorico(sessId) {
       '<td style="padding:5px;background:#fff3cd;color:#856404;font-weight:bold;font-size:8pt;border:1px solid #ccc">N.E. Non accessibili</td>'+
       '<td style="padding:5px;background:#fff3cd;color:#856404;font-weight:bold;text-align:center;border:1px solid #ccc">'+nNE+'</td>'+
       '</tr></table>';
+    // Note generali
+    var _noteREI = righe.find(function(r){ return r.noteScheda; });
+    var noteGREI = _noteREI ? (_noteREI.noteScheda||'') : '';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:8.5pt;margin-bottom:10px">'+
+      '<tr><td style="padding:4px 8px;border:1px solid #ccc;background:#f5f5f5;font-weight:bold;width:18%">Note generali</td>'+
+      '<td style="padding:6px 8px;border:1px solid #ccc">'+(noteGREI||'&nbsp;')+'</td></tr></table>';
+    // Nota bene
+    html += '<div style="border:1px solid #e74c3c;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:7pt;color:#333">'+
+      '<b style="color:#C0392B">&#9888; NOTA BENE &mdash; LIMITAZIONE DI RESPONSABILIT&Agrave;</b><br>'+
+      'La presente manutenzione si riferisce esclusivamente alle porte e uscite antincendio sopra elencate. '+
+      'I presidi contrassegnati come N.C. (NON CONFORME) presentano anomalie che ne compromettono la sicurezza d\'uso. '+
+      'Si diffida la Committenza dall\'utilizzo delle relative porte fino al ripristino delle condizioni di conformit&agrave;. '+
+      'Il presente rapporto, inviato tramite canali telematici (SDI/e-mail), si intende approvato in assenza di contestazioni scritte entro 5 giorni lavorativi.'+
+      '</div>';
+    // Dichiarazione di conformità
+    html += '<div style="border:1px solid #ccc;border-radius:4px;padding:8px 10px;margin-bottom:14px;font-size:7pt;color:#333">'+
+      '<b>DICHIARAZIONE DI CONFORMIT&Agrave; (D.M. 1/9/2021):</b> Il sottoscritto <b>'+tecnico+'</b>, '+
+      'in qualit&agrave; di Tecnico Manutentore Qualificato, dichiara che tutte le porte sopra elencate sono state controllate a regola d\'arte. '+
+      'Le porte con ESITO CONFORME risultano efficienti e pronte all\'uso.</div>';
     html += (function(tec){
     return '<table style="border-collapse:collapse;width:100%;margin-top:10px"><tr>'+
       '<td style="width:50%;padding:10px;border:1px solid #ccc;text-align:center;font-size:8pt">'+
@@ -9387,7 +9407,7 @@ function _buildHTMLSchedaREI(){
       '<td style="'+tdS+'">'+g('rei-din-pr')+'</td>' +
       '<td style="'+tdS+'">'+gs('rei-scrocchi')+'</td>' +
       '<td style="'+tdL+'">'+g('rei-manut')+'</td>' +
-      '<td style="'+tdS+'">'+g('man-prox')+'</td>' +
+      '<td style="'+tdS+'">'+fromISO(g('man-prox'))+'</td>' +
       '<td style="'+tdS+';color:'+esitoColor+';font-weight:bold">'+esitoTxt+'</td>' +
       '<td style="'+tdL+'">'+notaTxt+'</td>' +
       '</tr>';
