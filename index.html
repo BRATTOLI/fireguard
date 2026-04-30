@@ -7243,6 +7243,17 @@ function importaExcel(){
   ultimoImport.importato = true;
   ultimoImport.dataImport = new Date().toLocaleString('it-IT');
 
+  // ── Se cliente scelto dal dropdown, allinea il nome in tutti i presidi ────
+  if(clienteFinale){
+    nuoviPresidi.forEach(function(p){
+      p.cli   = clienteFinale.rs;
+      p.cliId = clienteFinale.id;
+      // Ricalcola codice presidio con prefisso corretto
+      var num = p.cod.split('-').pop();
+      p.cod = clienteFinale.id.replace('CLI-','IMP') + '-' + num;
+    });
+  }
+
   // Crea cliente se non esiste
   if(!clienteFinale){
     nuovoCliId = prossimoCLI();
