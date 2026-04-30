@@ -7073,6 +7073,12 @@ function importaExcel(){
   const nuoviPresidi = [];
   // nuovoCliId calcolato anticipatamente (usato nel loop anche quando il cliente esiste già)
   var nuovoCliId = null;
+  // ── Set matricole già presenti per questo cliente (evita duplicati) ────────
+  var _matricoleEsistenti = new Set(
+    presidiEsistenti.map(function(p){ return (p.matr||'').trim().toLowerCase(); })
+                    .filter(function(m){ return m && m !== '—'; })
+  );
+  var _duplicatiSaltati = 0;
 
   ultimoImport.righe.forEach(function(row){
     // Salta righe non valide per file REI
@@ -7118,6 +7124,10 @@ function importaExcel(){
       // Colonna ANTE (col 2)
       const anteREI = String(row[2]||'').trim() || '—';
 
+      // ── Salta se matricola già presente per questo cliente ────────────────
+      if(matrREI && matrREI !== '—' && _matricoleEsistenti.has(matrREI.toLowerCase())){
+        _duplicatiSaltati++; contatore--; continue;
+      }
       nuoviPresidi.push({
         cod:           cod,
         tipo:          'REI',
@@ -7162,6 +7172,10 @@ function importaExcel(){
       var anteUES2 = tipoAnteUES2.replace(/[AE]/i,'').trim() || '—';
       var tipoDispUES2 = tipoAnteUES2.includes('A') ? 'Antipanico' : tipoAnteUES2.includes('E') ? 'Emergenza' : '—';
       var ubicazioneUES2 = String(row[21]||'').trim() || '—';
+      // ── Salta se matricola già presente per questo cliente ────────────────
+      if(numUES2 && _matricoleEsistenti.has(numUES2.toLowerCase())){
+        _duplicatiSaltati++; contatore--; continue;
+      }
       nuoviPresidi.push({
         cod:            cod, tipo: 'UES', cli: nomeCliente,
         cliId:          cliId || nuovoCliId || '',
@@ -7190,6 +7204,11 @@ function importaExcel(){
       });
     } else {
       // ── ESTINTORE / altri presidi standard ────────────────────────────────
+      // Salta se matricola già presente per questo cliente
+      var _matrEst = (colVal(row,'matricol')||'').trim().toLowerCase();
+      if(_matrEst && _matrEst !== '—' && _matricoleEsistenti.has(_matrEst)){
+        _duplicatiSaltati++; contatore--; return;
+      }
       nuoviPresidi.push({
         cod:     cod,
         tipo:    tipoForzato,
@@ -7322,9 +7341,10 @@ function importaExcel(){
     _staSalvando = false;
   }
 
-  const msg = clienteEsistente
-    ? '✅ ' + nuoviPresidi.length + ' presidi aggiunti a: ' + clienteEsistente.rs
-    : '✅ Nuovo cliente creato: ' + nomeCliente + ' — ' + nuoviPresidi.length + ' presidi importati';
+  var _msgDup = _duplicatiSaltati > 0 ? ' ('+_duplicatiSaltati+' duplicati ignorati)' : '';
+  const msg = clienteFinale
+    ? '✅ ' + nuoviPresidi.length + ' presidi aggiunti a: ' + clienteFinale.rs + _msgDup
+    : '✅ Nuovo cliente creato: ' + nomeCliente + ' — ' + nuoviPresidi.length + ' presidi importati' + _msgDup;
   notifica(msg);
 }
 
