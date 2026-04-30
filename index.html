@@ -5642,16 +5642,13 @@ function renderStoricoPresidio() {
 // Helper: confronto nome cliente flessibile (gestisce piccole differenze di nome)
 function cliMatch(presidio, cliente){
   if(!presidio || !cliente) return false;
-  // ── Priorità assoluta: match per cliId ────────────────────────────────────
-  // Se il presidio ha un cliId, usa SOLO quello — evita falsi match per nome
-  if(presidio.cliId && cliente.id){
-    return presidio.cliId === cliente.id;
-  }
-  // ── Fallback solo se cliId mancante (dati vecchi senza ID) ────────────────
+  // ── Match per cliId (priorità) ────────────────────────────────────────────
+  if(presidio.cliId && cliente.id && presidio.cliId === cliente.id) return true;
+  // ── Fallback per nome esatto (cliId mancante o errato) ───────────────────
   const a = (presidio.cli||'').toLowerCase().trim();
   const b = (cliente.rs||'').toLowerCase().trim();
   if(!a || !b) return false;
-  return a === b; // solo match esatto sul nome, niente fuzzy
+  return a === b;
 }
 
 
@@ -7790,6 +7787,8 @@ function caricaPresidiManutenzione(){
     renderSchedaREI(presidiTipo, dataInt, cli);
   } else if(tipoPres === 'UES'){
     renderSchedaUES(presidiTipo, dataInt, cli);
+  } else if(tipoPres === 'IDR' || tipoPres === 'NSP'){
+    renderSchedaIDR(presidiTipo, dataInt, cli, tipoPres);
   } else {
     renderSchedaEstintori(presidiTipo, dataInt, cli);
   }
@@ -7797,6 +7796,171 @@ function caricaPresidiManutenzione(){
   if(cont)  cont.style.display = 'block';
   if(vuoto) vuoto.style.display = 'none';
 }
+
+
+// ── Genera HTML tabella PDF per scheda IDR/NSP ────────────────────────────────
+function generaSchedaIDRPDF(rows, thS, tdS, tdC, tipoPres){
+  var isNSP = tipoPres === 'NSP';
+  var html = '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6.5pt;margin-bottom:8px">' +
+    '<colgroup>' +
+    '<col style="width:2%"><col style="width:12%"><col style="width:7%">' +
+    '<col style="width:5%"><col style="width:5%"><col style="width:8%">' +
+    '<col style="width:4%"><col style="width:7%"><col style="width:10%">' +
+    '<col style="width:7%"><col style="width:7%"><col style="width:5%">' +
+    '<col style="width:5%"><col style="width:5%"><col style="width:6%"><col style="width:8%">' +
+    '</colgroup>' +
+    '<thead><tr>' +
+    '<th style="'+thS+'">N°</th>' +
+    '<th style="'+thS+'">Posizione</th>' +
+    '<th style="'+thS+'">'+(isNSP?'Tipo naspo':'Tipo idrante')+'</th>' +
+    '<th style="'+thS+'">Lung.(m)</th>' +
+    '<th style="'+thS+'">Diam.(mm)</th>' +
+    '<th style="'+thS+'">Costruttore</th>' +
+    '<th style="'+thS+'">Anno</th>' +
+    '<th style="'+thS+'">Matricola</th>' +
+    '<th style="'+thS+'">Tipo att.</th>' +
+    '<th style="'+thS+'">Mann.</th>' +
+    '<th style="'+thS+'">Prox. scad.</th>' +
+    '<th style="'+thS+'">Ult. coll.</th>' +
+    '<th style="'+thS+'">Scad. coll.</th>' +
+    '<th style="'+thS+'">Fine vita</th>' +
+    '<th style="'+thS+'">Esito</th>' +
+    '<th style="'+thS+'">Note</th>' +
+    '</tr></thead><tbody>';
+
+  var nConf=0, nNC=0, nNE=0, nRow=0;
+  rows.forEach(function(row, i){
+    var chk = row.querySelector('.man-chk');
+    if(chk && !chk.checked) return;
+    var g = function(cls){ var el=row.querySelector('.'+cls); return el?el.value||'—':'—'; };
+    var gs = function(cls){ var el=row.querySelector('.'+cls); if(!el||el.selectedIndex<0) return '—'; return el.options[el.selectedIndex].text||'—'; };
+    var esito = row.querySelector('.man-esito');
+    var esitoVal = esito ? esito.value : 'ok';
+    var esV = esitoVal==='ok'?'C.':esitoVal==='nc'?'N.C.':esitoVal==='nd'?'N.E.':'Anomalia';
+    var esC = esitoVal==='ok'?'#1a7a3a':esitoVal==='nc'?'#C0392B':'#856404';
+    if(esitoVal==='ok') nConf++; else if(esitoVal==='nc') nNC++; else nNE++;
+    nRow++;
+    var bg = i%2===0 ? '#fff' : '#fafafa';
+    var nota = row.querySelector('.man-note'); var notaTxt = nota ? nota.value||'' : '';
+    html += '<tr style="background:'+bg+'">' +
+      '<td style="'+tdC+'">'+(nRow)+'</td>' +
+      '<td style="'+tdS+'">'+g('man-ubi')+'</td>' +
+      '<td style="'+tdC+'">'+g('man-agente')+'</td>' +
+      '<td style="'+tdC+'">'+g('man-peso')+'</td>' +
+      '<td style="'+tdC+'">'+g('man-pesotot')+'</td>' +
+      '<td style="'+tdS+'">'+g('man-costr')+'</td>' +
+      '<td style="'+tdC+'">'+g('man-anno')+'</td>' +
+      '<td style="'+tdC+'">'+g('man-matr')+'</td>' +
+      '<td style="'+tdS+'">'+g('man-tipo-att')+'</td>' +
+      '<td style="'+tdC+'">'+fromISO(g('man-sem-data'))+'</td>' +
+      '<td style="'+tdC+'">'+fromISO(g('man-prox-data'))+'</td>' +
+      '<td style="'+tdC+'">'+g('man-rev-eff')+'</td>' +
+      '<td style="'+tdC+'">'+g('man-coll-eff')+'</td>' +
+      '<td style="'+tdC+'">'+g('man-vita')+'</td>' +
+      '<td style="'+tdC+';color:'+esC+';font-weight:bold">'+esV+'</td>' +
+      '<td style="'+tdS+'">'+notaTxt+'</td>' +
+      '</tr>';
+  });
+  html += '</tbody></table>';
+
+  // Riepilogo
+  var tot = nConf+nNC+nNE;
+  html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-bottom:12px"><tr>' +
+    '<td style="padding:5px;background:#1A4F8A;color:white;font-weight:bold;border:1px solid #ccc">Totale presidi verificati</td>' +
+    '<td style="padding:5px;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+tot+'</td>' +
+    '<td style="padding:5px;background:#e8f5e9;color:#1a7a3a;font-weight:bold;border:1px solid #ccc">✅ Conformi</td>' +
+    '<td style="padding:5px;color:#1a7a3a;font-weight:bold;text-align:center;border:1px solid #ccc">'+nConf+'</td>' +
+    '<td style="padding:5px;background:#fff3cd;color:#856404;font-weight:bold;border:1px solid #ccc">⚠️ Anomalie</td>' +
+    '<td style="padding:5px;color:#856404;font-weight:bold;text-align:center;border:1px solid #ccc">'+nNE+'</td>' +
+    '<td style="padding:5px;background:#fdecea;color:#C0392B;font-weight:bold;border:1px solid #ccc">❌ Non conf.</td>' +
+    '<td style="padding:5px;color:#C0392B;font-weight:bold;text-align:center;border:1px solid #ccc">'+nNC+'</td>' +
+    '</tr></table>';
+  return html;
+}
+window.generaSchedaIDRPDF = generaSchedaIDRPDF;
+
+// ── SCHEDA IDRANTI / NASPI ────────────────────────────────────────────────────
+function renderSchedaIDR(presidi, dataInt, cli, tipoPres){
+  var tbody = document.getElementById('tbl-man-sem-body');
+  var thead = document.querySelector('#tbl-man-sem thead tr');
+  if(!tbody) return;
+  var isNSP = tipoPres === 'NSP';
+
+  var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
+
+  // Intestazioni specifiche IDR/NSP
+  if(thead) thead.innerHTML =
+    '<th style="width:26px"><input type="checkbox" id="chk-all-pres" onchange="toggleTuttiPres(this)" checked=""></th>' +
+    '<th style="width:32px">N°</th>' +
+    '<th style="width:160px">Ubicazione / Posizione</th>' +
+    '<th style="width:90px">Tipo idrante</th>' +
+    '<th style="width:50px">Lung. (m)</th>' +
+    '<th style="width:60px">Diam. (mm)</th>' +
+    '<th style="width:90px">Costruttore</th>' +
+    '<th style="width:60px">Anno</th>' +
+    '<th style="width:80px">Matricola</th>' +
+    '<th style="width:160px">Tipo att. (norma)</th>' +
+    '<th style="width:110px">Man. eseguita</th>' +
+    '<th style="width:100px">Prox. scad.</th>' +
+    '<th style="width:76px">Ult. collaudo</th>' +
+    '<th style="width:76px">Scad. collaudo</th>' +
+    '<th style="width:76px">Fine vita</th>' +
+    '<th style="width:130px">Esito</th>' +
+    '<th style="width:160px">Anomalie / Note</th>';
+
+  var tipoAttOpts = [
+    ['Sorveglianza mensile IDR/NSP','Sorveglianza mensile (art.3.1)'],
+    ['Controllo periodico IDR/NSP','Controllo periodico semestrale (art.3.2)'],
+    ['Collaudo idrostatico IDR/NSP','Collaudo idrostatico 5 anni (art.3.3)'],
+    ['Manutenzione straordinaria IDR/NSP','Manutenzione straordinaria / Fine vita'],
+  ];
+
+  tbody.innerHTML = presidi.map(function(p, idx){
+    var _ultimoReg = REG_DATA.filter(function(r){ return r.cod===p.cod; })[0] || {};
+    // Lunghezza = p.peso (riutilizziamo il campo kg per lunghezza)
+    var lungh = (p.peso && p.peso!=='—') ? p.peso : (_ultimoReg.peso||'');
+    // Diametro = p.pesotot (riutilizziamo kgtot per diametro)
+    var diam  = (p.pesotot && p.pesotot!=='—') ? p.pesotot : (_ultimoReg.pesotot||'');
+    var costr = (p.costr && p.costr!=='—') ? p.costr : (_ultimoReg.costr||'');
+    var annop = (p.annop && p.annop!=='—') ? p.annop : '';
+    var matr  = (p.matr  && p.matr !=='—') ? p.matr  : '';
+    var vita  = (p.vita  && p.vita !=='—') ? p.vita  : '';
+    var coll  = (p.coll  && p.coll !=='—') ? p.coll  : '';
+    var scad  = (p.scad  && p.scad !=='—') ? p.scad  : '';
+    var dataPross = calcolaProssimaScadDaTipoAtt(dataInt, '4.5');
+
+    return '<tr id="man-row-'+idx+'" data-cod="'+p.cod+'" data-tipo="'+tipoPres+'" data-cli="'+(cli?cli.rs:'')+'">' +
+      '<td><input type="checkbox" class="man-chk" data-idx="'+idx+'" checked=""></td>' +
+      '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
+      '<td><input class="man-ubi" type="text" value="'+(p.ubi||'')+'" style="'+inpCss+'"></td>' +
+      '<td><input class="man-agente" type="text" value="'+(isNSP?'Naspo DN25':'Idrante UNI 45')+'" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input class="man-peso" type="number" value="'+lungh+'" placeholder="m" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input class="man-pesotot" type="number" value="'+diam+'" placeholder="mm" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input class="man-costr" type="text" value="'+costr+'" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input class="man-anno" type="number" value="'+annop+'" min="1960" max="2099" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input class="man-matr" type="text" value="'+matr+'" style="'+inpCss+';text-align:center"></td>' +
+      '<td><select class="man-tipo-att" style="'+inpCss+'">' +
+        tipoAttOpts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]==='Controllo periodico IDR/NSP'?' selected':'')+'>'+o[1]+'</option>'; }).join('') +
+      '</select></td>' +
+      '<td><input class="man-sem-data" type="date" value="'+dataInt+'" style="'+inpCss+'" onchange="aggiornaProssIDR(this)"></td>' +
+      '<td><input class="man-prox-data" type="date" value="'+dataPross+'" style="'+inpCss+'"></td>' +
+      '<td><input class="man-rev-eff" type="number" value="'+coll+'" min="1980" max="2099" placeholder="anno" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input class="man-coll-eff" type="number" value="'+(coll?String(parseInt(coll)+5):'')+'" min="1980" max="2099" placeholder="anno" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input class="man-vita" type="number" value="'+vita+'" min="1980" max="2099" placeholder="anno" style="'+inpCss+';text-align:center"></td>' +
+      '<td><select class="man-esito" style="'+inpCss+'"><option value="ok" selected>✅ Conforme</option><option value="exp">⚠️ Anomalia</option><option value="nc">❌ N.C.</option><option value="nd">⊘ N.D. in loco</option></select></td>' +
+      '<td><input class="man-note" type="text" placeholder="Note..." style="'+inpCss+'"></td>' +
+      '</tr>';
+  }).join('');
+}
+window.renderSchedaIDR = renderSchedaIDR;
+
+function aggiornaProssIDR(inputData){
+  var riga = inputData.closest('tr');
+  if(!riga) return;
+  var proxInput = riga.querySelector('.man-prox-data');
+  if(proxInput) proxInput.value = calcolaProssimaScadDaTipoAtt(inputData.value,'4.5');
+}
+window.aggiornaProssIDR = aggiornaProssIDR;
 
 
 // ── SCHEDA ESTINTORI ──────────────────────────────────────────────────────────
@@ -8516,6 +8680,10 @@ function stampaManutenzioneWord(){
     '</tr></table>';
 
   // ── Tabella presidi — replica fedele scheda PDF ───────────────────────────
+  if(_tipoPresAnteprima==='IDR'||_tipoPresAnteprima==='NSP'){
+    // ── SCHEDA IDRANTI / NASPI ─────────────────────────────────────────────
+    html += generaSchedaIDRPDF(rows, thS, tdS, tdC, _tipoPresAnteprima);
+  } else {
   html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6.5pt;margin-bottom:8px">' +
     '<colgroup>'+
     '<col style="width:2%"><col style="width:11%"><col style="width:5%"><col style="width:3%"><col style="width:3%">'+
@@ -9445,6 +9613,7 @@ function _buildHTMLSchedaREI(){
       '</tr>';
   });
   html += '</tbody></table>';
+  } // fine else EST
 
   // Riepilogo
   var totale = nConf+nNC+nNE;
