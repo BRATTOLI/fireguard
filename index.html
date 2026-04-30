@@ -4071,6 +4071,13 @@ La validità del presente cartellino cessa in caso di manomissione o manutenzion
 <div class="notif show" id="notif">✅ Dati ripristinati dal salvataggio — 5 clienti, 97 presidi</div>
 
 <script>
+// ── Fallback S garantisce navigazione anche se script precedente ha errori ──
+window.S = window.S || function(id){
+  document.querySelectorAll('[id^="sec-"]').forEach(function(s){ s.style.display='none'; });
+  var el = document.getElementById('sec-'+id);
+  if(el) el.style.display='block';
+  document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('active'); });
+};
 // ─── DATI ────────────────────────────────────────────────────────────────────
 var TODAY = new Date();
 document.getElementById('data-oggi').textContent = TODAY.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'long',year:'numeric'});
