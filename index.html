@@ -9991,6 +9991,8 @@ function salvaLS(){
       } : null
     };
     localStorage.setItem(LS_KEY, JSON.stringify(stato));
+    // ── Avvia anche salvataggio cloud con debounce ──
+    if (typeof scheduleAutoSave === 'function') scheduleAutoSave();
     return true;
   } catch(e){
     console.warn('Errore salvataggio LocalStorage:', e);
