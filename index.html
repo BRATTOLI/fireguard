@@ -4078,6 +4078,13 @@ window.S = window.S || function(id){
   if(el) el.style.display='block';
   document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('active'); });
 };
+// Fallback per funzioni che potrebbero non essere ancora definite
+window.renderRegistro = window.renderRegistro || function(){};
+window.renderClienti = window.renderClienti || function(){};
+window.renderPresidi = window.renderPresidi || function(){};
+window.buildDashboard = window.buildDashboard || function(){};
+window.renderBianche = window.renderBianche || function(){};
+window.renderDePaloTable = window.renderDePaloTable || function(){};
 // ─── DATI ────────────────────────────────────────────────────────────────────
 var TODAY = new Date();
 document.getElementById('data-oggi').textContent = TODAY.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'long',year:'numeric'});
