@@ -7846,7 +7846,7 @@ function renderSchedaREI(presidiREI, dataInt, cli){
   var tblWrap = document.querySelector('#tbl-man-sem');
   if(!tbody) return;
 
-  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:80px">N°/Pos.</th><th style="width:70px">Tipo REI</th><th style="width:40px">Ante</th><th style="width:70px">Costruttore</th><th style="width:70px">Anno</th><th style="width:80px">Matricola</th><th style="width:130px">Man. eseguita</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Chiudiporta</th><th style="width:60px">Coord.chius.</th><th style="width:55px">Gioco(mm)</th><th style="width:60px">Guar.term.</th><th style="width:60px">Guar.batt.</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:50px">Integr.</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
+  if(thead) thead.innerHTML = '<th style="width:26px"><input type="checkbox" onchange="toggleTuttiPres(this)" checked=""></th><th style="width:32px">N°</th><th style="width:80px">N°/Pos.</th><th style="width:70px">Tipo REI</th><th style="width:40px">Ante</th><th style="width:70px">Costruttore</th><th style="width:70px">Anno</th><th style="width:80px">Matricola</th><th style="width:130px">Man. eseguita</th><th style="width:110px">Prox. scad.</th><th style="width:50px">Viteria</th><th style="width:60px">Cerniere</th><th style="width:60px">Ossidaz.</th><th style="width:60px">Vernice</th><th style="width:50px">Marc.CE</th><th style="width:60px">Chiudiporta</th><th style="width:60px">Coord.chius.</th><th style="width:55px">Gioco(mm)</th><th style="width:60px">Guar.term.</th><th style="width:60px">Guar.batt.</th><th style="width:60px">Din.Lib(N)</th><th style="width:60px">Din.Pr.(N)</th><th style="width:60px">Scrocchi</th><th style="width:50px">Integr.</th><th style="width:130px">Manutenzione</th><th style="width:130px">Esito</th><th style="width:150px">Note</th>';
 
   var inpCss = 'width:100%;padding:3px 4px;border:1px solid #ddd;border-radius:4px;font-size:11px;box-sizing:border-box';
 
@@ -9345,6 +9345,7 @@ function _buildHTMLSchedaREI(){
     '<th style="'+vthREI+'">'+getLR('Din. Pressione (N)')+'</th>' +
     '<th style="'+vthREI+'">'+getLR('Rientro scrocchi')+'</th>' +
     '<th style="'+hthREI+'">Manutenzione eseguita</th>' +
+    '<th style="'+hthREI+'">Prox. scad. semest.</th>' +
     '<th style="'+hthREI+'">Esito</th>' +
     '<th style="'+hthREI+'">Note</th>' +
     '</tr></thead><tbody>';
