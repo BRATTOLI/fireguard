@@ -7455,8 +7455,8 @@ function renderSchedaEstintori(presidi, dataInt, cli){
       '<td style="text-align:center;font-weight:700">'+(idx+1)+'</td>' +
       '<td><input class="man-ubi" type="text" value="'+(p.ubi||'')+'\" style="'+inpCss+'"></td>' +
       '<td><input class="man-agente" type="text" value="'+agenteLbl+'" style="'+inpCss+'"></td>' +
-      '<td><input class="man-peso" type="number" value="'+(p.peso||'')+'" style="'+inpCss+';text-align:center"></td>' +
-      '<td><input class="man-pesotot" type="number" value="'+(p.pesotot||'')+'" style="'+inpCss+';text-align:center"><span style="font-size:9px;color:#aaa"> kg</span></td>' +
+      '<td><input class="man-peso" type="number" value="'+((p.peso&&p.peso!=='—')?p.peso:'')+'" style="'+inpCss+';text-align:center"></td>' +
+      '<td><input class="man-pesotot" type="number" value="'+((p.pesotot&&p.pesotot!=='—')?p.pesotot:'')+'" style="'+inpCss+';text-align:center"><span style="font-size:9px;color:#aaa"> kg</span></td>' +
       '<td><input class="man-costr" type="text" value="'+(p.costr||'')+'" style="'+inpCss+'"></td>' +
       '<td><input class="man-anno" type="number" value="'+(p.annop||'')+'" min="1960" max="2099" style="'+inpCss+';text-align:center" onchange="ricalcolaRigaAuto('+idx+')"></td>' +
       '<td><input class="man-matr" type="text" value="'+(p.matr||'')+'" style="'+inpCss+'"></td>' +
