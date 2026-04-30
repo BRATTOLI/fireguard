@@ -6782,11 +6782,38 @@ function mostraPreviewExcel(){
   document.getElementById('xl-count').textContent = ultimoImport.righe.length + ' righe — ' + xlHeaders.length + ' colonne';
 
   const ci = document.getElementById('xl-cliente-info');
-  if(ultimoImport.clienteRilevato){
-    ci.textContent = '📋 Cliente rilevato: ' + ultimoImport.clienteRilevato;
+  const _nomeRilev = (ultimoImport.clienteRilevato || '').trim();
+  // Verifica se esiste un cliente con nome esatto
+  const _matchEsatto = _nomeRilev ? CLI_DATA.find(function(c){
+    return c.rs.toLowerCase().trim() === _nomeRilev.toLowerCase().trim();
+  }) : null;
+
+  if(_nomeRilev){
+    if(_matchEsatto){
+      // Match esatto — mostra semplicemente il nome
+      ci.innerHTML = '<span style="color:#1b5e20">✅ Cliente trovato in anagrafica: <strong>' + _matchEsatto.rs + '</strong></span>';
+      _importCliIdScelto = _matchEsatto.id;
+    } else {
+      // Nessun match esatto — mostra dropdown per scelta manuale
+      var opzioni = '<option value="">➕ Crea nuovo cliente: ' + _nomeRilev + '</option>';
+      CLI_DATA.slice().sort(function(a,b){ return a.rs.localeCompare(b.rs,'it'); }).forEach(function(c){
+        opzioni += '<option value="' + c.id + '">' + c.rs + ' (' + c.id + ')</option>';
+      });
+      ci.innerHTML =
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<span style="color:#b45309;font-weight:600">⚠️ Cliente dal file: <strong>' + _nomeRilev + '</strong></span>' +
+        '<select id="import-cli-select" onchange="_importCliIdScelto=this.value||null" ' +
+        'style="padding:4px 8px;font-size:12px;border:1.5px solid #f59e0b;border-radius:6px;background:#fffbeb">' +
+        opzioni + '</select>' +
+        '<span style="font-size:11px;color:#78716c">← Scegli cliente esistente oppure lascia "Crea nuovo"</span>' +
+        '</div>';
+      _importCliIdScelto = null;
+    }
     ci.style.display = 'block';
   } else {
+    ci.innerHTML = '';
     ci.style.display = 'none';
+    _importCliIdScelto = null;
   }
 
   document.getElementById('xl-preview').style.display = 'block';
@@ -6872,33 +6899,27 @@ function importaExcel(){
   const nomeCliente = (ultimoImport.clienteRilevato || ultimoImport.nomeFile.replace(/\.[^.]+$/,'') || 'Cliente importato')
                         .substring(0, 60).trim();
 
-  // ── Cerca cliente esistente con match flessibile ──────────────────────────
+  // ── Cerca cliente esistente — SOLO match esatto sul nome ────────────────
+  // Il match fuzzy causava abbinamenti errati (es. tutti i "CONDOMINIO" insieme)
+  // L'utente sceglie esplicitamente tramite dropdown se il cliente non è esatto
   const clienteEsistente = CLI_DATA.find(function(c){
     const a = c.rs.toLowerCase().trim();
     const b = nomeCliente.toLowerCase().trim();
-    // Match esatto
-    if(a === b) return true;
-    // Match parziale (uno contiene l'altro)
-    if(a.includes(b) || b.includes(a)) return true;
-    // Match senza parole brevi (di, del, la, ecc.)
-    const stopwords = /\b(di|del|della|dei|delle|degli|il|lo|la|le|gli|i|un|una|uno|e|a|in|su|per|con|da)\b/g;
-    const aNorm = a.replace(stopwords,'').replace(/\s+/g,' ').trim();
-    const bNorm = b.replace(stopwords,'').replace(/\s+/g,' ').trim();
-    if(aNorm === bNorm) return true;
-    // Match per parole chiave significative (almeno 2 parole in comune di lunghezza > 4)
-    const aWords = aNorm.split(' ').filter(function(w){ return w.length > 4; });
-    const bWords = bNorm.split(' ').filter(function(w){ return w.length > 4; });
-    const comuni = aWords.filter(function(w){ return bWords.includes(w); });
-    return comuni.length >= 2;
+    return a === b;
   });
 
+  // ── Se non trovato esatto, controlla se l'utente ha selezionato un cliente dal dropdown ──
+  var _cliSelezionatoId = (typeof _importCliIdScelto !== 'undefined') ? _importCliIdScelto : null;
+  var clienteEsistenteForzato = _cliSelezionatoId ? CLI_DATA.find(function(c){ return c.id === _cliSelezionatoId; }) : null;
+  var clienteFinale = clienteEsistenteForzato || clienteEsistente || null;
+
   // ── Prefisso codice presidi ───────────────────────────────────────────────
-  const cliId = clienteEsistente ? clienteEsistente.id : null;
+  const cliId = clienteFinale ? clienteFinale.id : null;
   const prefisso = cliId ? cliId.replace('CLI-','IMP') : 'IMP000';
 
   // ── Calcola max numero presidio esistente per questo cliente ──────────────
   // per non sovrascrivere presidi già presenti
-  const presidiEsistenti = cliId ? PRESIDI_DATA.filter(function(p){
+  const presidiEsistenti = (clienteFinale ? clienteFinale.id : cliId) ? PRESIDI_DATA.filter(function(p){
     return p.cod.startsWith(prefisso);
   }) : [];
   const maxNum = presidiEsistenti.reduce(function(m,p){
@@ -7064,7 +7085,7 @@ function importaExcel(){
 
   // ── CONFERMA PRIMA DI SALVARE ─────────────────────────────────────────────
   const tipoStr = (TIPI.find(function(t){ return t.id === tipoForzato; }) || { n: tipoForzato }).n;
-  const cliStr  = clienteEsistente ? clienteEsistente.rs : nomeCliente + ' (NUOVO cliente)';
+  const cliStr  = clienteFinale ? clienteFinale.rs : nomeCliente + ' (NUOVO cliente)';
   const confMsg = '📋 Stai per importare:\n\n' +
     '• Tipo: ' + tipoStr + '\n' +
     '• Cliente: ' + cliStr + '\n' +
@@ -7082,7 +7103,7 @@ function importaExcel(){
   ultimoImport.dataImport = new Date().toLocaleString('it-IT');
 
   // Crea cliente se non esiste
-  if(!clienteEsistente){
+  if(!clienteFinale){
     nuovoCliId = prossimoCLI();
     CLI_DATA.push({
       id: nuovoCliId, rs: nomeCliente,
@@ -7095,7 +7116,7 @@ function importaExcel(){
       p.cli = nomeCliente;
     });
   } else {
-    clienteEsistente.presidi = (clienteEsistente.presidi || 0) + nuoviPresidi.length;
+    clienteFinale.presidi = (clienteFinale.presidi || 0) + nuoviPresidi.length;
   }
 
   // Blocca onSnapshot durante import per evitare sovrascrittura
@@ -7106,6 +7127,7 @@ function importaExcel(){
 
   // Reset selezione tipo import
   _tipoImportSelezionato = null;
+  _importCliIdScelto = null;
   if(typeof resetTipoImport === 'function') resetTipoImport();
 
   // Svuota anteprima
@@ -11143,6 +11165,7 @@ setTimeout(function() {
 // SELEZIONE TIPO PRESIDIO NELL'IMPORT EXCEL
 // ═══════════════════════════════════════════════════════════════════
 var _tipoImportSelezionato = null;
+var _importCliIdScelto = null; // cliente scelto manualmente dal dropdown import
 
 function selezionaTipoImport(tipo){
   _tipoImportSelezionato = tipo;
