@@ -4704,16 +4704,58 @@ function ristampaSchedaStorico(sessId) {
         '</tr>';
     });
     html+='</tbody></table>';
-    html += (function(tec){
-    return '<table style="border-collapse:collapse;width:100%;margin-top:10px"><tr>'+
-      '<td style="width:50%;padding:10px;border:1px solid #ccc;text-align:center;font-size:8pt">'+
-        '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>'+
-        (typeof TIMBRO_B64!=="undefined"&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>')+
-        '<div style="border-top:1px solid #999;margin-top:4px;padding-top:4px;font-size:8pt">'+tec+'</div>'+
-      '</td>'+
-      '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>'+
+
+    // ── Riepilogo conformità ───────────────────────────────────────────────
+    var tot = nConf + nNC + nNE;
+    var tdC='padding:5px;border:1px solid #ccc;font-weight:bold;text-align:center;font-size:8pt;';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-bottom:12px"><tr>'+
+      '<td style="'+tdC+'background:#1A4F8A;color:white">Totale presidi verificati</td>'+
+      '<td style="'+tdC+'font-size:11pt;color:#1A4F8A">'+tot+'</td>'+
+      '<td style="'+tdC+'background:#1E7E34;color:white">&#10003; Conformi</td>'+
+      '<td style="'+tdC+'font-size:11pt;color:#1E7E34">'+nConf+'</td>'+
+      '<td style="'+tdC+'background:#856404;color:white">&#9888; Anomalie</td>'+
+      '<td style="'+tdC+'font-size:11pt;color:#856404">'+nNE+'</td>'+
+      '<td style="'+tdC+'background:#C0392B;color:white">&#10007; Non conf.</td>'+
+      '<td style="'+tdC+'font-size:11pt;color:#C0392B">'+nNC+'</td>'+
       '</tr></table>';
-  })(tecnico);
+
+    // ── Note generali ──────────────────────────────────────────────────────
+    var _noteScheda = righe.find(function(r){ return r.noteScheda; });
+    var noteG = _noteScheda ? (_noteScheda.noteScheda||'') : '';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:8.5pt;margin-bottom:16px">'+
+      '<tr><td style="padding:4px 8px;border:1px solid #ccc;background:#f5f5f5;font-weight:bold;width:18%">Note generali</td>'+
+      '<td style="padding:6px 8px;border:1px solid #ccc;min-height:32px">'+(noteG||'&nbsp;')+'</td></tr></table>';
+
+    // ── Nota bene + Dichiarazione ──────────────────────────────────────────
+    html += '<table style="border-collapse:collapse;width:100%;border:1.5px solid #C0392B;font-size:7.5pt;background:#fffbf9;margin-bottom:8px"><tr><td style="padding:8px 12px">';
+    html += '<div style="font-weight:bold;color:#C0392B;margin-bottom:5px;font-size:8pt">&#9888; NOTA BENE &mdash; LIMITAZIONE DI RESPONSABILIT&Agrave; E ASSENZA REGISTRO</div>';
+    html += '<p style="margin:0 0 3px 0"><b>Ambito di Intervento:</b> La presente manutenzione si riferisce esclusivamente ai presidi sopra elencati oggetto del contratto. Qualsiasi altro dispositivo antincendio presente in loco (es. porte REI, idranti, naspi, maniglioni, lampade d&#39;emergenza), se non esplicitamente inserito nel presente rapporto, non &egrave; stato oggetto di controllo o manutenzione da parte della scrivente ditta.</p>';
+    html += '<p style="margin:0 0 3px 0"><b>Criticit&agrave; Altri Presidi:</b> Si segnala che eventuali sistemi non elencati potrebbero risultare non conformi o privi della documentazione tecnica obbligatoria, il cui reperimento resta a carico esclusivo del Responsabile dell&#39;Attivit&agrave;.</p>';
+    html += '<p style="margin:0 0 3px 0"><b>Assenza Registro e Referente:</b> Al momento dell&#39;intervento non &egrave; stato rinvenuto in loco il Registro Antincendio obbligatorio. Si attesta inoltre l&#39;assenza del Responsabile o di personale delegato disponibile alla firma.</p>';
+    html += '<p style="margin:0 0 3px 0"><b>Obblighi:</b> Il presente rapporto, inviato tramite canali telematici (SDI/e-mail), deve essere allegato al registro custodito in ufficio in attesa dell&#39;installazione di un porta-registro in loco. La conformit&agrave; (D.M. 1/9/2021) &egrave; garantita solo per le attrezzature con <b>ESITO CONFORME</b> sopra riportate.</p>';
+    html += '<p style="margin:0 0 3px 0"><b>Obblighi del Cliente:</b> Resta a carico del Cliente l&#39;obbligo di Sorveglianza mensile (Punto 4.3 UNI 9994-1) e l&#39;aggiornamento del Registro Antincendio.</p>';
+    html += '<p style="margin:0">Il presente rapporto, inviato allegato alla fattura tramite sistema SDI/e-mail, si intende approvato e accettato integralmente in assenza di contestazioni scritte entro 5 giorni lavorativi. <b>Ambiente:</b> Rifiuti gestiti secondo D.Lgs 152/06 (CER 160509 / 160505).</p>';
+    html += '</td></tr></table>';
+    html += '<table style="border-collapse:collapse;width:100%;border:1px solid #ccc;margin-bottom:8px"><tr><td style="padding:6px 10px;font-size:8pt">';
+    html += '<b>DICHIARAZIONE DI CONFORMIT&Agrave; (D.M. 1/9/2021):</b> Il sottoscritto '+tecnico+', in qualit&agrave; di Tecnico Manutentore Qualificato, dichiara che tutte le attrezzature sopra elencate sono state controllate a regola d&#39;arte. I presidi con <b>ESITO CONFORME</b> risultano efficienti e pronti all&#39;uso.';
+    html += '</td></tr></table>';
+
+    // ── Timbro e firma ─────────────────────────────────────────────────────
+    html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-top:8px"><tr>'+
+      '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">'+
+      '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>'+
+      (typeof TIMBRO_B64!=='undefined'&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>')+
+      '<b>'+(DITTA.rs||'')+'</b><br><span style="font-size:8pt">'+tecnico+'</span>'+
+      '</td>'+
+      '<td style="width:4%"></td>'+
+      '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">'+
+      '<div style="font-size:8pt;color:#555;margin-bottom:30px">Firma per ricevuta verbale &mdash; Responsabile cliente</div>'+
+      '<b>'+(cli.rs||'')+'</b><br><span style="font-size:8pt">'+(cli.ref||'')+'</span>'+
+      '</td>'+
+      '</tr></table>';
+    html += '<p style="font-size:7pt;color:#aaa;margin-top:8px;text-align:center">Manutenzione eseguita secondo Norma UNI 9994-1:2024 &mdash; D.M. 1 Settembre 2021</p>';
+    html += '<p style="font-size:7pt;color:#aaa;text-align:center">Generato da '+(DITTA.sw||'3E Antincendio')+' &mdash; '+new Date().toLocaleDateString('it-IT')+'</p>';
+
     scaricaSchemaLandscapePDF(html, 'Scheda_Estintori_'+nomeBase+'_'+dataInt.replace(/\//g,'-'));
   }
   notifica('✅ PDF scheda scaricato!');
