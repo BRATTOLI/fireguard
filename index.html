@@ -17,12 +17,12 @@ window.notifica = function(msg, tipo){
   else { console.log(msg); }
 };
 window.S = function(id){
-  document.querySelectorAll('[id^="sec-"]').forEach(function(s){ s.style.display='none'; });
-  var el = document.getElementById('sec-'+id);
-  if(el){ el.style.display='block'; }
+  document.querySelectorAll('.sec').forEach(function(s){ s.classList.remove('active'); });
+  var el = document.getElementById(id);
+  if(el){ el.classList.add('active'); }
   document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('active'); });
-  var btn = document.querySelector('[onclick*="S(\'' + id + '\')"]');
-  if(btn) btn.classList.add('active');
+  var ids=['dashboard','clienti','presidi','schede','import','registro','scadenze','qrcode','schede-blank','rapporti','manuale','ditta','targhette'];
+  var i=ids.indexOf(id); if(i>=0) document.querySelectorAll('.nb')[i].classList.add('active');
 };
 ['renderRegistro','renderClienti','renderPresidi','buildDashboard','renderBianche',
  'renderDePaloTable','salvaLS','aggiornaSelectClienti','ricalcolaFineVitaTutti',
@@ -4094,9 +4094,9 @@ La validità del presente cartellino cessa in caso di manomissione o manutenzion
 <script>
 // ── Fallback S garantisce navigazione anche se script precedente ha errori ──
 window.S = window.S || function(id){
-  document.querySelectorAll('[id^="sec-"]').forEach(function(s){ s.style.display='none'; });
-  var el = document.getElementById('sec-'+id);
-  if(el) el.style.display='block';
+  document.querySelectorAll('.sec').forEach(function(s){ s.classList.remove('active'); });
+  var el = document.getElementById(id);
+  if(el) el.classList.add('active');
   document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('active'); });
 };
 // Fallback per funzioni che potrebbero non essere ancora definite
