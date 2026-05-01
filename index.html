@@ -11268,50 +11268,39 @@ function eseguiSalvatagioCloud() {
     var registro = _cleanUndef(typeof REG_DATA     !== 'undefined' ? REG_DATA     : []);
 
     if (migratoFlag) {
-        // ── MODALITÀ COLLEZIONI SEPARATE ───────────────────────────────────
-        // Scrive ogni documento nella sua collezione
-        var batch = db.batch();
-        var count = 0;
+        // ── MODALITÀ COLLEZIONI SEPARATE — batch multipli da 490 ────────────
+        var ops = [];
+        clienti.forEach(function(c) { if(c.id)  ops.push({col:'clienti',    id:c.id,        data:c}); });
+        presidi.forEach(function(p) { if(p.cod) ops.push({col:'presidi',    id:p.cod,       data:p}); });
+        registro.forEach(function(r){ if(r.n)   ops.push({col:'interventi', id:String(r.n), data:r}); });
 
-        function flushBatch(b) { return b.commit(); }
+        console.log('💾 Salvataggio ' + ops.length + ' documenti su collezioni...');
 
-        clienti.forEach(function(c) {
-            if (!c.id) return;
-            batch.set(db.collection('clienti').doc(c.id), c);
-            count++;
-        });
-        presidi.forEach(function(p) {
-            if (!p.cod) return;
-            batch.set(db.collection('presidi').doc(p.cod), p);
-            count++;
-        });
-        registro.forEach(function(r) {
-            if (!r.n) return;
-            batch.set(db.collection('interventi').doc(String(r.n)), r);
-            count++;
-        });
-
-        // Se troppi documenti, spezza in chunk da 490
-        if (count > 490) {
-            // Fallback al documento principale per sicurezza
-            db.collection('database').doc('principale').set({
-                clienti: clienti, presidi: presidi, registro: registro,
-                ditta:   _cleanUndef(typeof DITTA   !== 'undefined' ? DITTA   : {}),
-                tecnici: _cleanUndef(typeof TECNICI !== 'undefined' ? TECNICI : []),
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(function() {
-                _staSalvando = false;
-                setCloudStatus('ok');
-            }).catch(function(e) { _staSalvando = false; setCloudStatus('error'); });
-            return;
+        // Spezza in batch da 490 ed eseguili in sequenza
+        var batches = [];
+        for (var i = 0; i < ops.length; i += 490) {
+            var chunk = ops.slice(i, i + 490);
+            var b = db.batch();
+            chunk.forEach(function(op) {
+                b.set(db.collection(op.col).doc(op.id), op.data);
+            });
+            batches.push(b);
         }
 
-        batch.commit()
-            .then(function() {
+        // Esegui tutti i batch in sequenza
+        var promise = Promise.resolve();
+        batches.forEach(function(b, idx) {
+            promise = promise.then(function() {
+                return b.commit().then(function() {
+                    console.log('✅ Batch ' + (idx+1) + '/' + batches.length + ' completato');
+                });
+            });
+        });
+
+        promise.then(function() {
                 _staSalvando = false;
-                _ignoraSnapshot = 3; // ignora i prossimi 3 snapshot (eco del salvataggio)
                 setCloudStatus('ok');
-                console.log('☁️ Salvato su collezioni: ' + count + ' documenti.');
+                console.log('☁️ Salvato su collezioni: ' + ops.length + ' documenti totali.');
             })
             .catch(function(err) {
                 _staSalvando = false;
