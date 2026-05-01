@@ -4098,6 +4098,8 @@ window.S = window.S || function(id){
   var el = document.getElementById(id);
   if(el) el.classList.add('active');
   document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('active'); });
+  var ids=['dashboard','clienti','presidi','schede','import','registro','scadenze','qrcode','schede-blank','rapporti','manuale','ditta','targhette'];
+  var i=ids.indexOf(id); if(i>=0) document.querySelectorAll('.nb')[i].classList.add('active');
 };
 // Fallback per funzioni che potrebbero non essere ancora definite
 window.renderRegistro = window.renderRegistro || function(){};
@@ -4997,10 +4999,8 @@ function renderStoricoCliente(){
     var _isUES = _tipoSess.includes('UES') || _tipoPres==='UES' || _codSess.includes('UES') ||
                  _opSess.includes('uscita') || _opSess.includes('ues');
     var _isREIUES = _isREI || _isUES;
-    var _isIDR = _tipoSess.includes('IDR') || _tipoPres==='IDR' || _codSess.includes('IDR') ||
-                 _opSess.includes('idrante') || _opSess.includes('idr');
-    var _isNSP = _tipoSess.includes('NSP') || _tipoPres==='NSP' || _codSess.includes('NSP') ||
-                 _opSess.includes('naspo') || _opSess.includes('nsp');
+    var _isIDR = _tipoSess.includes('IDR') || _tipoPres==='IDR' || _codSess.includes('IDR') || _opSess.includes('idrante');
+    var _isNSP = _tipoSess.includes('NSP') || _tipoPres==='NSP' || _codSess.includes('NSP') || _opSess.includes('naspo');
 
     var righeHtml = righe.map(function(r){
       var pres    = PRESIDI_DATA.find(function(p){ return p.cod === r.cod; }) || {};
@@ -5358,15 +5358,7 @@ function salvaCliente(){
   closeM('mCli');
   renderClienti();
   buildDashboard();
-  // Blocca onSnapshot durante la finestra di rischio (salvataggio in corso)
-  // e salva immediatamente su Firebase senza aspettare i 2s del debounce
-  _staSalvando = true;
   salvaLS();
-  // Forza salvataggio cloud immediato (sovrascrive il timer da 2s)
-  if(typeof _autoSaveTimer !== 'undefined' && _autoSaveTimer){ clearTimeout(_autoSaveTimer); _autoSaveTimer = null; }
-  setTimeout(function(){
-    eseguiSalvatagioCloud();
-  }, 100);
 }
 
 // Elimina cliente e tutti i suoi presidi
@@ -6737,10 +6729,7 @@ function salvaPresidio(){
   renderPresidi(_filtroTipoAttivo);
   renderClienti();
   buildDashboard();
-  _staSalvando = true;
   salvaLS();
-  if(typeof _autoSaveTimer !== 'undefined' && _autoSaveTimer){ clearTimeout(_autoSaveTimer); _autoSaveTimer = null; }
-  setTimeout(function(){ eseguiSalvatagioCloud(); }, 100);
   aggiornaLSBadge();
   notifica('✅ Presidio "'+cod+'" aggiunto per '+nomeCliente+'!');
 }
@@ -8925,7 +8914,7 @@ function stampaManutenzioneWord(){
     '<th style="'+thS+'">Note</th>' +
     '</tr></thead><tbody>';
 
-  // rows già definita sopra
+  var rows   = document.querySelectorAll('#tbl-man-sem-body tr');
   var nRow   = 0;
   var nConf  = 0; var nAnom = 0; var nNC = 0; var nND = 0;
   var anomalieDettaglio = [];
@@ -9104,7 +9093,6 @@ function stampaManutenzioneWord(){
   html += '<p style="font-size:7pt;color:#aaa;margin-top:8px;text-align:center">Manutenzione eseguita secondo Norma '+_normaAnteprima+' — Una copia del presente verbale viene conservata nel registro digitale accessibile tramite QR Code</p>';
   html += '<p style="font-size:7pt;color:#aaa;text-align:center">Generato da '+DITTA.sw+' — '+TODAY.toLocaleDateString("it-IT")+'</p>';
 
-  } // fine else - da qui: comune a tutti i tipi
   var dataFileStr = (dataEl && dataEl.value) ? fromISO(dataEl.value).replace(/\//g,'-') : TODAY.toLocaleDateString('it-IT').replace(/\//g,'-');
   var nomeFile = 'Scheda_manutenzione_'+cli.rs.replace(/\s+/g,'_')+'_'+dataFileStr;
   scaricaDocLandscape(html, nomeFile);
@@ -9519,7 +9507,7 @@ function S(id){
   if(id==='registro'){ aggiornaSelectManutenzione(); renderRegistro(); }
   if(id==='targhette') setTimeout(tgCarica, 300); // ricarica quando entri
 }
-window.S = S; // override del fallback iniziale — questa e' la versione corretta
+window.S = S; // override del fallback iniziale
 
 function azzeraRegistro(){
   if(!confirm('Sei sicuro? Tutte le schede semestrali verranno cancellate.\nClienti e presidi rimangono intatti.\n\nOperazione non reversibile.')) return;
@@ -9830,6 +9818,7 @@ function _buildHTMLSchedaREI(){
       '</tr>';
   });
   html += '</tbody></table>';
+  } // fine else EST
 
   // Riepilogo
   var totale = nConf+nNC+nNE;
@@ -10752,11 +10741,6 @@ function caricaTimbro(input){
     localStorage.setItem('fireguard_timbro', e.target.result);
     aggiornaPreviewTimbro();
     notifica('✅ Timbro caricato — verrà applicato alle schede manutenzione');
-    // Salva timbro anche su Firebase (documento principale)
-    if(typeof db !== 'undefined' && typeof _autoSaveAbilitato !== 'undefined' && _autoSaveAbilitato){
-      db.collection('database').doc('principale').set({ timbro: e.target.result }, { merge: true })
-        .catch(function(e){ console.warn('Errore salvataggio timbro Firebase:', e); });
-    }
   };
   reader.readAsDataURL(input.files[0]);
 }
@@ -10766,11 +10750,6 @@ function rimuoviTimbro(){
   localStorage.removeItem('fireguard_timbro');
   aggiornaPreviewTimbro();
   notifica('🗑 Timbro rimosso');
-  // Rimuovi timbro anche da Firebase
-  if(typeof db !== 'undefined' && typeof _autoSaveAbilitato !== 'undefined' && _autoSaveAbilitato){
-    db.collection('database').doc('principale').set({ timbro: '' }, { merge: true })
-      .catch(function(e){ console.warn('Errore rimozione timbro Firebase:', e); });
-  }
 }
 
 function aggiornaPreviewTimbro(){
@@ -10832,32 +10811,31 @@ function caricaLS(){
     const stato = JSON.parse(raw);
     if(!stato || !stato.versione) return false;
 
-    // Carica sempre da localStorage come dati iniziali
-    // Firebase sovrascriverà con i dati aggiornati dopo il login
-    // In questo modo il software funziona anche quando Firebase è offline
-    if(true){
-      // Carica sempre da localStorage (Firebase aggiornerà dopo)
-      if(Array.isArray(stato.clienti) && stato.clienti.length > 0){
-        CLI_DATA.length = 0;
-        stato.clienti
-          .filter(c => !CLIENTI_DEMO_DA_PULIRE.includes(c.rs))
-          .forEach(c => CLI_DATA.push(c));
-      }
-      if(Array.isArray(stato.presidi) && stato.presidi.length > 0){
-        PRESIDI_DATA.length = 0;
-        stato.presidi
-          .filter(p => CLI_DATA.some(c => c.rs === p.cli) || !PRESIDI_DEMO_CLI.includes(p.cli))
-          .filter(p => !PRESIDI_DEMO_CLI.includes(p.cli))
-          .forEach(p => PRESIDI_DATA.push(p));
-      }
-      if(Array.isArray(stato.registro) && stato.registro.length > 0){
-        REG_DATA.length = 0;
-        stato.registro
-          .filter(r => !CLIENTI_DEMO_DA_PULIRE.includes(r.cli) && !PRESIDI_DEMO_CLI.includes(r.cli))
-          .forEach(r => REG_DATA.push(r));
-      }
+    // ── Ripristina clienti filtrando quelli demo ──────────────────────────
+    if(Array.isArray(stato.clienti) && stato.clienti.length > 0){
+      CLI_DATA.length = 0;
+      stato.clienti
+        .filter(c => !CLIENTI_DEMO_DA_PULIRE.includes(c.rs))
+        .forEach(c => CLI_DATA.push(c));
     }
-    // ── Ripristina ditta e tecnici (sempre — non sono in Firebase collezioni)
+    // ── Ripristina presidi filtrando quelli collegati a clienti demo ──────
+    if(Array.isArray(stato.presidi) && stato.presidi.length > 0){
+      PRESIDI_DATA.length = 0;
+      // Tieni solo i presidi associati a clienti NON demo (clienti reali)
+      // I clienti reali sono già caricati in CLI_DATA sopra
+      stato.presidi
+        .filter(p => CLI_DATA.some(c => c.rs === p.cli) || !PRESIDI_DEMO_CLI.includes(p.cli))
+        .filter(p => !PRESIDI_DEMO_CLI.includes(p.cli))
+        .forEach(p => PRESIDI_DATA.push(p));
+    }
+    // ── Ripristina registro filtrando interventi demo ─────────────────────
+    if(Array.isArray(stato.registro) && stato.registro.length > 0){
+      REG_DATA.length = 0;
+      stato.registro
+        .filter(r => !CLIENTI_DEMO_DA_PULIRE.includes(r.cli) && !PRESIDI_DEMO_CLI.includes(r.cli))
+        .forEach(r => REG_DATA.push(r));
+    }
+    // ── Ripristina ditta e tecnici ─────────────────────────────────────────
     if(stato.ditta) Object.assign(DITTA, stato.ditta);
     if(Array.isArray(stato.tecnici)){ TECNICI.length=0; stato.tecnici.forEach(function(t){TECNICI.push(t);}); }
     // ── Ripristina ultimo import ───────────────────────────────────────────
@@ -11045,7 +11023,7 @@ function scaricaFileSoftware() {
 
 // ─── SISTEMA SNAPSHOT / UNDO (Punto 3) ───────────────────────────────────────
 // _cronologiaSnapshot dichiarato globalmente in cima
-var _MAX_SNAPSHOT = 5; // ridotto da 10: ogni snapshot pesa ~300KB, 5 = max 1.5MB in localStorage
+var _MAX_SNAPSHOT = 10;
 
 function salvaSnapshot(descrizione) {
   if (typeof _cronologiaSnapshot === 'undefined') return;
@@ -11119,6 +11097,7 @@ function aggiornaFileSoftware(){ salvaLS(); notifica('💾 Dati salvati.'); }
 function salvaSnapshotVersione(){ /* rimosso */ }
 function mostraCronologia(){ /* rimosso */ }
 function svuotaCronologia(){ /* rimosso */ }
+function ripristinaSnapshot(){ /* rimosso */ }
 </script>
 
 
@@ -11229,20 +11208,15 @@ function setCloudStatus(stato) {
 var _autoSaveTimer = null;
 var _autoSaveAbilitato = false; // si attiva solo dopo il login
 var _staSalvando = false; // blocca onSnapshot durante il salvataggio
-var _ignoraSnapshot = 0; // numero di snapshot da ignorare dopo salvataggio
 
 function scheduleAutoSave() {
-    if (!_autoSaveAbilitato) { console.warn('scheduleAutoSave: autoSave non abilitato'); return; }
+    if (!_autoSaveAbilitato) return;
     setCloudStatus('pending');
     if (_autoSaveTimer) clearTimeout(_autoSaveTimer);
-    console.log('⏱️ Auto-save programmato tra 2s...');
     _autoSaveTimer = setTimeout(function() {
-        console.log('💾 Eseguo salvataggio cloud...');
         eseguiSalvatagioCloud();
     }, 2000);
 }
-window.scheduleAutoSave = scheduleAutoSave;
-window.eseguiSalvatagioCloud = eseguiSalvatagioCloud;
 
 // Rimuove ricorsivamente tutti i campi undefined (Firestore non li accetta)
 function _cleanUndef(obj) {
@@ -11269,39 +11243,47 @@ function eseguiSalvatagioCloud() {
     var registro = _cleanUndef(typeof REG_DATA     !== 'undefined' ? REG_DATA     : []);
 
     if (migratoFlag) {
-        // ── MODALITÀ COLLEZIONI SEPARATE — batch multipli da 490 ────────────
-        var ops = [];
-        clienti.forEach(function(c) { if(c.id)  ops.push({col:'clienti',    id:c.id,        data:c}); });
-        presidi.forEach(function(p) { if(p.cod) ops.push({col:'presidi',    id:p.cod,       data:p}); });
-        registro.forEach(function(r){ if(r.n)   ops.push({col:'interventi', id:String(r.n), data:r}); });
+        // ── MODALITÀ COLLEZIONI SEPARATE ───────────────────────────────────
+        // Scrive ogni documento nella sua collezione
+        var batch = db.batch();
+        var count = 0;
 
-        console.log('💾 Salvataggio ' + ops.length + ' documenti su collezioni...');
+        function flushBatch(b) { return b.commit(); }
 
-        // Spezza in batch da 490 ed eseguili in sequenza
-        var batches = [];
-        for (var i = 0; i < ops.length; i += 490) {
-            var chunk = ops.slice(i, i + 490);
-            var b = db.batch();
-            chunk.forEach(function(op) {
-                b.set(db.collection(op.col).doc(op.id), op.data);
-            });
-            batches.push(b);
-        }
-
-        // Esegui tutti i batch in sequenza
-        var promise = Promise.resolve();
-        batches.forEach(function(b, idx) {
-            promise = promise.then(function() {
-                return b.commit().then(function() {
-                    console.log('✅ Batch ' + (idx+1) + '/' + batches.length + ' completato');
-                });
-            });
+        clienti.forEach(function(c) {
+            if (!c.id) return;
+            batch.set(db.collection('clienti').doc(c.id), c);
+            count++;
+        });
+        presidi.forEach(function(p) {
+            if (!p.cod) return;
+            batch.set(db.collection('presidi').doc(p.cod), p);
+            count++;
+        });
+        registro.forEach(function(r) {
+            if (!r.n) return;
+            batch.set(db.collection('interventi').doc(String(r.n)), r);
+            count++;
         });
 
-        promise.then(function() {
+        // Se troppi documenti, spezza in chunk da 490
+        if (count > 490) {
+            // Fallback al documento principale per sicurezza
+            db.collection('database').doc('principale').set({
+                clienti: clienti, presidi: presidi, registro: registro,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(function() {
                 _staSalvando = false;
                 setCloudStatus('ok');
-                console.log('☁️ Salvato su collezioni: ' + ops.length + ' documenti totali.');
+            }).catch(function(e) { _staSalvando = false; setCloudStatus('error'); });
+            return;
+        }
+
+        batch.commit()
+            .then(function() {
+                _staSalvando = false;
+                setCloudStatus('ok');
+                console.log('☁️ Salvato su collezioni: ' + count + ' documenti.');
             })
             .catch(function(err) {
                 _staSalvando = false;
@@ -11318,15 +11300,11 @@ function eseguiSalvatagioCloud() {
             clienti:  clienti,
             presidi:  presidi,
             registro: registro,
-            ditta:    _cleanUndef(typeof DITTA       !== 'undefined' ? DITTA       : {}),
-            tecnici:  _cleanUndef(typeof TECNICI     !== 'undefined' ? TECNICI     : []),
-            timbro:   (typeof window.TIMBRO_B64 !== 'undefined' && window.TIMBRO_B64) ? window.TIMBRO_B64 : '',
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
         db.collection('database').doc('principale').set(data)
             .then(function() {
                 _staSalvando = false;
-                _ignoraSnapshot = 1; // ignora il prossimo snapshot (eco del salvataggio)
                 setCloudStatus('ok');
                 console.log('☁️ Auto-save Firebase completato.');
             })
@@ -11352,32 +11330,10 @@ window.salvaLS = function() {
             tecnici:  typeof TECNICI      !== 'undefined' ? TECNICI      : []
         };
         localStorage.setItem('fireguard_3e_v3', JSON.stringify(stato));
-    } catch(e) { console.warn('Errore localStorage:', e); if(e && e.name==='QuotaExceededError') { if(typeof notifica==='function') notifica('⚠️ Spazio locale esaurito — dati salvati solo su cloud'); } }
+    } catch(e) { console.warn('Errore localStorage:', e); }
     scheduleAutoSave();
     return true;
 };
-
-// --- FIX 1: Salva prima di chiudere il browser ---
-window.onbeforeunload = function() {
-    try { salvaLS(); } catch(e) {}
-    // Non ritorniamo stringa: nessun popup di conferma, solo salvataggio silenzioso
-};
-
-// --- FIX 2: Blocca onSnapshot mentre l'utente modifica attivamente ---
-var _staModificando = false;
-(function() {
-    document.addEventListener('focusin', function(e) {
-        if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
-            _staModificando = true;
-        }
-    });
-    document.addEventListener('focusout', function(e) {
-        if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
-            // Piccolo ritardo: permette al salvataggio di completarsi prima di sbloccare
-            setTimeout(function() { _staModificando = false; }, 500);
-        }
-    });
-})();
 
 // --- GESTIONE AUTENTICAZIONE ---
 var auth = firebase.auth();
@@ -11418,150 +11374,89 @@ function avviaSincronizzazione() {
     if (unsubscribe) unsubscribe();
     setCloudStatus('saving');
 
-    // Controlla flag migrazione SU FIREBASE (non solo localStorage)
-    // Questo garantisce che tutti i browser/dispositivi usino la stessa modalità
-    db.collection('database').doc('flags').get().then(function(flagDoc) {
-        var migratoFirebase = flagDoc.exists && flagDoc.data().migrato_collezioni === true;
-        var migratoLocale   = localStorage.getItem('fg_migrato_collezioni') === 'true';
-        var migratoFlag     = migratoFirebase || migratoLocale;
-        // Sincronizza il flag locale con quello Firebase
-        if (migratoFirebase && !migratoLocale) {
-            localStorage.setItem('fg_migrato_collezioni', 'true');
-    // Salva flag migrazione anche su Firebase per sincronizzare tutti i browser
-    db.collection('database').doc('flags').set({ migrato_collezioni: true }, { merge: true })
-      .catch(function(e){ console.warn('Flag migrazione Firebase:', e); });
-            console.log('🔄 Flag migrazione sincronizzato da Firebase');
-        }
-        if (migratoFlag) {
-            _avviaSincronizzazioneCollezioni();
-        } else {
-            _avviaSincronizzazionePrincipale();
-        }
-    }).catch(function() {
-        // Se Firebase non risponde, usa localStorage
-        var migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
-        if (migratoFlag) { _avviaSincronizzazioneCollezioni(); }
-        else { _avviaSincronizzazionePrincipale(); }
-    });
-}
+    var migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
 
-function _avviaSincronizzazionePrincipale() {
-    // get() one-shot — NO onSnapshot
-    db.collection('database').doc('principale').get().then(function(doc) {
-        if (doc.exists) {
-            var cloudData = doc.data();
-            var _c = cloudData.clienti  || []; CLI_DATA.length = 0;     _c.forEach(function(x){ CLI_DATA.push(x); });
-            var _p = cloudData.presidi  || []; PRESIDI_DATA.length = 0; _p.forEach(function(x){ PRESIDI_DATA.push(x); });
-            var _r = cloudData.registro || []; REG_DATA.length = 0;     _r.forEach(function(x){ REG_DATA.push(x); });
-            if(cloudData.ditta   && Object.keys(cloudData.ditta).length)   { if(typeof DITTA   !== 'undefined') Object.assign(DITTA,   cloudData.ditta); }
-            if(cloudData.tecnici && cloudData.tecnici.length)               { if(typeof TECNICI !== 'undefined'){ TECNICI.length=0; cloudData.tecnici.forEach(function(t){ TECNICI.push(t); }); } }
-            if(cloudData.timbro && cloudData.timbro.length > 10 && !localStorage.getItem('fireguard_timbro')){
-                window.TIMBRO_B64 = cloudData.timbro;
-                localStorage.setItem('fireguard_timbro', cloudData.timbro);
-                if(typeof aggiornaPreviewTimbro === 'function') aggiornaPreviewTimbro();
-            }
-            if(!ultimoImport || !ultimoImport.righe || !ultimoImport.righe.length){
-                try{
+    if (migratoFlag) {
+        // Leggi dalle 3 collezioni separate
+        _avviaSincronizzazioneCollezioni();
+    } else {
+        // Leggi dal documento principale
+        unsubscribe = db.collection('database').doc('principale').onSnapshot(function(doc) {
+            if (_staSalvando) { console.log('⏸️ Snapshot ignorato (salvataggio in corso)'); return; }
+            if (doc.exists) {
+                var cloudData = doc.data();
+                var _c = cloudData.clienti  || []; CLI_DATA.length = 0;     _c.forEach(function(x){ CLI_DATA.push(x); });
+                var _p = cloudData.presidi  || []; PRESIDI_DATA.length = 0; _p.forEach(function(x){ PRESIDI_DATA.push(x); });
+                var _r = cloudData.registro || []; REG_DATA.length = 0;     _r.forEach(function(x){ REG_DATA.push(x); });
+                // ── Ripristina ultimoImport dal localStorage (non viene salvato su Firebase) ──
+                if(!ultimoImport || !ultimoImport.righe || !ultimoImport.righe.length){
+                  try{
                     var _lsSnap = localStorage.getItem(LS_KEY);
                     if(_lsSnap){ var _lsObj2 = JSON.parse(_lsSnap);
-                        if(_lsObj2.ultimoImport && _lsObj2.ultimoImport.righe && _lsObj2.ultimoImport.righe.length){
-                            ultimoImport = _lsObj2.ultimoImport; window.ultimoImport = ultimoImport;
-                            xlHeaders = ultimoImport.headers || []; window.xlHeaders = xlHeaders;
-                        }
+                      if(_lsObj2.ultimoImport && _lsObj2.ultimoImport.righe && _lsObj2.ultimoImport.righe.length){
+                        ultimoImport = _lsObj2.ultimoImport; window.ultimoImport = ultimoImport;
+                        xlHeaders = ultimoImport.headers || []; window.xlHeaders = xlHeaders;
+                      }
                     }
-                } catch(e){}
-            }
-            if (typeof renderClienti  === 'function') renderClienti();
-            if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
-            if (typeof renderRegistro === 'function') renderRegistro();
-            if (typeof buildDashboard === 'function') buildDashboard();
-            setCloudStatus('ok');
-            console.log('✅ Dati caricati dal documento principale (one-shot).');
-        } else {
-            setCloudStatus('ok');
-        }
-    }).catch(function(err) {
-        console.warn('⚠️ Firebase non disponibile, carico da localStorage:', err.message);
-        setCloudStatus('error');
-        var raw = localStorage.getItem('fireguard_3e_v3');
-        if (raw) {
-            try {
-                var stato = JSON.parse(raw);
-                if (stato.clienti)  { CLI_DATA.length=0;     stato.clienti.forEach(function(x){CLI_DATA.push(x);}); }
-                if (stato.presidi)  { PRESIDI_DATA.length=0; stato.presidi.forEach(function(x){PRESIDI_DATA.push(x);}); }
-                if (stato.registro) { REG_DATA.length=0;     stato.registro.forEach(function(x){REG_DATA.push(x);}); }
+                  } catch(e){}
+                }
                 if (typeof renderClienti  === 'function') renderClienti();
                 if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
                 if (typeof renderRegistro === 'function') renderRegistro();
                 if (typeof buildDashboard === 'function') buildDashboard();
-                notifica('⚠️ Firebase offline — dati caricati dalla cache locale');
-            } catch(e2) {}
-        }
-    });
-    unsubscribe = function() {}; // noop
+                setCloudStatus('ok');
+                console.log('🔄 Dati sincronizzati dal documento principale.');
+            } else {
+                setCloudStatus('ok');
+            }
+        }, function(err) {
+            setCloudStatus('error');
+            console.error('Errore lettura Firebase:', err);
+        });
+    }
 }
 
 function _avviaSincronizzazioneCollezioni() {
-    setCloudStatus('saving');
+    var _pronti = { clienti: false, presidi: false, interventi: false };
+    var _u = [];
 
-    Promise.all([
-        db.collection('clienti').get(),
-        db.collection('presidi').get(),
-        db.collection('interventi').get()
-    ]).then(function(results) {
-        var snapClienti    = results[0];
-        var snapPresidi    = results[1];
-        var snapInterventi = results[2];
-
-        CLI_DATA.length = 0;
-        snapClienti.forEach(function(d) { CLI_DATA.push(d.data()); });
-        CLI_DATA.sort(function(a,b){ return (a.id||'').localeCompare(b.id||''); });
-
-        PRESIDI_DATA.length = 0;
-        snapPresidi.forEach(function(d) { PRESIDI_DATA.push(d.data()); });
-
-        REG_DATA.length = 0;
-        snapInterventi.forEach(function(d) { REG_DATA.push(d.data()); });
-        REG_DATA.sort(function(a,b){ return (b.n||0)-(a.n||0); });
-
-        // Salva nel localStorage come cache locale aggiornata
-        try {
-            var cache = { versione:'3.2', salvato: new Date().toISOString(),
-                clienti: CLI_DATA, presidi: PRESIDI_DATA, registro: REG_DATA,
-                ditta: DITTA, tecnici: TECNICI };
-            localStorage.setItem('fireguard_3e_v3', JSON.stringify(cache));
-        } catch(e) {}
-
-        if (typeof renderClienti  === 'function') renderClienti();
-        if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
-        if (typeof renderRegistro === 'function') renderRegistro();
-        if (typeof buildDashboard === 'function') buildDashboard();
-
-        setCloudStatus('ok');
-        console.log('✅ Caricato da collezioni: ' + CLI_DATA.length + ' clienti, ' + PRESIDI_DATA.length + ' presidi, ' + REG_DATA.length + ' interventi.');
-    }).catch(function(err) {
-        // Firebase non disponibile (quota esaurita, offline, ecc.)
-        // Fallback: carica dal localStorage locale
-        console.warn('⚠️ Firebase non disponibile, carico da localStorage:', err.message);
-        setCloudStatus('error');
-        var raw = localStorage.getItem('fireguard_3e_v3');
-        if (raw) {
-            try {
-                var stato = JSON.parse(raw);
-                if (stato.clienti)  { CLI_DATA.length=0;     stato.clienti.forEach(function(x){CLI_DATA.push(x);}); }
-                if (stato.presidi)  { PRESIDI_DATA.length=0; stato.presidi.forEach(function(x){PRESIDI_DATA.push(x);}); }
-                if (stato.registro) { REG_DATA.length=0;     stato.registro.forEach(function(x){REG_DATA.push(x);}); }
-                if (typeof renderClienti  === 'function') renderClienti();
-                if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
-                if (typeof renderRegistro === 'function') renderRegistro();
-                if (typeof buildDashboard === 'function') buildDashboard();
-                notifica('⚠️ Firebase offline — dati caricati dalla cache locale');
-                console.log('✅ Fallback localStorage: ' + CLI_DATA.length + ' clienti, ' + PRESIDI_DATA.length + ' presidi.');
-            } catch(e2) { console.error('Errore fallback localStorage:', e2); }
+    function _aggiornaUI(fonte) {
+        _pronti[fonte] = true;
+        if (fonte === 'clienti'    && typeof renderClienti  === 'function') renderClienti();
+        if (fonte === 'presidi'    && typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
+        if (fonte === 'interventi' && typeof renderRegistro === 'function') renderRegistro();
+        if (_pronti.clienti && _pronti.presidi && _pronti.interventi) {
+            if (typeof buildDashboard === 'function') buildDashboard();
+            setCloudStatus('ok');
+            console.log('🔄 Sincronizzato da collezioni: ' + CLI_DATA.length + ' clienti, ' + PRESIDI_DATA.length + ' presidi, ' + REG_DATA.length + ' interventi.');
         }
-    });
+    }
 
-    unsubscribe = function() {};
+    _u.push(db.collection('clienti').onSnapshot(function(snap) {
+        if (_staSalvando) { console.log('⏸️ Snapshot clienti ignorato (salvataggio in corso)'); return; }
+        CLI_DATA.length = 0;
+        snap.forEach(function(d) { CLI_DATA.push(d.data()); });
+        CLI_DATA.sort(function(a,b){ return (a.id||'').localeCompare(b.id||''); });
+        _aggiornaUI('clienti');
+    }, function(e) { console.error('Listener clienti:', e); _aggiornaUI('clienti'); }));
+
+    _u.push(db.collection('presidi').onSnapshot(function(snap) {
+        if (_staSalvando) { console.log('⏸️ Snapshot presidi ignorato (salvataggio in corso)'); return; }
+        PRESIDI_DATA.length = 0;
+        snap.forEach(function(d) { PRESIDI_DATA.push(d.data()); });
+        _aggiornaUI('presidi');
+    }, function(e) { console.error('Listener presidi:', e); _aggiornaUI('presidi'); }));
+
+    _u.push(db.collection('interventi').onSnapshot(function(snap) {
+        if (_staSalvando) { console.log('⏸️ Snapshot interventi ignorato (salvataggio in corso)'); return; }
+        REG_DATA.length = 0;
+        snap.forEach(function(d) { REG_DATA.push(d.data()); });
+        REG_DATA.sort(function(a,b){ return (b.n||0)-(a.n||0); });
+        _aggiornaUI('interventi');
+    }, function(e) { console.error('Listener interventi:', e); _aggiornaUI('interventi'); }));
+
+    // Unsubscribe globale
+    unsubscribe = function() { _u.forEach(function(fn){ try{fn();}catch(e){} }); };
 }
 
 // ─── MIGRAZIONE DATI — tasto in dashboard ────────────────────────────────────
