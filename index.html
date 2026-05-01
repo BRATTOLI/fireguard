@@ -5358,7 +5358,15 @@ function salvaCliente(){
   closeM('mCli');
   renderClienti();
   buildDashboard();
+  // Blocca onSnapshot durante la finestra di rischio (salvataggio in corso)
+  // e salva immediatamente su Firebase senza aspettare i 2s del debounce
+  _staSalvando = true;
   salvaLS();
+  // Forza salvataggio cloud immediato (sovrascrive il timer da 2s)
+  if(typeof _autoSaveTimer !== 'undefined' && _autoSaveTimer){ clearTimeout(_autoSaveTimer); _autoSaveTimer = null; }
+  setTimeout(function(){
+    eseguiSalvatagioCloud();
+  }, 100);
 }
 
 // Elimina cliente e tutti i suoi presidi
@@ -6729,7 +6737,10 @@ function salvaPresidio(){
   renderPresidi(_filtroTipoAttivo);
   renderClienti();
   buildDashboard();
+  _staSalvando = true;
   salvaLS();
+  if(typeof _autoSaveTimer !== 'undefined' && _autoSaveTimer){ clearTimeout(_autoSaveTimer); _autoSaveTimer = null; }
+  setTimeout(function(){ eseguiSalvatagioCloud(); }, 100);
   aggiornaLSBadge();
   notifica('✅ Presidio "'+cod+'" aggiunto per '+nomeCliente+'!');
 }
