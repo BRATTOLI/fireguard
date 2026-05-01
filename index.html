@@ -7394,6 +7394,10 @@ function importaExcel(){
       // Salta righe dove la matricola contiene testo lungo (es. "C. = CONFORME...")
       const matricolaCol = String(row[15]||row[16]||'').trim();
       if(matricolaCol.length > 20) return;
+    } else if(isFileUES){
+      // File UES: la prima colonna deve essere un numero intero (numero uscita)
+      const primaColUES = String(row[0]||'').trim();
+      if(!primaColUES || isNaN(parseInt(primaColUES))) return;
     } else {
       // File estintori: salta righe completamente vuote o solo con numeri
       const vals = row.filter(function(c){ return String(c||'').trim().length > 0; });
@@ -7467,15 +7471,21 @@ function importaExcel(){
       });
     } else if(isFileUES){
       // ── USCITA DI SICUREZZA ────────────────────────────────────────────────
+      // Struttura file: col0=num, col1=dispositivo, col2=tipo/ante (es: 1E,2A),
+      // col3-7=verifiche, col8=costruttore, col9=anno, col10-15=verifiche,
+      // col16=manutenzione, col22=ubicazione, col23=esito
       var numUES2 = String(row[0]||'').trim();
-      var esitoCrudoUES2 = String(row[22]||row[21]||'').trim();
+      var esitoCrudoUES2 = String(row[23]||row[22]||row[21]||'').trim();
       var esitoNormUES2 = esitoCrudoUES2.toLowerCase().includes('n.c') ? 'nc'
                         : (esitoCrudoUES2.toLowerCase().startsWith('c') && esitoCrudoUES2.length < 5) ? 'ok'
                         : 'N.V.';
       var tipoAnteUES2 = String(row[2]||'').trim();
-      var anteUES2 = tipoAnteUES2.replace(/[AE]/i,'').trim() || '—';
-      var tipoDispUES2 = tipoAnteUES2.includes('A') ? 'Antipanico' : tipoAnteUES2.includes('E') ? 'Emergenza' : '—';
-      var ubicazioneUES2 = String(row[21]||'').trim() || '—';
+      // Estrae numero ante (es: "1E" → "1", "2A" → "2")
+      var numAnteUES2 = tipoAnteUES2.replace(/[^0-9]/g,'').trim() || '1';
+      // Estrae tipo (es: "1E" → "E" → "Emergenza", "2A" → "A" → "Antipanico")
+      var letteraUES2 = tipoAnteUES2.replace(/[^AEae]/g,'').toUpperCase();
+      var tipoDispUES2 = letteraUES2.includes('A') ? 'Antipanico' : letteraUES2.includes('E') ? 'Emergenza' : '—';
+      var ubicazioneUES2 = String(row[22]||'').trim() || '—';
       // ── Salta se matricola già presente per questo cliente ────────────────
       if(numUES2 && _matricoleEsistenti.has(numUES2.toLowerCase())){
         _duplicatiSaltati++; contatore--; return;
@@ -7490,7 +7500,7 @@ function importaExcel(){
         esito:          esitoNormUES2,
         ues_dispositivo:String(row[1]||'').trim() || '—',
         ues_tipo:       tipoDispUES2,
-        ues_ante:       anteUES2,
+        ues_ante:       numAnteUES2,
         ues_viteria:    String(row[3]||'').trim() || '—',
         ues_cerniere:   String(row[4]||'').trim() || '—',
         ues_ossidaz:    String(row[5]||'').trim() || '—',
