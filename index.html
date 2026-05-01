@@ -4,12 +4,33 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>3E Antincendio — Gestione Presidi v11 — 3E di Brattoli Pasquale</title>
+<title>3E Antincendio — Gestione Presidi v12 — 3E di Brattoli Pasquale</title>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
 <script>
+// ── FALLBACK CRITICI — eseguiti prima di tutto il resto ──────────────────────
+window.notifica = function(msg, tipo){ 
+  var el = document.getElementById('toast');
+  if(el){ el.textContent = msg; el.style.display='block'; setTimeout(function(){ el.style.display='none'; },3000); }
+  else { console.log(msg); }
+};
+window.S = function(id){
+  document.querySelectorAll('[id^="sec-"]').forEach(function(s){ s.style.display='none'; });
+  var el = document.getElementById('sec-'+id);
+  if(el){ el.style.display='block'; }
+  document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('active'); });
+  var btn = document.querySelector('[onclick*="S(''+id+''"]');
+  if(btn) btn.classList.add('active');
+};
+['renderRegistro','renderClienti','renderPresidi','buildDashboard','renderBianche',
+ 'renderDePaloTable','salvaLS','aggiornaSelectClienti','ricalcolaFineVitaTutti',
+ 'renderTipiGrid','aggiornaLSBadge','setCloudStatus'].forEach(function(fn){
+  window[fn] = window[fn] || function(){};
+});
+window._cleanUndef = window._cleanUndef || function(x){ return x; };
+// ─────────────────────────────────────────────────────────────────────────────
 // QR Code generator - implementazione completa con supporto modalita byte (testo arbitrario)
 var QRCode=(function(){
 'use strict';
