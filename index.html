@@ -21,7 +21,7 @@ window.S = function(id){
   var el = document.getElementById('sec-'+id);
   if(el){ el.style.display='block'; }
   document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('active'); });
-  var btn = document.querySelector('[onclick*="S(''+id+''"]');
+  var btn = document.querySelector('[onclick*="S(\'' + id + '\')"]');
   if(btn) btn.classList.add('active');
 };
 ['renderRegistro','renderClienti','renderPresidi','buildDashboard','renderBianche',
