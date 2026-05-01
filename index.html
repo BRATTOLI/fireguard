@@ -11424,53 +11424,73 @@ function avviaSincronizzazione() {
     if (unsubscribe) unsubscribe();
     setCloudStatus('saving');
 
-    var migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
+    // Controlla flag migrazione SU FIREBASE (non solo localStorage)
+    // Questo garantisce che tutti i browser/dispositivi usino la stessa modalità
+    db.collection('database').doc('flags').get().then(function(flagDoc) {
+        var migratoFirebase = flagDoc.exists && flagDoc.data().migrato_collezioni === true;
+        var migratoLocale   = localStorage.getItem('fg_migrato_collezioni') === 'true';
+        var migratoFlag     = migratoFirebase || migratoLocale;
+        // Sincronizza il flag locale con quello Firebase
+        if (migratoFirebase && !migratoLocale) {
+            localStorage.setItem('fg_migrato_collezioni', 'true');
+    // Salva flag migrazione anche su Firebase per sincronizzare tutti i browser
+    db.collection('database').doc('flags').set({ migrato_collezioni: true }, { merge: true })
+      .catch(function(e){ console.warn('Flag migrazione Firebase:', e); });
+            console.log('🔄 Flag migrazione sincronizzato da Firebase');
+        }
+        if (migratoFlag) {
+            _avviaSincronizzazioneCollezioni();
+        } else {
+            _avviaSincronizzazionePrincipale();
+        }
+    }).catch(function() {
+        // Se Firebase non risponde, usa localStorage
+        var migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
+        if (migratoFlag) { _avviaSincronizzazioneCollezioni(); }
+        else { _avviaSincronizzazionePrincipale(); }
+    });
+}
 
-    if (migratoFlag) {
-        // Leggi dalle 3 collezioni separate
-        _avviaSincronizzazioneCollezioni();
-    } else {
-        // Leggi dal documento principale — get() one-shot, NO onSnapshot
-        // onSnapshot causava sovrascrittura continua dei dati locali ad ogni salvataggio
-        db.collection('database').doc('principale').get().then(function(doc) {
-            if (doc.exists) {
-                var cloudData = doc.data();
-                var _c = cloudData.clienti  || []; CLI_DATA.length = 0;     _c.forEach(function(x){ CLI_DATA.push(x); });
-                var _p = cloudData.presidi  || []; PRESIDI_DATA.length = 0; _p.forEach(function(x){ PRESIDI_DATA.push(x); });
-                var _r = cloudData.registro || []; REG_DATA.length = 0;     _r.forEach(function(x){ REG_DATA.push(x); });
-                if(cloudData.ditta   && Object.keys(cloudData.ditta).length)   { if(typeof DITTA   !== 'undefined') Object.assign(DITTA,   cloudData.ditta); }
-                if(cloudData.tecnici && cloudData.tecnici.length)               { if(typeof TECNICI !== 'undefined'){ TECNICI.length=0; cloudData.tecnici.forEach(function(t){ TECNICI.push(t); }); } }
-                if(cloudData.timbro && cloudData.timbro.length > 10 && !localStorage.getItem('fireguard_timbro')){
-                  window.TIMBRO_B64 = cloudData.timbro;
-                  localStorage.setItem('fireguard_timbro', cloudData.timbro);
-                  if(typeof aggiornaPreviewTimbro === 'function') aggiornaPreviewTimbro();
-                }
-                if(!ultimoImport || !ultimoImport.righe || !ultimoImport.righe.length){
-                  try{
+function _avviaSincronizzazionePrincipale() {
+    // get() one-shot — NO onSnapshot
+    db.collection('database').doc('principale').get().then(function(doc) {
+        if (doc.exists) {
+            var cloudData = doc.data();
+            var _c = cloudData.clienti  || []; CLI_DATA.length = 0;     _c.forEach(function(x){ CLI_DATA.push(x); });
+            var _p = cloudData.presidi  || []; PRESIDI_DATA.length = 0; _p.forEach(function(x){ PRESIDI_DATA.push(x); });
+            var _r = cloudData.registro || []; REG_DATA.length = 0;     _r.forEach(function(x){ REG_DATA.push(x); });
+            if(cloudData.ditta   && Object.keys(cloudData.ditta).length)   { if(typeof DITTA   !== 'undefined') Object.assign(DITTA,   cloudData.ditta); }
+            if(cloudData.tecnici && cloudData.tecnici.length)               { if(typeof TECNICI !== 'undefined'){ TECNICI.length=0; cloudData.tecnici.forEach(function(t){ TECNICI.push(t); }); } }
+            if(cloudData.timbro && cloudData.timbro.length > 10 && !localStorage.getItem('fireguard_timbro')){
+                window.TIMBRO_B64 = cloudData.timbro;
+                localStorage.setItem('fireguard_timbro', cloudData.timbro);
+                if(typeof aggiornaPreviewTimbro === 'function') aggiornaPreviewTimbro();
+            }
+            if(!ultimoImport || !ultimoImport.righe || !ultimoImport.righe.length){
+                try{
                     var _lsSnap = localStorage.getItem(LS_KEY);
                     if(_lsSnap){ var _lsObj2 = JSON.parse(_lsSnap);
-                      if(_lsObj2.ultimoImport && _lsObj2.ultimoImport.righe && _lsObj2.ultimoImport.righe.length){
-                        ultimoImport = _lsObj2.ultimoImport; window.ultimoImport = ultimoImport;
-                        xlHeaders = ultimoImport.headers || []; window.xlHeaders = xlHeaders;
-                      }
+                        if(_lsObj2.ultimoImport && _lsObj2.ultimoImport.righe && _lsObj2.ultimoImport.righe.length){
+                            ultimoImport = _lsObj2.ultimoImport; window.ultimoImport = ultimoImport;
+                            xlHeaders = ultimoImport.headers || []; window.xlHeaders = xlHeaders;
+                        }
                     }
-                  } catch(e){}
-                }
-                if (typeof renderClienti  === 'function') renderClienti();
-                if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
-                if (typeof renderRegistro === 'function') renderRegistro();
-                if (typeof buildDashboard === 'function') buildDashboard();
-                setCloudStatus('ok');
-                console.log('✅ Dati caricati dal documento principale (one-shot).');
-            } else {
-                setCloudStatus('ok');
+                } catch(e){}
             }
-        }).catch(function(err) {
-            setCloudStatus('error');
-            console.error('Errore lettura Firebase:', err);
-        });
-        unsubscribe = function() {}; // noop
-    }
+            if (typeof renderClienti  === 'function') renderClienti();
+            if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
+            if (typeof renderRegistro === 'function') renderRegistro();
+            if (typeof buildDashboard === 'function') buildDashboard();
+            setCloudStatus('ok');
+            console.log('✅ Dati caricati dal documento principale (one-shot).');
+        } else {
+            setCloudStatus('ok');
+        }
+    }).catch(function(err) {
+        setCloudStatus('error');
+        console.error('Errore lettura Firebase:', err);
+    });
+    unsubscribe = function() {}; // noop
 }
 
 function _avviaSincronizzazioneCollezioni() {
