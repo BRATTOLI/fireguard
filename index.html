@@ -11270,6 +11270,8 @@ function eseguiSalvatagioCloud() {
             // Fallback al documento principale per sicurezza
             db.collection('database').doc('principale').set({
                 clienti: clienti, presidi: presidi, registro: registro,
+                ditta:   _cleanUndef(typeof DITTA   !== 'undefined' ? DITTA   : {}),
+                tecnici: _cleanUndef(typeof TECNICI !== 'undefined' ? TECNICI : []),
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(function() {
                 _staSalvando = false;
@@ -11299,6 +11301,8 @@ function eseguiSalvatagioCloud() {
             clienti:  clienti,
             presidi:  presidi,
             registro: registro,
+            ditta:    _cleanUndef(typeof DITTA   !== 'undefined' ? DITTA   : {}),
+            tecnici:  _cleanUndef(typeof TECNICI !== 'undefined' ? TECNICI : []),
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
         db.collection('database').doc('principale').set(data)
@@ -11329,10 +11333,32 @@ window.salvaLS = function() {
             tecnici:  typeof TECNICI      !== 'undefined' ? TECNICI      : []
         };
         localStorage.setItem('fireguard_3e_v3', JSON.stringify(stato));
-    } catch(e) { console.warn('Errore localStorage:', e); }
+    } catch(e) { console.warn('Errore localStorage:', e); if(e && e.name==='QuotaExceededError') { if(typeof notifica==='function') notifica('⚠️ Spazio locale esaurito — dati salvati solo su cloud'); } }
     scheduleAutoSave();
     return true;
 };
+
+// --- FIX 1: Salva prima di chiudere il browser ---
+window.onbeforeunload = function() {
+    try { salvaLS(); } catch(e) {}
+    // Non ritorniamo stringa: nessun popup di conferma, solo salvataggio silenzioso
+};
+
+// --- FIX 2: Blocca onSnapshot mentre l'utente modifica attivamente ---
+var _staModificando = false;
+(function() {
+    document.addEventListener('focusin', function(e) {
+        if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+            _staModificando = true;
+        }
+    });
+    document.addEventListener('focusout', function(e) {
+        if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+            // Piccolo ritardo: permette al salvataggio di completarsi prima di sbloccare
+            setTimeout(function() { _staModificando = false; }, 500);
+        }
+    });
+})();
 
 // --- GESTIONE AUTENTICAZIONE ---
 var auth = firebase.auth();
@@ -11381,12 +11407,15 @@ function avviaSincronizzazione() {
     } else {
         // Leggi dal documento principale
         unsubscribe = db.collection('database').doc('principale').onSnapshot(function(doc) {
-            if (_staSalvando) { console.log('⏸️ Snapshot ignorato (salvataggio in corso)'); return; }
+            if (_staSalvando)   { console.log('⏸️ Snapshot ignorato (salvataggio in corso)'); return; }
+            if (_staModificando) { console.log('⏸️ Snapshot ignorato (modifica in corso)'); return; }
             if (doc.exists) {
                 var cloudData = doc.data();
                 var _c = cloudData.clienti  || []; CLI_DATA.length = 0;     _c.forEach(function(x){ CLI_DATA.push(x); });
                 var _p = cloudData.presidi  || []; PRESIDI_DATA.length = 0; _p.forEach(function(x){ PRESIDI_DATA.push(x); });
                 var _r = cloudData.registro || []; REG_DATA.length = 0;     _r.forEach(function(x){ REG_DATA.push(x); });
+                if(cloudData.ditta   && Object.keys(cloudData.ditta).length)   { if(typeof DITTA   !== 'undefined') Object.assign(DITTA,   cloudData.ditta); }
+                if(cloudData.tecnici && cloudData.tecnici.length)               { if(typeof TECNICI !== 'undefined'){ TECNICI.length=0; cloudData.tecnici.forEach(function(t){ TECNICI.push(t); }); } }
                 // ── Ripristina ultimoImport dal localStorage (non viene salvato su Firebase) ──
                 if(!ultimoImport || !ultimoImport.righe || !ultimoImport.righe.length){
                   try{
@@ -11432,7 +11461,7 @@ function _avviaSincronizzazioneCollezioni() {
     }
 
     _u.push(db.collection('clienti').onSnapshot(function(snap) {
-        if (_staSalvando) { console.log('⏸️ Snapshot clienti ignorato (salvataggio in corso)'); return; }
+        if (_staSalvando || _staModificando) { console.log('⏸️ Snapshot clienti ignorato'); return; }
         CLI_DATA.length = 0;
         snap.forEach(function(d) { CLI_DATA.push(d.data()); });
         CLI_DATA.sort(function(a,b){ return (a.id||'').localeCompare(b.id||''); });
@@ -11440,14 +11469,14 @@ function _avviaSincronizzazioneCollezioni() {
     }, function(e) { console.error('Listener clienti:', e); _aggiornaUI('clienti'); }));
 
     _u.push(db.collection('presidi').onSnapshot(function(snap) {
-        if (_staSalvando) { console.log('⏸️ Snapshot presidi ignorato (salvataggio in corso)'); return; }
+        if (_staSalvando || _staModificando) { console.log('⏸️ Snapshot presidi ignorato'); return; }
         PRESIDI_DATA.length = 0;
         snap.forEach(function(d) { PRESIDI_DATA.push(d.data()); });
         _aggiornaUI('presidi');
     }, function(e) { console.error('Listener presidi:', e); _aggiornaUI('presidi'); }));
 
     _u.push(db.collection('interventi').onSnapshot(function(snap) {
-        if (_staSalvando) { console.log('⏸️ Snapshot interventi ignorato (salvataggio in corso)'); return; }
+        if (_staSalvando || _staModificando) { console.log('⏸️ Snapshot interventi ignorato'); return; }
         REG_DATA.length = 0;
         snap.forEach(function(d) { REG_DATA.push(d.data()); });
         REG_DATA.sort(function(a,b){ return (b.n||0)-(a.n||0); });
