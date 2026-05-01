@@ -11231,13 +11231,17 @@ var _staSalvando = false; // blocca onSnapshot durante il salvataggio
 var _ignoraSnapshot = 0; // numero di snapshot da ignorare dopo salvataggio
 
 function scheduleAutoSave() {
-    if (!_autoSaveAbilitato) return;
+    if (!_autoSaveAbilitato) { console.warn('scheduleAutoSave: autoSave non abilitato'); return; }
     setCloudStatus('pending');
     if (_autoSaveTimer) clearTimeout(_autoSaveTimer);
+    console.log('⏱️ Auto-save programmato tra 2s...');
     _autoSaveTimer = setTimeout(function() {
+        console.log('💾 Eseguo salvataggio cloud...');
         eseguiSalvatagioCloud();
     }, 2000);
 }
+window.scheduleAutoSave = scheduleAutoSave;
+window.eseguiSalvatagioCloud = eseguiSalvatagioCloud;
 
 // Rimuove ricorsivamente tutti i campi undefined (Firestore non li accetta)
 function _cleanUndef(obj) {
