@@ -4098,8 +4098,6 @@ window.S = window.S || function(id){
   var el = document.getElementById(id);
   if(el) el.classList.add('active');
   document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('active'); });
-  var ids=['dashboard','clienti','presidi','schede','import','registro','scadenze','qrcode','schede-blank','rapporti','manuale','ditta','targhette'];
-  var i=ids.indexOf(id); if(i>=0) document.querySelectorAll('.nb')[i].classList.add('active');
 };
 // Fallback per funzioni che potrebbero non essere ancora definite
 window.renderRegistro = window.renderRegistro || function(){};
@@ -4999,8 +4997,10 @@ function renderStoricoCliente(){
     var _isUES = _tipoSess.includes('UES') || _tipoPres==='UES' || _codSess.includes('UES') ||
                  _opSess.includes('uscita') || _opSess.includes('ues');
     var _isREIUES = _isREI || _isUES;
-    var _isIDR = _tipoSess.includes('IDR') || _tipoPres==='IDR' || _codSess.includes('IDR') || _opSess.includes('idrante');
-    var _isNSP = _tipoSess.includes('NSP') || _tipoPres==='NSP' || _codSess.includes('NSP') || _opSess.includes('naspo');
+    var _isIDR = _tipoSess.includes('IDR') || _tipoPres==='IDR' || _codSess.includes('IDR') ||
+                 _opSess.includes('idrante') || _opSess.includes('idr');
+    var _isNSP = _tipoSess.includes('NSP') || _tipoPres==='NSP' || _codSess.includes('NSP') ||
+                 _opSess.includes('naspo') || _opSess.includes('nsp');
 
     var righeHtml = righe.map(function(r){
       var pres    = PRESIDI_DATA.find(function(p){ return p.cod === r.cod; }) || {};
@@ -8914,7 +8914,7 @@ function stampaManutenzioneWord(){
     '<th style="'+thS+'">Note</th>' +
     '</tr></thead><tbody>';
 
-  var rows   = document.querySelectorAll('#tbl-man-sem-body tr');
+  // rows già definita sopra
   var nRow   = 0;
   var nConf  = 0; var nAnom = 0; var nNC = 0; var nND = 0;
   var anomalieDettaglio = [];
@@ -9093,6 +9093,7 @@ function stampaManutenzioneWord(){
   html += '<p style="font-size:7pt;color:#aaa;margin-top:8px;text-align:center">Manutenzione eseguita secondo Norma '+_normaAnteprima+' — Una copia del presente verbale viene conservata nel registro digitale accessibile tramite QR Code</p>';
   html += '<p style="font-size:7pt;color:#aaa;text-align:center">Generato da '+DITTA.sw+' — '+TODAY.toLocaleDateString("it-IT")+'</p>';
 
+  } // fine else - da qui: comune a tutti i tipi
   var dataFileStr = (dataEl && dataEl.value) ? fromISO(dataEl.value).replace(/\//g,'-') : TODAY.toLocaleDateString('it-IT').replace(/\//g,'-');
   var nomeFile = 'Scheda_manutenzione_'+cli.rs.replace(/\s+/g,'_')+'_'+dataFileStr;
   scaricaDocLandscape(html, nomeFile);
@@ -9506,8 +9507,11 @@ function S(id){
   if(id==='ditta')renderDitta();
   if(id==='registro'){ aggiornaSelectManutenzione(); renderRegistro(); }
   if(id==='targhette') setTimeout(tgCarica, 300); // ricarica quando entri
+  if(id==='clienti') renderClienti();
+  if(id==='presidi') renderPresidi(_filtroTipoAttivo);
+  if(id==='dashboard') buildDashboard();
 }
-window.S = S; // override del fallback iniziale
+window.S = S; // override del fallback iniziale — questa e' la versione corretta
 
 function azzeraRegistro(){
   if(!confirm('Sei sicuro? Tutte le schede semestrali verranno cancellate.\nClienti e presidi rimangono intatti.\n\nOperazione non reversibile.')) return;
@@ -9818,7 +9822,6 @@ function _buildHTMLSchedaREI(){
       '</tr>';
   });
   html += '</tbody></table>';
-  } // fine else EST
 
   // Riepilogo
   var totale = nConf+nNC+nNE;
@@ -11097,7 +11100,6 @@ function aggiornaFileSoftware(){ salvaLS(); notifica('💾 Dati salvati.'); }
 function salvaSnapshotVersione(){ /* rimosso */ }
 function mostraCronologia(){ /* rimosso */ }
 function svuotaCronologia(){ /* rimosso */ }
-function ripristinaSnapshot(){ /* rimosso */ }
 </script>
 
 
