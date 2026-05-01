@@ -11430,11 +11430,9 @@ function avviaSincronizzazione() {
         // Leggi dalle 3 collezioni separate
         _avviaSincronizzazioneCollezioni();
     } else {
-        // Leggi dal documento principale
-        unsubscribe = db.collection('database').doc('principale').onSnapshot(function(doc) {
-            if (_staSalvando)   { console.log('⏸️ Snapshot ignorato (salvataggio in corso)'); return; }
-            if (_staModificando) { console.log('⏸️ Snapshot ignorato (modifica in corso)'); return; }
-            if (_ignoraSnapshot > 0) { _ignoraSnapshot--; console.log('⏸️ Snapshot principale (eco) ignorato'); return; }
+        // Leggi dal documento principale — get() one-shot, NO onSnapshot
+        // onSnapshot causava sovrascrittura continua dei dati locali ad ogni salvataggio
+        db.collection('database').doc('principale').get().then(function(doc) {
             if (doc.exists) {
                 var cloudData = doc.data();
                 var _c = cloudData.clienti  || []; CLI_DATA.length = 0;     _c.forEach(function(x){ CLI_DATA.push(x); });
@@ -11447,7 +11445,6 @@ function avviaSincronizzazione() {
                   localStorage.setItem('fireguard_timbro', cloudData.timbro);
                   if(typeof aggiornaPreviewTimbro === 'function') aggiornaPreviewTimbro();
                 }
-                // ── Ripristina ultimoImport dal localStorage (non viene salvato su Firebase) ──
                 if(!ultimoImport || !ultimoImport.righe || !ultimoImport.righe.length){
                   try{
                     var _lsSnap = localStorage.getItem(LS_KEY);
@@ -11464,14 +11461,15 @@ function avviaSincronizzazione() {
                 if (typeof renderRegistro === 'function') renderRegistro();
                 if (typeof buildDashboard === 'function') buildDashboard();
                 setCloudStatus('ok');
-                console.log('🔄 Dati sincronizzati dal documento principale.');
+                console.log('✅ Dati caricati dal documento principale (one-shot).');
             } else {
                 setCloudStatus('ok');
             }
-        }, function(err) {
+        }).catch(function(err) {
             setCloudStatus('error');
             console.error('Errore lettura Firebase:', err);
         });
+        unsubscribe = function() {}; // noop
     }
 }
 
