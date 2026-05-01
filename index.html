@@ -7834,7 +7834,7 @@ function caricaPresidiManutenzione(){
 
 
 // ── Genera HTML tabella PDF per scheda IDR/NSP ────────────────────────────────
-function generaSchedaIDRPDF(rows, thS, tdS, tdC, tipoPres){
+function generaSchedaIDRPDF(rows, thS, tdS, tdC, tipoPres, opts){
   var isNSP = tipoPres === 'NSP';
   var html = '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6.5pt;margin-bottom:8px">' +
     '<colgroup>' +
@@ -7910,6 +7910,67 @@ function generaSchedaIDRPDF(rows, thS, tdS, tdC, tipoPres){
     '<td style="padding:5px;background:#fdecea;color:#C0392B;font-weight:bold;border:1px solid #ccc">❌ Non conf.</td>' +
     '<td style="padding:5px;color:#C0392B;font-weight:bold;text-align:center;border:1px solid #ccc">'+nNC+'</td>' +
     '</tr></table>';
+
+  // ── Footer IDR: note generali, nota bene, dichiarazione, firma ──────────────
+  if(opts){
+    var _tecnico = opts.tecnico || '';
+    var _cli     = opts.cli     || {};
+    var _norma   = opts.norma   || 'UNI EN 671-3:2009 — D.M. 1/9/2021';
+    var _sw      = (typeof DITTA !== 'undefined' && DITTA.sw) ? DITTA.sw : '3E Antincendio';
+    var _todayStr= (typeof TODAY !== 'undefined') ? TODAY.toLocaleDateString('it-IT') : '';
+
+    // Note generali
+    var _noteGen = (document.getElementById('man-sem-note')||{value:''}).value.trim();
+    html += '<table style="border-collapse:collapse;width:100%;font-size:8.5pt;margin-bottom:16px">' +
+      '<tr><td style="padding:4px 6px;border:1px solid #ccc;background:#f5f5f5;font-weight:bold;width:18%">Note generali</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ccc;min-height:36px;font-size:8.5pt">'+(_noteGen||'&nbsp;')+'</td></tr>' +
+      '</table>';
+
+    // Nota bene
+    html += '<table style="border-collapse:collapse;width:100%;margin-top:14px;page-break-inside:avoid"><tr><td style="padding:0;border:none">';
+    html += '<table style="border-collapse:collapse;width:100%;border:1.5px solid #1A4F8A;font-size:7.5pt;background:#f0f6ff"><tr><td style="padding:8px 12px;border:none">';
+    html += '<div style="font-weight:bold;color:#1A4F8A;margin-bottom:5px;font-size:8pt">&#9888; NOTA BENE &mdash; LIMITAZIONE DI RESPONSABILIT&Agrave;</div>';
+    if(typeof _testiVerbale !== 'undefined' && _testiVerbale && _testiVerbale.notaBene){
+      html += _testiVerbale.notaBene.split('\n').filter(function(r){return r.trim();})
+        .map(function(r){return '<p style="margin:0 0 4px 0">'+r.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</p>';}).join('');
+    } else {
+      html += '<p style="margin:0 0 4px 0"><b>Ambito:</b> La presente manutenzione si riferisce agli idranti/naspi sopra elencati. Qualsiasi altro dispositivo antincendio non esplicitamente inserito nel rapporto non &egrave; stato controllato.</p>';
+      html += '<p style="margin:0 0 4px 0"><b>Obblighi del Cliente:</b> Resta a carico del Cliente la Sorveglianza mensile obbligatoria (art.3.1 UNI EN 671-3) e l&#39;aggiornamento del Registro Antincendio.</p>';
+      html += '<p style="margin:0 0 4px 0">Il presente rapporto si intende approvato in assenza di contestazioni scritte entro 5 giorni lavorativi dalla ricezione.</p>';
+    }
+    html += '</td></tr></table>';
+
+    // Dichiarazione di conformita
+    html += '<table style="border-collapse:collapse;width:100%;border:1px solid #ccc;margin-top:8px"><tr><td style="padding:6px 10px;font-size:8pt;border:none">';
+    html += '<b>DICHIARAZIONE DI CONFORMIT&Agrave; ('+_norma+'):</b> ';
+    if(typeof _testiVerbale !== 'undefined' && _testiVerbale && _testiVerbale.dichiarazione){
+      html += _testiVerbale.dichiarazione.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    } else {
+      html += 'Il sottoscritto <b>'+_tecnico+'</b>, in qualit&agrave; di Tecnico Manutentore Qualificato, dichiara che tutti gli idranti/naspi sopra elencati sono stati controllati a regola d&#39;arte secondo la norma '+_norma+'. I presidi con ESITO CONFORME risultano efficienti e pronti all&#39;uso.';
+    }
+    html += '</td></tr></table>';
+    html += '</td></tr></table>';
+
+    // Firma
+    html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-top:8px">' +
+      '<tr>' +
+      '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">' +
+      '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>' +
+      (typeof TIMBRO_B64!=='undefined'&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>') +
+      '<b>'+(typeof DITTA!=='undefined'?DITTA.rs:'')+'</b><br><span style="font-size:8pt">'+_tecnico+((typeof DITTA!=='undefined'&&DITTA.dm37)?' — Abit. '+DITTA.dm37:'')+'</span>' +
+      '</td>' +
+      '<td style="width:4%"></td>' +
+      '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">' +
+      '<div style="font-size:8pt;color:#555;margin-bottom:30px">Firma per ricevuta verbale — Responsabile cliente</div>' +
+      '<b>'+(_cli.rs||'')+'</b><br><span style="font-size:8pt">'+(_cli.ref||'')+'</span>' +
+      '</td>' +
+      '</tr></table>';
+
+    // Footer generato da
+    html += '<p style="font-size:7pt;color:#aaa;margin-top:8px;text-align:center">Manutenzione eseguita secondo Norma '+_norma+' — Una copia del presente verbale viene conservata nel registro digitale accessibile tramite QR Code</p>';
+    html += '<p style="font-size:7pt;color:#aaa;text-align:center">Generato da '+_sw+' — '+_todayStr+'</p>';
+  }
+
   return html;
 }
 window.generaSchedaIDRPDF = generaSchedaIDRPDF;
@@ -8720,7 +8781,7 @@ function stampaManutenzioneWord(){
   // ── Tabella presidi — replica fedele scheda PDF ───────────────────────────
   if(_tipoPresAnteprima==='IDR'||_tipoPresAnteprima==='NSP'){
     // ── SCHEDA IDRANTI / NASPI ─────────────────────────────────────────────
-    html += generaSchedaIDRPDF(rows, thS, tdS, tdC, _tipoPresAnteprima);
+    html += generaSchedaIDRPDF(rows, thS, tdS, tdC, _tipoPresAnteprima, {tecnico: tecnico, cli: cli, norma: _normaAnteprima});
   } else {
   html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6.5pt;margin-bottom:8px">' +
     '<colgroup>'+
