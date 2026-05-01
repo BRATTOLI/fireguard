@@ -8721,8 +8721,6 @@ function stampaManutenzioneWord(){
   if(_tipoPresAnteprima==='IDR'||_tipoPresAnteprima==='NSP'){
     // ── SCHEDA IDRANTI / NASPI ─────────────────────────────────────────────
     html += generaSchedaIDRPDF(rows, thS, tdS, tdC, _tipoPresAnteprima);
-    scaricaDocLandscape(html, 'Scheda_IDR_'+cli.rs.replace(/\s+/g,'_'));
-    return;
   } else {
   html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6.5pt;margin-bottom:8px">' +
     '<colgroup>'+
