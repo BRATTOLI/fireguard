@@ -5366,23 +5366,27 @@ function salvaCliente(){
     var _migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
     if(_migratoFlag){
       // Modalità collezioni separate: salva solo il cliente modificato/creato
-      var _cliDaSalvare = CLI_DATA.find(function(x){ return x.rs === rs; });
+      // Usa l'id (già noto) invece del nome per evitare ambiguità con nomi uguali
+      var _idDaSalvare = cliId || (CLI_DATA.find(function(x){ return x.rs === rs; }) || {}).id;
+      var _cliDaSalvare = _idDaSalvare ? CLI_DATA.find(function(x){ return x.id === _idDaSalvare; }) : null;
       if(_cliDaSalvare && _cliDaSalvare.id){
-        _staSalvando = true;
+        _staSalvando++;
+        setCloudStatus('saving');
         db.collection('clienti').doc(_cliDaSalvare.id).set(_cleanUndef(_cliDaSalvare))
-          .then(function(){ _staSalvando = false; setCloudStatus('ok'); })
-          .catch(function(e){ _staSalvando = false; setCloudStatus('error'); console.error('Errore salvataggio cliente Firestore:', e); });
+          .then(function(){ _staSalvando--; setCloudStatus('ok'); })
+          .catch(function(e){ _staSalvando--; setCloudStatus('error'); console.error('Errore salvataggio cliente Firestore:', e); });
       }
     } else {
       // Modalità documento principale
-      _staSalvando = true;
+      _staSalvando++;
+      setCloudStatus('saving');
       db.collection('database').doc('principale').set({
         clienti:   _cleanUndef(CLI_DATA),
         presidi:   _cleanUndef(PRESIDI_DATA),
         registro:  _cleanUndef(REG_DATA),
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(function(){ _staSalvando = false; setCloudStatus('ok'); })
-        .catch(function(e){ _staSalvando = false; setCloudStatus('error'); console.error('Errore salvataggio Firestore:', e); });
+      }).then(function(){ _staSalvando--; setCloudStatus('ok'); })
+        .catch(function(e){ _staSalvando--; setCloudStatus('error'); console.error('Errore salvataggio Firestore:', e); });
     }
   }
   // ─────────────────────────────────────────────────────────────────────────
@@ -5434,7 +5438,7 @@ function unisciClienti(cliIdDa, cliIdA){
   if(!da || !a){ notifica('❌ Cliente non trovato'); return; }
   if(!confirm('Unire tutti i presidi e interventi di\n"'+da.rs+'" ('+cliIdDa+')\nin\n"'+a.rs+'" ('+cliIdA+')?\n\nIl cliente '+cliIdDa+' verrà eliminato.')) return;
 
-  _staSalvando = true;
+  _staSalvando++;
 
   // Sposta presidi
   PRESIDI_DATA.forEach(function(p){
@@ -5476,10 +5480,10 @@ function unisciClienti(cliIdDa, cliIdA){
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     }));
     Promise.all(promesse)
-      .then(function(){ _staSalvando=false; setCloudStatus('ok'); notifica('✅ Clienti uniti correttamente!'); })
-      .catch(function(e){ _staSalvando=false; setCloudStatus('error'); console.error(e); });
+      .then(function(){ _staSalvando--; setCloudStatus('ok'); notifica('✅ Clienti uniti correttamente!'); })
+      .catch(function(e){ _staSalvando--; setCloudStatus('error'); console.error(e); });
   } else {
-    _staSalvando=false;
+    _staSalvando--;
     notifica('✅ Clienti uniti (solo locale)');
   }
 }
@@ -5513,7 +5517,7 @@ function eliminaDuplicatiPresidi(cliId){
 
   if(!confirm('🧹 Trovati ' + daEliminare.length + ' presidi duplicati per:\n"' + cli.rs + '"\n\nVerranno eliminati mantenendo uno per ogni matricola.\n\nConfermi?')) return;
 
-  _staSalvando = true;
+  _staSalvando++;
 
   // Rimuovi da PRESIDI_DATA
   daEliminare.forEach(function(p){
@@ -5546,18 +5550,18 @@ function eliminaDuplicatiPresidi(cliId){
     }));
     Promise.all(promesse)
       .then(function(){
-        _staSalvando = false;
+        _staSalvando--;
         setCloudStatus('ok');
         notifica('✅ Eliminati ' + daEliminare.length + ' duplicati da ' + cli.rs);
       })
       .catch(function(e){
-        _staSalvando = false;
+        _staSalvando--;
         setCloudStatus('error');
         console.error(e);
         notifica('⚠️ Errore eliminazione cloud: ' + e.message);
       });
   } else {
-    _staSalvando = false;
+    _staSalvando--;
     notifica('✅ Eliminati ' + daEliminare.length + ' duplicati (solo locale)');
   }
 }
@@ -5573,7 +5577,7 @@ function eliminaCliente(cliId){
   if(!confirm('\ud83d\udd34 SECONDA CONFERMA\n\nSei sicuro di voler eliminare il cliente "'+cli.rs+'" con '+nPres+' presidi?\n\nPremi OK per confermare definitivamente.')) return;
 
   // ── Blocca onSnapshot per evitare che Firebase ripristini i dati eliminati ──
-  _staSalvando = true;
+  _staSalvando++;
 
   // Rimuovi cliente da memoria
   const idx = CLI_DATA.findIndex(c=>c.id===cliId);
@@ -5614,18 +5618,18 @@ function eliminaCliente(cliId){
 
     Promise.all(promesse)
       .then(function(){
-        _staSalvando = false;
+        _staSalvando--;
         setCloudStatus('ok');
         console.log('🗑️ Cliente '+cliId+' eliminato da Firestore.');
       })
       .catch(function(err){
-        _staSalvando = false;
+        _staSalvando--;
         setCloudStatus('error');
         console.error('Errore eliminazione Firestore:', err);
         notifica('⚠️ Errore eliminazione cloud. Riprovare.');
       });
   } else {
-    _staSalvando = false;
+    _staSalvando--;
   }
 }
 
@@ -7558,7 +7562,7 @@ function importaExcel(){
   }
 
   // Blocca onSnapshot durante import per evitare sovrascrittura
-  _staSalvando = true;
+  _staSalvando++;
 
   // Aggiungi presidi
   nuoviPresidi.forEach(function(p){ PRESIDI_DATA.push(p); });
@@ -7605,7 +7609,7 @@ function importaExcel(){
   if(typeof eseguiSalvatagioCloud === 'function') {
     eseguiSalvatagioCloud();
   } else {
-    _staSalvando = false;
+    _staSalvando--;
   }
 
   var _msgDup = _duplicatiSaltati > 0 ? ' ('+_duplicatiSaltati+' duplicati ignorati)' : '';
@@ -11236,7 +11240,7 @@ function setCloudStatus(stato) {
 // ─── AUTO-SAVE CON DEBOUNCE 2 SECONDI ────────────────────────────────────────
 var _autoSaveTimer = null;
 var _autoSaveAbilitato = false; // si attiva solo dopo il login
-var _staSalvando = false; // blocca onSnapshot durante il salvataggio
+var _staSalvando = 0; // contatore operazioni async in corso (0 = libero) — evita race condition tra salvataggi paralleli
 
 function scheduleAutoSave() {
     if (!_autoSaveAbilitato) return;
@@ -11262,7 +11266,7 @@ function _cleanUndef(obj) {
 
 function eseguiSalvatagioCloud() {
     if (!_autoSaveAbilitato) return;
-    _staSalvando = true;
+    _staSalvando++;
     setCloudStatus('saving');
 
     var migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
@@ -11273,53 +11277,38 @@ function eseguiSalvatagioCloud() {
 
     if (migratoFlag) {
         // ── MODALITÀ COLLEZIONI SEPARATE ───────────────────────────────────
-        // Scrive ogni documento nella sua collezione
-        var batch = db.batch();
-        var count = 0;
+        // Costruisce lista operazioni e spezza in chunk da 490 (limite Firestore)
+        var ops = [];
+        clienti.forEach(function(c)  { if(c.id)  ops.push({ col:'clienti',    id:c.id,        data:c }); });
+        presidi.forEach(function(p)  { if(p.cod) ops.push({ col:'presidi',    id:p.cod,       data:p }); });
+        registro.forEach(function(r) { if(r.n)   ops.push({ col:'interventi', id:String(r.n), data:r }); });
 
-        function flushBatch(b) { return b.commit(); }
+        var totalOps = ops.length;
+        console.log('☁️ Auto-save: ' + totalOps + ' documenti da scrivere su collezioni.');
 
-        clienti.forEach(function(c) {
-            if (!c.id) return;
-            batch.set(db.collection('clienti').doc(c.id), c);
-            count++;
-        });
-        presidi.forEach(function(p) {
-            if (!p.cod) return;
-            batch.set(db.collection('presidi').doc(p.cod), p);
-            count++;
-        });
-        registro.forEach(function(r) {
-            if (!r.n) return;
-            batch.set(db.collection('interventi').doc(String(r.n)), r);
-            count++;
-        });
+        var chunks = [];
+        for(var _ci = 0; _ci < ops.length; _ci += 490) chunks.push(ops.slice(_ci, _ci + 490));
 
-        // Se troppi documenti, spezza in chunk da 490
-        if (count > 490) {
-            // Fallback al documento principale per sicurezza
-            db.collection('database').doc('principale').set({
-                clienti: clienti, presidi: presidi, registro: registro,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(function() {
-                _staSalvando = false;
+        var chunkIndex = 0;
+        function commitNextChunk() {
+            if(chunkIndex >= chunks.length){
+                _staSalvando--;
                 setCloudStatus('ok');
-            }).catch(function(e) { _staSalvando = false; setCloudStatus('error'); });
-            return;
-        }
-
-        batch.commit()
-            .then(function() {
-                _staSalvando = false;
-                setCloudStatus('ok');
-                console.log('☁️ Salvato su collezioni: ' + count + ' documenti.');
-            })
-            .catch(function(err) {
-                _staSalvando = false;
+                console.log('☁️ Salvato su collezioni: ' + totalOps + ' docs in ' + chunks.length + ' batch.');
+                return;
+            }
+            var b = db.batch();
+            chunks[chunkIndex++].forEach(function(op){
+                b.set(db.collection(op.col).doc(op.id), op.data);
+            });
+            b.commit().then(commitNextChunk).catch(function(err){
+                _staSalvando--;
                 setCloudStatus('error');
-                console.error('Errore salvataggio collezioni:', err);
+                console.error('Errore salvataggio collezioni (chunk ' + chunkIndex + '):', err);
                 setTimeout(function(){ setCloudStatus('ok'); }, 4000);
             });
+        }
+        commitNextChunk();
 
     } else {
         // ── MODALITÀ DOCUMENTO PRINCIPALE (default) ────────────────────────
@@ -11333,12 +11322,12 @@ function eseguiSalvatagioCloud() {
         };
         db.collection('database').doc('principale').set(data)
             .then(function() {
-                _staSalvando = false;
+                _staSalvando--;
                 setCloudStatus('ok');
                 console.log('☁️ Auto-save Firebase completato.');
             })
             .catch(function(err) {
-                _staSalvando = false;
+                _staSalvando--;
                 setCloudStatus('error');
                 console.error('Errore auto-save Firebase:', err);
                 setTimeout(function(){ setCloudStatus('ok'); }, 4000);
