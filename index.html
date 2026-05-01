@@ -5811,6 +5811,40 @@ function renderStoricoPresidio() {
 }
 
 // Helper: confronto nome cliente flessibile (gestisce piccole differenze di nome)
+// ── Aggiunge cliId ai presidi che ne mancano, usando il nome cliente come riferimento ──
+function riparaCliId() {
+  var riparati = 0;
+  var daSalvareFirestore = [];
+  PRESIDI_DATA.forEach(function(p) {
+    if(p.cliId) return; // già ha l'id, salta
+    // Cerca il cliente per nome (trim + lowercase per sicurezza)
+    var nomeP = (p.cli || '').toLowerCase().trim();
+    if(!nomeP) return;
+    var cli = CLI_DATA.find(function(c) {
+      return (c.rs || '').toLowerCase().trim() === nomeP;
+    });
+    if(cli) {
+      p.cliId = cli.id;
+      riparati++;
+      daSalvareFirestore.push(p);
+    }
+  });
+  if(riparati > 0) {
+    console.log('🔧 Riparati ' + riparati + ' presidi senza cliId.');
+    salvaLS(); // salva nel localStorage
+    // Aggiorna anche su Firestore se disponibile e quota ok
+    if(typeof db !== 'undefined' && db && _autoSaveAbilitato && !_quotaEsaurita) {
+      var migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
+      if(migratoFlag) {
+        daSalvareFirestore.forEach(function(p) {
+          if(p.cod) db.collection('presidi').doc(p.cod).set(_cleanUndef(p))
+            .catch(function(e){ console.warn('Errore salvataggio presidio riparato:', e); });
+        });
+      }
+    }
+  }
+}
+
 function cliMatch(presidio, cliente){
   if(!presidio || !cliente) return false;
   // ── Match per cliId (priorità) ────────────────────────────────────────────
@@ -11429,6 +11463,7 @@ function avviaSincronizzazione() {
             if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
             if (typeof renderRegistro === 'function') renderRegistro();
             if (typeof buildDashboard === 'function') buildDashboard();
+            if (typeof riparaCliId    === 'function') riparaCliId();
             console.log('📦 Dati caricati da localStorage: ' + CLI_DATA.length + ' clienti, ' + PRESIDI_DATA.length + ' presidi.');
         }
     } catch(e) { console.warn('Errore lettura localStorage:', e); }
@@ -11489,6 +11524,7 @@ function _avviaSincronizzazioneCollezioni() {
         if (fonte === 'presidi'    && typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
         if (fonte === 'interventi' && typeof renderRegistro === 'function') renderRegistro();
         if (_pronti.clienti && _pronti.presidi && _pronti.interventi) {
+            riparaCliId(); // aggiunge cliId ai presidi che ne mancano
             if (typeof buildDashboard === 'function') buildDashboard();
             setCloudStatus('ok');
             console.log('🔄 Sincronizzato da collezioni: ' + CLI_DATA.length + ' clienti, ' + PRESIDI_DATA.length + ' presidi, ' + REG_DATA.length + ' interventi.');
