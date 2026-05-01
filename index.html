@@ -7337,7 +7337,6 @@ function importaExcel(){
   // Se l'utente non ha selezionato un tipo, usa EST come default con avviso
   var tipoForzato = _tipoImportSelezionato || 'EST';
   var isFileREI = (tipoForzato === 'REI');
-  var isFileUES  = (tipoForzato === 'UES');
   var isFileUES = (tipoForzato === 'UES');
 
   // ── Nome cliente dal file ─────────────────────────────────────────────────
@@ -7379,8 +7378,11 @@ function importaExcel(){
   var nuovoCliId = null;
   // ── Set matricole già presenti per questo cliente (evita duplicati) ────────
   var _matricoleEsistenti = new Set(
-    presidiEsistenti.map(function(p){ return (p.matr||'').trim().toLowerCase(); })
-                    .filter(function(m){ return m && m !== '—'; })
+    presidiEsistenti.map(function(p){
+      // Per UES usa ubicazione+dispositivo come chiave univoca
+      if(p.tipo === 'UES') return ((p.ubi||'') + '|' + (p.ues_dispositivo||'')).trim().toLowerCase();
+      return (p.matr||'').trim().toLowerCase();
+    }).filter(function(m){ return m && m !== '—'; })
   );
   var _duplicatiSaltati = 0;
 
@@ -7486,8 +7488,9 @@ function importaExcel(){
       var letteraUES2 = tipoAnteUES2.replace(/[^AEae]/g,'').toUpperCase();
       var tipoDispUES2 = letteraUES2.includes('A') ? 'Antipanico' : letteraUES2.includes('E') ? 'Emergenza' : '—';
       var ubicazioneUES2 = String(row[22]||'').trim() || '—';
-      // ── Salta se matricola già presente per questo cliente ────────────────
-      if(numUES2 && _matricoleEsistenti.has(numUES2.toLowerCase())){
+      // ── Salta duplicati: per UES usa ubicazione+dispositivo come chiave (il numero non è una matricola univoca)
+      var _keyUES = (ubicazioneUES2 + '|' + String(row[1]||'').trim()).toLowerCase();
+      if(ubicazioneUES2 !== '—' && _matricoleEsistenti.has(_keyUES)){
         _duplicatiSaltati++; contatore--; return;
       }
       nuoviPresidi.push({
