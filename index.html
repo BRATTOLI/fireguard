@@ -8714,6 +8714,7 @@ function stampaManutenzioneWord(){
     '<td style="'+tdS+'">'+_normaAnteprima+'</td>' +
     '</tr></table>';
 
+  var rows = document.querySelectorAll('#tbl-man-sem-body tr');
   // ── Tabella presidi — replica fedele scheda PDF ───────────────────────────
   if(_tipoPresAnteprima==='IDR'||_tipoPresAnteprima==='NSP'){
     // ── SCHEDA IDRANTI / NASPI ─────────────────────────────────────────────
@@ -8745,7 +8746,7 @@ function stampaManutenzioneWord(){
     '<th style="'+thS+'">Note</th>' +
     '</tr></thead><tbody>';
 
-  var rows   = document.querySelectorAll('#tbl-man-sem-body tr');
+  // rows già definita sopra
   var nRow   = 0;
   var nConf  = 0; var nAnom = 0; var nNC = 0; var nND = 0;
   var anomalieDettaglio = [];
