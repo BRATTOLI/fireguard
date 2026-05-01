@@ -10741,6 +10741,11 @@ function caricaTimbro(input){
     localStorage.setItem('fireguard_timbro', e.target.result);
     aggiornaPreviewTimbro();
     notifica('✅ Timbro caricato — verrà applicato alle schede manutenzione');
+    // Salva timbro anche su Firebase (documento principale)
+    if(typeof db !== 'undefined' && typeof _autoSaveAbilitato !== 'undefined' && _autoSaveAbilitato){
+      db.collection('database').doc('principale').set({ timbro: e.target.result }, { merge: true })
+        .catch(function(e){ console.warn('Errore salvataggio timbro Firebase:', e); });
+    }
   };
   reader.readAsDataURL(input.files[0]);
 }
@@ -10750,6 +10755,11 @@ function rimuoviTimbro(){
   localStorage.removeItem('fireguard_timbro');
   aggiornaPreviewTimbro();
   notifica('🗑 Timbro rimosso');
+  // Rimuovi timbro anche da Firebase
+  if(typeof db !== 'undefined' && typeof _autoSaveAbilitato !== 'undefined' && _autoSaveAbilitato){
+    db.collection('database').doc('principale').set({ timbro: '' }, { merge: true })
+      .catch(function(e){ console.warn('Errore rimozione timbro Firebase:', e); });
+  }
 }
 
 function aggiornaPreviewTimbro(){
@@ -11023,7 +11033,7 @@ function scaricaFileSoftware() {
 
 // ─── SISTEMA SNAPSHOT / UNDO (Punto 3) ───────────────────────────────────────
 // _cronologiaSnapshot dichiarato globalmente in cima
-var _MAX_SNAPSHOT = 10;
+var _MAX_SNAPSHOT = 5; // ridotto da 10: ogni snapshot pesa ~300KB, 5 = max 1.5MB in localStorage
 
 function salvaSnapshot(descrizione) {
   if (typeof _cronologiaSnapshot === 'undefined') return;
@@ -11301,8 +11311,9 @@ function eseguiSalvatagioCloud() {
             clienti:  clienti,
             presidi:  presidi,
             registro: registro,
-            ditta:    _cleanUndef(typeof DITTA   !== 'undefined' ? DITTA   : {}),
-            tecnici:  _cleanUndef(typeof TECNICI !== 'undefined' ? TECNICI : []),
+            ditta:    _cleanUndef(typeof DITTA       !== 'undefined' ? DITTA       : {}),
+            tecnici:  _cleanUndef(typeof TECNICI     !== 'undefined' ? TECNICI     : []),
+            timbro:   (typeof window.TIMBRO_B64 !== 'undefined' && window.TIMBRO_B64) ? window.TIMBRO_B64 : '',
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
         db.collection('database').doc('principale').set(data)
@@ -11416,6 +11427,11 @@ function avviaSincronizzazione() {
                 var _r = cloudData.registro || []; REG_DATA.length = 0;     _r.forEach(function(x){ REG_DATA.push(x); });
                 if(cloudData.ditta   && Object.keys(cloudData.ditta).length)   { if(typeof DITTA   !== 'undefined') Object.assign(DITTA,   cloudData.ditta); }
                 if(cloudData.tecnici && cloudData.tecnici.length)               { if(typeof TECNICI !== 'undefined'){ TECNICI.length=0; cloudData.tecnici.forEach(function(t){ TECNICI.push(t); }); } }
+                if(cloudData.timbro && cloudData.timbro.length > 10 && !localStorage.getItem('fireguard_timbro')){
+                  window.TIMBRO_B64 = cloudData.timbro;
+                  localStorage.setItem('fireguard_timbro', cloudData.timbro);
+                  if(typeof aggiornaPreviewTimbro === 'function') aggiornaPreviewTimbro();
+                }
                 // ── Ripristina ultimoImport dal localStorage (non viene salvato su Firebase) ──
                 if(!ultimoImport || !ultimoImport.righe || !ultimoImport.righe.length){
                   try{
