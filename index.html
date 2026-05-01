@@ -10070,7 +10070,7 @@ function _buildHTMLSchedaUES(){
     '<th style="'+hthUES+'">N°</th>' +
     '<th style="'+hthUES+'">N°/Posizione</th>' +
     '<th style="'+hthUES+'">Dispositivo (UNI EN 1125/179)</th>' +
-    '<th style="'+vthUES+'">'+getLU('A=Antipanico E=Emerg. N°Ante')+'</th>' +
+    '<th style="'+vthUES+'">'+getLU('Tipo (A=Antipanico E=Emergenza) e N° ante')+'</th>' +
     '<th style="'+hthUES+'">Costruttore</th>' +
     '<th style="'+vthUES+'">'+getLU('Anno costr.')+'</th>' +
     '<th style="'+hthUES+'">Ubicazione</th>' +
@@ -10113,7 +10113,7 @@ function _buildHTMLSchedaUES(){
       '<td style="'+tdS+'">'+(i+1)+'</td>' +
       '<td style="'+tdS+'">'+numUES+'</td>' +
       '<td style="'+tdL+'">'+g('ues-dispositivo')+'</td>' +
-      '<td style="'+tdS+'">'+gs('ues-tipo')+' — '+g('ues-ante')+'</td>' +
+      '<td style="'+tdS+'">'+gs('ues-tipo')+' — N° '+g('ues-ante')+'</td>' +
       '<td style="'+tdL+'">'+g('man-costr')+'</td>' +
       '<td style="'+tdS+'">'+g('man-anno')+'</td>' +
       '<td style="'+tdL+'">'+g('man-ubi')+'</td>' +
@@ -10136,7 +10136,6 @@ function _buildHTMLSchedaUES(){
   });
   html += '</tbody></table>';
 
-  var totale = nConf+nNC+nNE;
   html += '<table style="border-collapse:collapse;width:100%;margin-bottom:14px"><tr>' +
     '<td style="padding:6px;background:#1A4F8A;color:#fff;font-weight:bold;font-size:8pt;border:1px solid #ccc">Totale uscite verificate</td>' +
     '<td style="padding:6px;background:#1A4F8A;color:#fff;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+totale+'</td>' +
@@ -10144,6 +10143,8 @@ function _buildHTMLSchedaUES(){
     '<td style="padding:6px;background:#e8f5e9;color:#1a7a3a;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+nConf+'</td>' +
     '<td style="padding:6px;background:#fdecea;color:#C0392B;font-weight:bold;font-size:8pt;border:1px solid #ccc">❌ Non conformi</td>' +
     '<td style="padding:6px;background:#fdecea;color:#C0392B;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+nNC+'</td>' +
+    '<td style="padding:6px;background:#fff8e1;color:#856404;font-weight:bold;font-size:8pt;border:1px solid #ccc">N.E. Non accessibili</td>' +
+    '<td style="padding:6px;background:#fff8e1;color:#856404;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+nNE+'</td>' +
     '</tr></table>';
 
   html += '<div style="border:1px solid #e74c3c;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:7pt;color:#333">' +
@@ -10151,10 +10152,19 @@ function _buildHTMLSchedaUES(){
     'Si diffida la Committenza dall\'utilizzo delle relative uscite fino al ripristino delle condizioni di conformità.' +
     '</div>';
 
+  // Dichiarazione di conformità (come nelle schede REI)
+  html += '<div style="border:1.5px solid #1A4F8A;border-radius:4px;padding:8px 12px;margin-bottom:10px;font-size:7pt;color:#1A4F8A;background:#e8f0fb">' +
+    '<b>DICHIARAZIONE DEL TECNICO MANUTENTORE</b><br>' +
+    'Il sottoscritto tecnico abilitato dichiara che le operazioni di controllo e manutenzione sui dispositivi di apertura delle uscite di sicurezza sono state eseguite ' +
+    'conformemente alle prescrizioni della norma UNI EN 1125 / UNI EN 179 e del D.M. 1/9/2021, e che i dispositivi risultati conformi soddisfano i requisiti di funzionalità ' +
+    'richiesti per garantire la sicurezza degli occupanti in caso di emergenza.' +
+    '</div>';
+
   html += '<table style="border-collapse:collapse;width:100%"><tr>' +
     '<td style="width:50%;padding:10px;border:1px solid #ccc;text-align:center;font-size:8pt">' +
       '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>' +
       (typeof TIMBRO_B64!=='undefined'&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>') +
+      '<div style="font-size:8pt;font-weight:bold;margin-top:4px">' + tecnico + '</div>' +
     '</td>' +
     '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>' +
     '</tr></table>';
@@ -11534,6 +11544,11 @@ function _avviaSincronizzazioneCollezioni() {
     _u.push(db.collection('clienti').onSnapshot(function(snap) {
         if (_staSalvando) { console.log('⏸️ Snapshot clienti ignorato (salvataggio in corso)'); return; }
         if (_quotaEsaurita) { console.log('⏸️ Snapshot clienti ignorato (quota Firebase esaurita)'); return; }
+        // Non sovrascrivere se Firebase ha meno dati del localStorage (quota parziale)
+        if (snap.size > 0 && snap.size < CLI_DATA.length) {
+            console.warn('⏸️ Snapshot clienti ignorato: Firebase ha ' + snap.size + ' doc, locale ne ha ' + CLI_DATA.length + ' — locale prioritario.');
+            _aggiornaUI('clienti'); return;
+        }
         CLI_DATA.length = 0;
         snap.forEach(function(d) { CLI_DATA.push(d.data()); });
         CLI_DATA.sort(function(a,b){ return (a.id||'').localeCompare(b.id||''); });
@@ -11543,6 +11558,10 @@ function _avviaSincronizzazioneCollezioni() {
     _u.push(db.collection('presidi').onSnapshot(function(snap) {
         if (_staSalvando) { console.log('⏸️ Snapshot presidi ignorato (salvataggio in corso)'); return; }
         if (_quotaEsaurita) { console.log('⏸️ Snapshot presidi ignorato (quota Firebase esaurita)'); return; }
+        if (snap.size > 0 && snap.size < PRESIDI_DATA.length) {
+            console.warn('⏸️ Snapshot presidi ignorato: Firebase ha ' + snap.size + ' doc, locale ne ha ' + PRESIDI_DATA.length + ' — locale prioritario.');
+            _aggiornaUI('presidi'); return;
+        }
         PRESIDI_DATA.length = 0;
         snap.forEach(function(d) { PRESIDI_DATA.push(d.data()); });
         _aggiornaUI('presidi');
@@ -11551,6 +11570,10 @@ function _avviaSincronizzazioneCollezioni() {
     _u.push(db.collection('interventi').onSnapshot(function(snap) {
         if (_staSalvando) { console.log('⏸️ Snapshot interventi ignorato (salvataggio in corso)'); return; }
         if (_quotaEsaurita) { console.log('⏸️ Snapshot interventi ignorato (quota Firebase esaurita)'); return; }
+        if (snap.size > 0 && snap.size < REG_DATA.length) {
+            console.warn('⏸️ Snapshot interventi ignorato: Firebase ha ' + snap.size + ' doc, locale ne ha ' + REG_DATA.length + ' — locale prioritario.');
+            _aggiornaUI('interventi'); return;
+        }
         REG_DATA.length = 0;
         snap.forEach(function(d) { REG_DATA.push(d.data()); });
         REG_DATA.sort(function(a,b){ return (b.n||0)-(a.n||0); });
