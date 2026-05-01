@@ -10832,11 +10832,11 @@ function caricaLS(){
     const stato = JSON.parse(raw);
     if(!stato || !stato.versione) return false;
 
-    // ── In modalità collezioni: NON caricare clienti/presidi/registro dal localStorage
-    // Firebase è la fonte di verità — avviaSincronizzazione() caricherà i dati corretti
-    var migratoLS = localStorage.getItem('fg_migrato_collezioni') === 'true';
-    if(!migratoLS){
-      // Solo in modalità NON migrata: carica da localStorage
+    // Carica sempre da localStorage come dati iniziali
+    // Firebase sovrascriverà con i dati aggiornati dopo il login
+    // In questo modo il software funziona anche quando Firebase è offline
+    if(true){
+      // Carica sempre da localStorage (Firebase aggiornerà dopo)
       if(Array.isArray(stato.clienti) && stato.clienti.length > 0){
         CLI_DATA.length = 0;
         stato.clienti
@@ -11481,16 +11481,27 @@ function _avviaSincronizzazionePrincipale() {
             setCloudStatus('ok');
         }
     }).catch(function(err) {
+        console.warn('⚠️ Firebase non disponibile, carico da localStorage:', err.message);
         setCloudStatus('error');
-        console.error('Errore lettura Firebase:', err);
+        var raw = localStorage.getItem('fireguard_3e_v3');
+        if (raw) {
+            try {
+                var stato = JSON.parse(raw);
+                if (stato.clienti)  { CLI_DATA.length=0;     stato.clienti.forEach(function(x){CLI_DATA.push(x);}); }
+                if (stato.presidi)  { PRESIDI_DATA.length=0; stato.presidi.forEach(function(x){PRESIDI_DATA.push(x);}); }
+                if (stato.registro) { REG_DATA.length=0;     stato.registro.forEach(function(x){REG_DATA.push(x);}); }
+                if (typeof renderClienti  === 'function') renderClienti();
+                if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
+                if (typeof renderRegistro === 'function') renderRegistro();
+                if (typeof buildDashboard === 'function') buildDashboard();
+                notifica('⚠️ Firebase offline — dati caricati dalla cache locale');
+            } catch(e2) {}
+        }
     });
     unsubscribe = function() {}; // noop
 }
 
 function _avviaSincronizzazioneCollezioni() {
-    // USA get() ONE-SHOT invece di onSnapshot realtime
-    // Gli onSnapshot triggerano ad ogni batch.set e sovrascrivono i dati locali
-    // con stati parziali. Con get() leggiamo solo al login, poi salviamo senza interferenze.
     setCloudStatus('saving');
 
     Promise.all([
@@ -11513,6 +11524,14 @@ function _avviaSincronizzazioneCollezioni() {
         snapInterventi.forEach(function(d) { REG_DATA.push(d.data()); });
         REG_DATA.sort(function(a,b){ return (b.n||0)-(a.n||0); });
 
+        // Salva nel localStorage come cache locale aggiornata
+        try {
+            var cache = { versione:'3.2', salvato: new Date().toISOString(),
+                clienti: CLI_DATA, presidi: PRESIDI_DATA, registro: REG_DATA,
+                ditta: DITTA, tecnici: TECNICI };
+            localStorage.setItem('fireguard_3e_v3', JSON.stringify(cache));
+        } catch(e) {}
+
         if (typeof renderClienti  === 'function') renderClienti();
         if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
         if (typeof renderRegistro === 'function') renderRegistro();
@@ -11521,13 +11540,28 @@ function _avviaSincronizzazioneCollezioni() {
         setCloudStatus('ok');
         console.log('✅ Caricato da collezioni: ' + CLI_DATA.length + ' clienti, ' + PRESIDI_DATA.length + ' presidi, ' + REG_DATA.length + ' interventi.');
     }).catch(function(err) {
+        // Firebase non disponibile (quota esaurita, offline, ecc.)
+        // Fallback: carica dal localStorage locale
+        console.warn('⚠️ Firebase non disponibile, carico da localStorage:', err.message);
         setCloudStatus('error');
-        console.error('Errore lettura collezioni:', err);
+        var raw = localStorage.getItem('fireguard_3e_v3');
+        if (raw) {
+            try {
+                var stato = JSON.parse(raw);
+                if (stato.clienti)  { CLI_DATA.length=0;     stato.clienti.forEach(function(x){CLI_DATA.push(x);}); }
+                if (stato.presidi)  { PRESIDI_DATA.length=0; stato.presidi.forEach(function(x){PRESIDI_DATA.push(x);}); }
+                if (stato.registro) { REG_DATA.length=0;     stato.registro.forEach(function(x){REG_DATA.push(x);}); }
+                if (typeof renderClienti  === 'function') renderClienti();
+                if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
+                if (typeof renderRegistro === 'function') renderRegistro();
+                if (typeof buildDashboard === 'function') buildDashboard();
+                notifica('⚠️ Firebase offline — dati caricati dalla cache locale');
+                console.log('✅ Fallback localStorage: ' + CLI_DATA.length + ' clienti, ' + PRESIDI_DATA.length + ' presidi.');
+            } catch(e2) { console.error('Errore fallback localStorage:', e2); }
+        }
     });
 
-    // Nessun listener realtime — i salvataggi avvengono tramite eseguiSalvatagioCloud()
-    // che usa batch.set() senza interferire con i dati locali
-    unsubscribe = function() {}; // noop - niente da disiscrivere
+    unsubscribe = function() {};
 }
 
 // ─── MIGRAZIONE DATI — tasto in dashboard ────────────────────────────────────
