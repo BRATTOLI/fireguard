@@ -10832,31 +10832,32 @@ function caricaLS(){
     const stato = JSON.parse(raw);
     if(!stato || !stato.versione) return false;
 
-    // ── Ripristina clienti filtrando quelli demo ──────────────────────────
-    if(Array.isArray(stato.clienti) && stato.clienti.length > 0){
-      CLI_DATA.length = 0;
-      stato.clienti
-        .filter(c => !CLIENTI_DEMO_DA_PULIRE.includes(c.rs))
-        .forEach(c => CLI_DATA.push(c));
+    // ── In modalità collezioni: NON caricare clienti/presidi/registro dal localStorage
+    // Firebase è la fonte di verità — avviaSincronizzazione() caricherà i dati corretti
+    var migratoLS = localStorage.getItem('fg_migrato_collezioni') === 'true';
+    if(!migratoLS){
+      // Solo in modalità NON migrata: carica da localStorage
+      if(Array.isArray(stato.clienti) && stato.clienti.length > 0){
+        CLI_DATA.length = 0;
+        stato.clienti
+          .filter(c => !CLIENTI_DEMO_DA_PULIRE.includes(c.rs))
+          .forEach(c => CLI_DATA.push(c));
+      }
+      if(Array.isArray(stato.presidi) && stato.presidi.length > 0){
+        PRESIDI_DATA.length = 0;
+        stato.presidi
+          .filter(p => CLI_DATA.some(c => c.rs === p.cli) || !PRESIDI_DEMO_CLI.includes(p.cli))
+          .filter(p => !PRESIDI_DEMO_CLI.includes(p.cli))
+          .forEach(p => PRESIDI_DATA.push(p));
+      }
+      if(Array.isArray(stato.registro) && stato.registro.length > 0){
+        REG_DATA.length = 0;
+        stato.registro
+          .filter(r => !CLIENTI_DEMO_DA_PULIRE.includes(r.cli) && !PRESIDI_DEMO_CLI.includes(r.cli))
+          .forEach(r => REG_DATA.push(r));
+      }
     }
-    // ── Ripristina presidi filtrando quelli collegati a clienti demo ──────
-    if(Array.isArray(stato.presidi) && stato.presidi.length > 0){
-      PRESIDI_DATA.length = 0;
-      // Tieni solo i presidi associati a clienti NON demo (clienti reali)
-      // I clienti reali sono già caricati in CLI_DATA sopra
-      stato.presidi
-        .filter(p => CLI_DATA.some(c => c.rs === p.cli) || !PRESIDI_DEMO_CLI.includes(p.cli))
-        .filter(p => !PRESIDI_DEMO_CLI.includes(p.cli))
-        .forEach(p => PRESIDI_DATA.push(p));
-    }
-    // ── Ripristina registro filtrando interventi demo ─────────────────────
-    if(Array.isArray(stato.registro) && stato.registro.length > 0){
-      REG_DATA.length = 0;
-      stato.registro
-        .filter(r => !CLIENTI_DEMO_DA_PULIRE.includes(r.cli) && !PRESIDI_DEMO_CLI.includes(r.cli))
-        .forEach(r => REG_DATA.push(r));
-    }
-    // ── Ripristina ditta e tecnici ─────────────────────────────────────────
+    // ── Ripristina ditta e tecnici (sempre — non sono in Firebase collezioni)
     if(stato.ditta) Object.assign(DITTA, stato.ditta);
     if(Array.isArray(stato.tecnici)){ TECNICI.length=0; stato.tecnici.forEach(function(t){TECNICI.push(t);}); }
     // ── Ripristina ultimo import ───────────────────────────────────────────
