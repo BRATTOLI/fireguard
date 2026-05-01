@@ -5360,6 +5360,32 @@ function salvaCliente(){
   renderClienti();
   buildDashboard();
   salvaLS();
+
+  // ── Salva su Firestore ────────────────────────────────────────────────────
+  if(typeof db !== 'undefined' && db && typeof _autoSaveAbilitato !== 'undefined' && _autoSaveAbilitato){
+    var _migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
+    if(_migratoFlag){
+      // Modalità collezioni separate: salva solo il cliente modificato/creato
+      var _cliDaSalvare = CLI_DATA.find(function(x){ return x.rs === rs; });
+      if(_cliDaSalvare && _cliDaSalvare.id){
+        _staSalvando = true;
+        db.collection('clienti').doc(_cliDaSalvare.id).set(_cleanUndef(_cliDaSalvare))
+          .then(function(){ _staSalvando = false; setCloudStatus('ok'); })
+          .catch(function(e){ _staSalvando = false; setCloudStatus('error'); console.error('Errore salvataggio cliente Firestore:', e); });
+      }
+    } else {
+      // Modalità documento principale
+      _staSalvando = true;
+      db.collection('database').doc('principale').set({
+        clienti:   _cleanUndef(CLI_DATA),
+        presidi:   _cleanUndef(PRESIDI_DATA),
+        registro:  _cleanUndef(REG_DATA),
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function(){ _staSalvando = false; setCloudStatus('ok'); })
+        .catch(function(e){ _staSalvando = false; setCloudStatus('error'); console.error('Errore salvataggio Firestore:', e); });
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 }
 
 // Elimina cliente e tutti i suoi presidi
