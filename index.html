@@ -11476,49 +11476,46 @@ function avviaSincronizzazione() {
 }
 
 function _avviaSincronizzazioneCollezioni() {
-    var _pronti = { clienti: false, presidi: false, interventi: false };
-    var _u = [];
+    // USA get() ONE-SHOT invece di onSnapshot realtime
+    // Gli onSnapshot triggerano ad ogni batch.set e sovrascrivono i dati locali
+    // con stati parziali. Con get() leggiamo solo al login, poi salviamo senza interferenze.
+    setCloudStatus('saving');
 
-    function _aggiornaUI(fonte) {
-        _pronti[fonte] = true;
-        if (fonte === 'clienti'    && typeof renderClienti  === 'function') renderClienti();
-        if (fonte === 'presidi'    && typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
-        if (fonte === 'interventi' && typeof renderRegistro === 'function') renderRegistro();
-        if (_pronti.clienti && _pronti.presidi && _pronti.interventi) {
-            if (typeof buildDashboard === 'function') buildDashboard();
-            setCloudStatus('ok');
-            console.log('🔄 Sincronizzato da collezioni: ' + CLI_DATA.length + ' clienti, ' + PRESIDI_DATA.length + ' presidi, ' + REG_DATA.length + ' interventi.');
-        }
-    }
+    Promise.all([
+        db.collection('clienti').get(),
+        db.collection('presidi').get(),
+        db.collection('interventi').get()
+    ]).then(function(results) {
+        var snapClienti    = results[0];
+        var snapPresidi    = results[1];
+        var snapInterventi = results[2];
 
-    _u.push(db.collection('clienti').onSnapshot(function(snap) {
-        if (_staSalvando || _staModificando) { console.log('⏸️ Snapshot clienti ignorato'); return; }
-        if (_ignoraSnapshot > 0) { _ignoraSnapshot--; console.log('⏸️ Snapshot clienti (eco) ignorato'); return; }
         CLI_DATA.length = 0;
-        snap.forEach(function(d) { CLI_DATA.push(d.data()); });
+        snapClienti.forEach(function(d) { CLI_DATA.push(d.data()); });
         CLI_DATA.sort(function(a,b){ return (a.id||'').localeCompare(b.id||''); });
-        _aggiornaUI('clienti');
-    }, function(e) { console.error('Listener clienti:', e); _aggiornaUI('clienti'); }));
 
-    _u.push(db.collection('presidi').onSnapshot(function(snap) {
-        if (_staSalvando || _staModificando) { console.log('⏸️ Snapshot presidi ignorato'); return; }
-        if (_ignoraSnapshot > 0) { _ignoraSnapshot--; console.log('⏸️ Snapshot presidi (eco) ignorato'); return; }
         PRESIDI_DATA.length = 0;
-        snap.forEach(function(d) { PRESIDI_DATA.push(d.data()); });
-        _aggiornaUI('presidi');
-    }, function(e) { console.error('Listener presidi:', e); _aggiornaUI('presidi'); }));
+        snapPresidi.forEach(function(d) { PRESIDI_DATA.push(d.data()); });
 
-    _u.push(db.collection('interventi').onSnapshot(function(snap) {
-        if (_staSalvando || _staModificando) { console.log('⏸️ Snapshot interventi ignorato'); return; }
-        if (_ignoraSnapshot > 0) { _ignoraSnapshot--; console.log('⏸️ Snapshot interventi (eco) ignorato'); return; }
         REG_DATA.length = 0;
-        snap.forEach(function(d) { REG_DATA.push(d.data()); });
+        snapInterventi.forEach(function(d) { REG_DATA.push(d.data()); });
         REG_DATA.sort(function(a,b){ return (b.n||0)-(a.n||0); });
-        _aggiornaUI('interventi');
-    }, function(e) { console.error('Listener interventi:', e); _aggiornaUI('interventi'); }));
 
-    // Unsubscribe globale
-    unsubscribe = function() { _u.forEach(function(fn){ try{fn();}catch(e){} }); };
+        if (typeof renderClienti  === 'function') renderClienti();
+        if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
+        if (typeof renderRegistro === 'function') renderRegistro();
+        if (typeof buildDashboard === 'function') buildDashboard();
+
+        setCloudStatus('ok');
+        console.log('✅ Caricato da collezioni: ' + CLI_DATA.length + ' clienti, ' + PRESIDI_DATA.length + ' presidi, ' + REG_DATA.length + ' interventi.');
+    }).catch(function(err) {
+        setCloudStatus('error');
+        console.error('Errore lettura collezioni:', err);
+    });
+
+    // Nessun listener realtime — i salvataggi avvengono tramite eseguiSalvatagioCloud()
+    // che usa batch.set() senza interferire con i dati locali
+    unsubscribe = function() {}; // noop - niente da disiscrivere
 }
 
 // ─── MIGRAZIONE DATI — tasto in dashboard ────────────────────────────────────
