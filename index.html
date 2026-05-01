@@ -11244,10 +11244,12 @@ function setCloudStatus(stato) {
 }
 
 // Gestione centralizzata errori Firestore — distingue quota da altri errori
+var _quotaEsaurita = false; // quando true, gli onSnapshot non sovrascrivono i dati locali
 function _gestisciErroreFirestore(err, contesto) {
     _staSalvando--;
     console.error((contesto || 'Firestore') + ':', err);
     if (err && err.code === 'resource-exhausted') {
+        _quotaEsaurita = true;
         setCloudStatus('quota');
         // Assicura che i dati siano almeno nel localStorage
         try {
@@ -11414,6 +11416,24 @@ window.eseguiLogout = function() { auth.signOut(); };
 // ─── SINCRONIZZAZIONE — legge da principale O da collezioni ──────────────────
 function avviaSincronizzazione() {
     if (unsubscribe) unsubscribe();
+
+    // ── PRIMA carica dal localStorage (dati certi e immediati) ───────────────
+    try {
+        var _lsRaw = localStorage.getItem('fireguard_3e_v3');
+        if (_lsRaw) {
+            var _lsObj = JSON.parse(_lsRaw);
+            if (_lsObj.clienti  && _lsObj.clienti.length)  { CLI_DATA.length = 0;      _lsObj.clienti.forEach(function(x){ CLI_DATA.push(x); }); }
+            if (_lsObj.presidi  && _lsObj.presidi.length)  { PRESIDI_DATA.length = 0;  _lsObj.presidi.forEach(function(x){ PRESIDI_DATA.push(x); }); }
+            if (_lsObj.registro && _lsObj.registro.length) { REG_DATA.length = 0;      _lsObj.registro.forEach(function(x){ REG_DATA.push(x); }); }
+            if (typeof renderClienti  === 'function') renderClienti();
+            if (typeof renderPresidi  === 'function') renderPresidi(_filtroTipoAttivo);
+            if (typeof renderRegistro === 'function') renderRegistro();
+            if (typeof buildDashboard === 'function') buildDashboard();
+            console.log('📦 Dati caricati da localStorage: ' + CLI_DATA.length + ' clienti, ' + PRESIDI_DATA.length + ' presidi.');
+        }
+    } catch(e) { console.warn('Errore lettura localStorage:', e); }
+    // ─────────────────────────────────────────────────────────────────────────
+
     setCloudStatus('saving');
 
     var migratoFlag = localStorage.getItem('fg_migrato_collezioni') === 'true';
@@ -11425,6 +11445,7 @@ function avviaSincronizzazione() {
         // Leggi dal documento principale
         unsubscribe = db.collection('database').doc('principale').onSnapshot(function(doc) {
             if (_staSalvando) { console.log('⏸️ Snapshot ignorato (salvataggio in corso)'); return; }
+            if (_quotaEsaurita) { console.log('⏸️ Snapshot ignorato (quota Firebase esaurita)'); return; }
             if (doc.exists) {
                 var cloudData = doc.data();
                 var _c = cloudData.clienti  || []; CLI_DATA.length = 0;     _c.forEach(function(x){ CLI_DATA.push(x); });
@@ -11476,6 +11497,7 @@ function _avviaSincronizzazioneCollezioni() {
 
     _u.push(db.collection('clienti').onSnapshot(function(snap) {
         if (_staSalvando) { console.log('⏸️ Snapshot clienti ignorato (salvataggio in corso)'); return; }
+        if (_quotaEsaurita) { console.log('⏸️ Snapshot clienti ignorato (quota Firebase esaurita)'); return; }
         CLI_DATA.length = 0;
         snap.forEach(function(d) { CLI_DATA.push(d.data()); });
         CLI_DATA.sort(function(a,b){ return (a.id||'').localeCompare(b.id||''); });
@@ -11484,6 +11506,7 @@ function _avviaSincronizzazioneCollezioni() {
 
     _u.push(db.collection('presidi').onSnapshot(function(snap) {
         if (_staSalvando) { console.log('⏸️ Snapshot presidi ignorato (salvataggio in corso)'); return; }
+        if (_quotaEsaurita) { console.log('⏸️ Snapshot presidi ignorato (quota Firebase esaurita)'); return; }
         PRESIDI_DATA.length = 0;
         snap.forEach(function(d) { PRESIDI_DATA.push(d.data()); });
         _aggiornaUI('presidi');
@@ -11491,6 +11514,7 @@ function _avviaSincronizzazioneCollezioni() {
 
     _u.push(db.collection('interventi').onSnapshot(function(snap) {
         if (_staSalvando) { console.log('⏸️ Snapshot interventi ignorato (salvataggio in corso)'); return; }
+        if (_quotaEsaurita) { console.log('⏸️ Snapshot interventi ignorato (quota Firebase esaurita)'); return; }
         REG_DATA.length = 0;
         snap.forEach(function(d) { REG_DATA.push(d.data()); });
         REG_DATA.sort(function(a,b){ return (b.n||0)-(a.n||0); });
