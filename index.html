@@ -11228,6 +11228,7 @@ function setCloudStatus(stato) {
 var _autoSaveTimer = null;
 var _autoSaveAbilitato = false; // si attiva solo dopo il login
 var _staSalvando = false; // blocca onSnapshot durante il salvataggio
+var _ignoraSnapshot = 0; // numero di snapshot da ignorare dopo salvataggio
 
 function scheduleAutoSave() {
     if (!_autoSaveAbilitato) return;
@@ -11304,6 +11305,7 @@ function eseguiSalvatagioCloud() {
         batch.commit()
             .then(function() {
                 _staSalvando = false;
+                _ignoraSnapshot = 3; // ignora i prossimi 3 snapshot (eco del salvataggio)
                 setCloudStatus('ok');
                 console.log('☁️ Salvato su collezioni: ' + count + ' documenti.');
             })
@@ -11330,6 +11332,7 @@ function eseguiSalvatagioCloud() {
         db.collection('database').doc('principale').set(data)
             .then(function() {
                 _staSalvando = false;
+                _ignoraSnapshot = 1; // ignora il prossimo snapshot (eco del salvataggio)
                 setCloudStatus('ok');
                 console.log('☁️ Auto-save Firebase completato.');
             })
@@ -11431,6 +11434,7 @@ function avviaSincronizzazione() {
         unsubscribe = db.collection('database').doc('principale').onSnapshot(function(doc) {
             if (_staSalvando)   { console.log('⏸️ Snapshot ignorato (salvataggio in corso)'); return; }
             if (_staModificando) { console.log('⏸️ Snapshot ignorato (modifica in corso)'); return; }
+            if (_ignoraSnapshot > 0) { _ignoraSnapshot--; console.log('⏸️ Snapshot principale (eco) ignorato'); return; }
             if (doc.exists) {
                 var cloudData = doc.data();
                 var _c = cloudData.clienti  || []; CLI_DATA.length = 0;     _c.forEach(function(x){ CLI_DATA.push(x); });
@@ -11489,6 +11493,7 @@ function _avviaSincronizzazioneCollezioni() {
 
     _u.push(db.collection('clienti').onSnapshot(function(snap) {
         if (_staSalvando || _staModificando) { console.log('⏸️ Snapshot clienti ignorato'); return; }
+        if (_ignoraSnapshot > 0) { _ignoraSnapshot--; console.log('⏸️ Snapshot clienti (eco) ignorato'); return; }
         CLI_DATA.length = 0;
         snap.forEach(function(d) { CLI_DATA.push(d.data()); });
         CLI_DATA.sort(function(a,b){ return (a.id||'').localeCompare(b.id||''); });
@@ -11497,6 +11502,7 @@ function _avviaSincronizzazioneCollezioni() {
 
     _u.push(db.collection('presidi').onSnapshot(function(snap) {
         if (_staSalvando || _staModificando) { console.log('⏸️ Snapshot presidi ignorato'); return; }
+        if (_ignoraSnapshot > 0) { _ignoraSnapshot--; console.log('⏸️ Snapshot presidi (eco) ignorato'); return; }
         PRESIDI_DATA.length = 0;
         snap.forEach(function(d) { PRESIDI_DATA.push(d.data()); });
         _aggiornaUI('presidi');
@@ -11504,6 +11510,7 @@ function _avviaSincronizzazioneCollezioni() {
 
     _u.push(db.collection('interventi').onSnapshot(function(snap) {
         if (_staSalvando || _staModificando) { console.log('⏸️ Snapshot interventi ignorato'); return; }
+        if (_ignoraSnapshot > 0) { _ignoraSnapshot--; console.log('⏸️ Snapshot interventi (eco) ignorato'); return; }
         REG_DATA.length = 0;
         snap.forEach(function(d) { REG_DATA.push(d.data()); });
         REG_DATA.sort(function(a,b){ return (b.n||0)-(a.n||0); });
