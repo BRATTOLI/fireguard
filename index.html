@@ -4504,6 +4504,8 @@ function ristampaSchedaStorico(sessId) {
   var _opR   = (r0.op||'').toLowerCase();
   var isREI = _tipoPres==='REI' || _tipoR.includes('REI') || _opR.includes('porta') || _opR.includes('rei');
   var isUES = _tipoPres==='UES' || _tipoR.includes('UES') || _opR.includes('uscita') || _opR.includes('ues');
+  var isIDR = _tipoPres==='IDR' || _tipoR.includes('IDR') || _opR.includes('idrante') || _opR.includes('idr');
+  var isNSP = _tipoPres==='NSP' || _tipoR.includes('NSP') || _opR.includes('naspo') || _opR.includes('nsp');
 
   if(isREI){
     // Ricostruisce HTML scheda REI dai dati storico
@@ -4716,6 +4718,105 @@ function ristampaSchedaStorico(sessId) {
       '<td style="width:50%;padding:40px 10px 8px;border:1px solid #ccc;text-align:center;font-size:8pt">Firma per ricevuta verbale — Responsabile cliente</td>'+
       '</tr></table>';
     scaricaSchemaLandscapePDF(html, 'Scheda_UES_'+nomeBase+'_'+dataInt.replace(/\//g,'-'));
+  } else if(isIDR||isNSP){
+    // IDR/NSP — ricostruisce tabella idranti/naspi
+    var _normaIDR = isNSP ? 'UNI EN 671-1:2012 — D.M. 1/9/2021' : 'UNI EN 671-3:2009 — D.M. 1/9/2021';
+    var _titoloIDR = 'SCHEDA DI MANUTENZIONE PRESIDI ANTINCENDIO';
+    var html = _intestazioneDocTipo(cli, dataInt, tecnico, _titoloIDR, _normaIDR);
+    var thS='background:#1A4F8A;color:white;padding:5px 6px;border:1px solid #999;font-size:7.5pt;text-align:center;font-weight:bold;';
+    var tdS='padding:4px 6px;border:1px solid #ccc;font-size:8pt;vertical-align:middle;text-align:center;';
+    var tdL='padding:4px 6px;border:1px solid #ccc;font-size:8pt;vertical-align:middle;';
+    html += '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:6.5pt;margin-bottom:8px">'+
+      '<colgroup>'+
+      '<col style="width:2%"><col style="width:12%"><col style="width:7%">'+
+      '<col style="width:5%"><col style="width:5%"><col style="width:8%">'+
+      '<col style="width:4%"><col style="width:7%"><col style="width:10%">'+
+      '<col style="width:7%"><col style="width:7%"><col style="width:5%">'+
+      '<col style="width:5%"><col style="width:5%"><col style="width:6%"><col style="width:8%">'+
+      '</colgroup>'+
+      '<thead><tr>'+
+      '<th style="'+thS+'">N°</th>'+
+      '<th style="'+thS+'">Posizione</th>'+
+      '<th style="'+thS+'">'+(isNSP?'Tipo naspo':'Tipo idrante')+'</th>'+
+      '<th style="'+thS+'">Lung.(m)</th>'+
+      '<th style="'+thS+'">Diam.(mm)</th>'+
+      '<th style="'+thS+'">Costruttore</th>'+
+      '<th style="'+thS+'">Anno</th>'+
+      '<th style="'+thS+'">Matricola</th>'+
+      '<th style="'+thS+'">Tipo att.</th>'+
+      '<th style="'+thS+'">Mann.</th>'+
+      '<th style="'+thS+'">Prox. scad.</th>'+
+      '<th style="'+thS+'">Ult. coll.</th>'+
+      '<th style="'+thS+'">Scad. coll.</th>'+
+      '<th style="'+thS+'">Fine vita</th>'+
+      '<th style="'+thS+'">Esito</th>'+
+      '<th style="'+thS+'">Note</th>'+
+      '</tr></thead><tbody>';
+    var nConf=0,nNC=0,nNE=0;
+    righe.forEach(function(r,i){
+      var pres=PRESIDI_DATA.find(function(p){return p.cod===r.cod;})||{};
+      var esV=r.esito==='ok'?'C.':r.esito==='nc'?'N.C.':'N.E.';
+      var esC=r.esito==='ok'?'#1a7a3a':r.esito==='nc'?'#C0392B':'#856404';
+      if(r.esito==='ok')nConf++;else if(r.esito==='nc')nNC++;else nNE++;
+      html+='<tr style="background:'+(i%2?'#fafafa':'#fff')+'">'+
+        '<td style="'+tdS+'">'+(i+1)+'</td>'+
+        '<td style="'+tdL+'">'+(r.ubi||pres.ubi||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(pres.agente||'Idrante UNI 45')+'</td>'+
+        '<td style="'+tdS+'">'+(r.peso||pres.peso||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.pesotot||pres.pesotot||'—')+'</td>'+
+        '<td style="'+tdL+'">'+(r.costr||pres.costr||'N.D.')+'</td>'+
+        '<td style="'+tdS+'">'+(r.annop||pres.annop||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.matr||pres.matr||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.op||'—')+'</td>'+
+        '<td style="'+tdS+'">'+r.d+'</td>'+
+        '<td style="'+tdS+'">'+(r.prox||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.revEff||pres.rev||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.collEff||pres.coll||'—')+'</td>'+
+        '<td style="'+tdS+'">'+(r.vita||pres.vita||'—')+'</td>'+
+        '<td style="'+tdS+';color:'+esC+';font-weight:bold">'+esV+'</td>'+
+        '<td style="'+tdL+'">'+(r.note||'')+'</td>'+
+        '</tr>';
+    });
+    html+='</tbody></table>';
+    var tot=nConf+nNC+nNE;
+    html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-bottom:12px"><tr>'+
+      '<td style="padding:5px;background:#1A4F8A;color:white;font-weight:bold;border:1px solid #ccc">Totale presidi verificati</td>'+
+      '<td style="padding:5px;font-weight:bold;font-size:11pt;text-align:center;border:1px solid #ccc">'+tot+'</td>'+
+      '<td style="padding:5px;background:#e8f5e9;color:#1a7a3a;font-weight:bold;border:1px solid #ccc">✅ Conformi</td>'+
+      '<td style="padding:5px;color:#1a7a3a;font-weight:bold;text-align:center;border:1px solid #ccc">'+nConf+'</td>'+
+      '<td style="padding:5px;background:#fff3cd;color:#856404;font-weight:bold;border:1px solid #ccc">⚠️ Anomalie</td>'+
+      '<td style="padding:5px;color:#856404;font-weight:bold;text-align:center;border:1px solid #ccc">'+nNE+'</td>'+
+      '<td style="padding:5px;background:#fdecea;color:#C0392B;font-weight:bold;border:1px solid #ccc">❌ Non conf.</td>'+
+      '<td style="padding:5px;color:#C0392B;font-weight:bold;text-align:center;border:1px solid #ccc">'+nNC+'</td>'+
+      '</tr></table>';
+    var _noteScheda=righe.find(function(r){return r.noteScheda;}); var noteG=_noteScheda?(_noteScheda.noteScheda||''):'';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:8.5pt;margin-bottom:16px">'+
+      '<tr><td style="padding:4px 8px;border:1px solid #ccc;background:#f5f5f5;font-weight:bold;width:18%">Note generali</td>'+
+      '<td style="padding:6px 8px;border:1px solid #ccc;min-height:32px">'+(noteG||'&nbsp;')+'</td></tr></table>';
+    html += '<table style="border-collapse:collapse;width:100%;border:1.5px solid #1A4F8A;font-size:7.5pt;background:#f0f6ff;margin-bottom:8px"><tr><td style="padding:8px 12px">'+
+      '<div style="font-weight:bold;color:#1A4F8A;margin-bottom:5px;font-size:8pt">&#9888; NOTA BENE &mdash; LIMITAZIONE DI RESPONSABILIT&Agrave;</div>'+
+      '<p style="margin:0 0 3px 0"><b>Ambito:</b> La presente manutenzione si riferisce agli idranti/naspi sopra elencati. Qualsiasi altro dispositivo antincendio non esplicitamente inserito nel rapporto non &egrave; stato controllato.</p>'+
+      '<p style="margin:0 0 3px 0"><b>Obblighi del Cliente:</b> Resta a carico del Cliente la Sorveglianza mensile obbligatoria (art.3.1 UNI EN 671-3) e l&#39;aggiornamento del Registro Antincendio.</p>'+
+      '<p style="margin:0">Il presente rapporto si intende approvato in assenza di contestazioni scritte entro 5 giorni lavorativi dalla ricezione.</p>'+
+      '</td></tr></table>';
+    html += '<table style="border-collapse:collapse;width:100%;border:1px solid #ccc;margin-bottom:8px"><tr><td style="padding:6px 10px;font-size:8pt">'+
+      '<b>DICHIARAZIONE DI CONFORMIT&Agrave; ('+_normaIDR+'):</b> Il sottoscritto <b>'+tecnico+'</b>, in qualit&agrave; di Tecnico Manutentore Qualificato, dichiara che tutti gli idranti/naspi sopra elencati sono stati controllati a regola d&#39;arte secondo la norma '+_normaIDR+'. I presidi con <b>ESITO CONFORME</b> risultano efficienti e pronti all&#39;uso.'+
+      '</td></tr></table>';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:9pt;margin-top:8px"><tr>'+
+      '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">'+
+      '<div style="font-size:8pt;color:#555;margin-bottom:6px">Timbro e firma Tecnico manutentore abilitato</div>'+
+      (typeof TIMBRO_B64!=='undefined'&&TIMBRO_B64?'<div style="text-align:center;margin:4px auto 8px auto"><img src="'+TIMBRO_B64+'" style="max-width:120px;max-height:80px;width:auto;height:auto;display:inline-block" /></div>':'<div style="height:80px"></div>')+
+      '<b>'+(typeof DITTA!=='undefined'?DITTA.rs:'')+'</b><br><span style="font-size:8pt">'+tecnico+'</span>'+
+      '</td>'+
+      '<td style="width:4%"></td>'+
+      '<td style="padding:10px 12px;border:1px solid #ccc;text-align:center;width:48%">'+
+      '<div style="font-size:8pt;color:#555;margin-bottom:30px">Firma per ricevuta verbale &mdash; Responsabile cliente</div>'+
+      '<b>'+(cli.rs||'')+'</b><br><span style="font-size:8pt">'+(cli.ref||'')+'</span>'+
+      '</td>'+
+      '</tr></table>';
+    html += '<p style="font-size:7pt;color:#aaa;margin-top:8px;text-align:center">Manutenzione eseguita secondo Norma '+_normaIDR+' &mdash; Una copia del presente verbale viene conservata nel registro digitale accessibile tramite QR Code</p>';
+    html += '<p style="font-size:7pt;color:#aaa;text-align:center">Generato da '+(typeof DITTA!=='undefined'?DITTA.sw:'3E Antincendio')+' &mdash; '+new Date().toLocaleDateString('it-IT')+'</p>';
+    scaricaSchemaLandscapePDF(html, 'Scheda_IDR_'+nomeBase+'_'+dataInt.replace(/\//g,'-'));
   } else {
     // Estintori — ricostruisce tabella standard
     var html = _intestazioneDocTipo(cli, dataInt, tecnico,
