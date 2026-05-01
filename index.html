@@ -4089,7 +4089,7 @@ La validità del presente cartellino cessa in caso di manomissione o manutenzion
   </div>
 </div>
 
-<div class="notif show" id="notif">✅ Dati ripristinati dal salvataggio — 5 clienti, 97 presidi</div>
+<div class="notif" id="notif"></div>
 
 <script>
 // ── Fallback S garantisce navigazione anche se script precedente ha errori ──
@@ -9338,6 +9338,7 @@ function S(id){
   if(id==='registro'){ aggiornaSelectManutenzione(); renderRegistro(); }
   if(id==='targhette') setTimeout(tgCarica, 300); // ricarica quando entri
 }
+window.S = S; // override del fallback iniziale — questa e' la versione corretta
 
 function azzeraRegistro(){
   if(!confirm('Sei sicuro? Tutte le schede semestrali verranno cancellate.\nClienti e presidi rimangono intatti.\n\nOperazione non reversibile.')) return;
