@@ -8927,6 +8927,7 @@ function stampaManutenzioneWord(){
   html += '<p style="font-size:7pt;color:#aaa;margin-top:8px;text-align:center">Manutenzione eseguita secondo Norma '+_normaAnteprima+' — Una copia del presente verbale viene conservata nel registro digitale accessibile tramite QR Code</p>';
   html += '<p style="font-size:7pt;color:#aaa;text-align:center">Generato da '+DITTA.sw+' — '+TODAY.toLocaleDateString("it-IT")+'</p>';
 
+  } // fine else - da qui: comune a tutti i tipi
   var dataFileStr = (dataEl && dataEl.value) ? fromISO(dataEl.value).replace(/\//g,'-') : TODAY.toLocaleDateString('it-IT').replace(/\//g,'-');
   var nomeFile = 'Scheda_manutenzione_'+cli.rs.replace(/\s+/g,'_')+'_'+dataFileStr;
   scaricaDocLandscape(html, nomeFile);
