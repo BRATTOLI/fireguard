@@ -5374,7 +5374,7 @@ function salvaCliente(){
         setCloudStatus('saving');
         db.collection('clienti').doc(_cliDaSalvare.id).set(_cleanUndef(_cliDaSalvare))
           .then(function(){ _staSalvando--; setCloudStatus('ok'); })
-          .catch(function(e){ _staSalvando--; setCloudStatus('error'); console.error('Errore salvataggio cliente Firestore:', e); });
+          .catch(function(e){ _gestisciErroreFirestore(e, 'salvaCliente collezione'); });
       }
     } else {
       // Modalità documento principale
@@ -5386,7 +5386,7 @@ function salvaCliente(){
         registro:  _cleanUndef(REG_DATA),
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       }).then(function(){ _staSalvando--; setCloudStatus('ok'); })
-        .catch(function(e){ _staSalvando--; setCloudStatus('error'); console.error('Errore salvataggio Firestore:', e); });
+        .catch(function(e){ _gestisciErroreFirestore(e, 'salvaCliente principale'); });
     }
   }
   // ─────────────────────────────────────────────────────────────────────────
@@ -10906,8 +10906,8 @@ function aggiornaLSBadge(){
   if(typeof setCloudStatus === 'function') setCloudStatus('ok');
 }
 
-// Auto-salva su Firebase ogni 60 secondi (fallback)
-setInterval(function(){ if(typeof salvaLS === 'function') salvaLS(); }, 60000);
+// Auto-salva su Firebase ogni 5 minuti (fallback — riduce consumo quota)
+setInterval(function(){ if(typeof salvaLS === 'function') salvaLS(); }, 300000);
 
 // ── Firebase gestisce la sincronizzazione ─────────────────────────────────────
 
@@ -11234,10 +11234,36 @@ function setCloudStatus(stato) {
         el.style.background = '#e6f0fa';
         el.style.color = '#0c3060';
         el.style.borderColor = '#b5d4f4';
+    } else if (stato === 'quota') {
+        el.textContent = '⚠️ Quota Firebase esaurita — dati solo in locale';
+        el.style.background = '#FFF3CD';
+        el.style.color = '#7B4F00';
+        el.style.borderColor = '#ff9800';
+        el.style.fontWeight = '700';
     }
 }
 
-// ─── AUTO-SAVE CON DEBOUNCE 2 SECONDI ────────────────────────────────────────
+// Gestione centralizzata errori Firestore — distingue quota da altri errori
+function _gestisciErroreFirestore(err, contesto) {
+    _staSalvando--;
+    console.error((contesto || 'Firestore') + ':', err);
+    if (err && err.code === 'resource-exhausted') {
+        setCloudStatus('quota');
+        // Assicura che i dati siano almeno nel localStorage
+        try {
+            var _ls = { versione:'3.2', salvato: new Date().toISOString(),
+                clienti: CLI_DATA, presidi: PRESIDI_DATA, registro: REG_DATA,
+                ditta: typeof DITTA!=='undefined'?DITTA:{}, tecnici: typeof TECNICI!=='undefined'?TECNICI:[] };
+            localStorage.setItem('fireguard_3e_v3', JSON.stringify(_ls));
+            console.warn('⚠️ Quota Firebase esaurita. Dati salvati nel localStorage come backup. Riprova domani o aggiorna il piano Firebase.');
+        } catch(e) { console.error('Anche localStorage fallito:', e); }
+    } else {
+        setCloudStatus('error');
+        setTimeout(function(){ setCloudStatus('ok'); }, 5000);
+    }
+}
+
+// ─── AUTO-SAVE CON DEBOUNCE ────────────────────────────────────────────────────
 var _autoSaveTimer = null;
 var _autoSaveAbilitato = false; // si attiva solo dopo il login
 var _staSalvando = 0; // contatore operazioni async in corso (0 = libero) — evita race condition tra salvataggi paralleli
@@ -11246,9 +11272,10 @@ function scheduleAutoSave() {
     if (!_autoSaveAbilitato) return;
     setCloudStatus('pending');
     if (_autoSaveTimer) clearTimeout(_autoSaveTimer);
+    // 30s di debounce: evita di riscrivere 549 doc ad ogni piccola modifica
     _autoSaveTimer = setTimeout(function() {
         eseguiSalvatagioCloud();
-    }, 2000);
+    }, 30000);
 }
 
 // Rimuove ricorsivamente tutti i campi undefined (Firestore non li accetta)
@@ -11302,10 +11329,7 @@ function eseguiSalvatagioCloud() {
                 b.set(db.collection(op.col).doc(op.id), op.data);
             });
             b.commit().then(commitNextChunk).catch(function(err){
-                _staSalvando--;
-                setCloudStatus('error');
-                console.error('Errore salvataggio collezioni (chunk ' + chunkIndex + '):', err);
-                setTimeout(function(){ setCloudStatus('ok'); }, 4000);
+                _gestisciErroreFirestore(err, 'Auto-save chunk ' + chunkIndex);
             });
         }
         commitNextChunk();
