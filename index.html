@@ -373,6 +373,31 @@ tr:hover td{background:#fafafa}
 /* RESPONSIVE */
 @media(max-width:900px){.kpi-g{grid-template-columns:repeat(3,1fr)}.pcg{grid-template-columns:repeat(3,1fr)}.fg{grid-template-columns:1fr}}
 @media(max-width:600px){.kpi-g{grid-template-columns:repeat(2,1fr)}.pcg{grid-template-columns:repeat(2,1fr)}.sr{grid-template-columns:1fr}.sl{border-right:none;border-bottom:1px solid var(--border)}}
+/* GRIGLIA MESI */
+.mesi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px}
+@media(max-width:900px){.mesi-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:600px){.mesi-grid{grid-template-columns:repeat(3,1fr)}}
+.mese-card{border-radius:10px;padding:10px 8px;cursor:pointer;border:2px solid transparent;text-align:center;transition:all .2s;user-select:none;background:#f8f9fa;position:relative}
+.mese-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.12);border-color:#1A4F8A}
+.mese-card.mese-attivo{border-color:#1A4F8A;background:#e6f0fa}
+.mese-card.mese-vuoto{opacity:.5;cursor:default}
+.mese-card.mese-vuoto:hover{transform:none;box-shadow:none;border-color:transparent}
+.mese-card.mese-urgente{background:#fff3cd;border-color:#E6A817}
+.mese-card.mese-scaduto{background:#fdecea;border-color:#C0392B}
+.mese-nome{font-size:12px;font-weight:800;color:var(--text)}
+.mese-anno{font-size:10px;color:var(--text2);margin-top:1px}
+.mese-badge{display:inline-block;margin-top:5px;min-width:22px;height:22px;line-height:22px;border-radius:11px;font-size:11px;font-weight:800;background:#1A4F8A;color:#fff;padding:0 6px}
+.mese-badge.urg{background:#E6A817}
+.mese-badge.scad{background:#C0392B}
+.mese-badge.vuoto{background:#ccc}
+/* STAMPA MANUTENZIONI MENSILI */
+@media print{
+  body>*{display:none!important}
+  #printMesiArea{display:block!important;position:fixed;top:0;left:0;width:100%;background:#fff;z-index:99999;font-family:Arial,sans-serif;font-size:10pt;color:#000}
+  #printMesiArea *{visibility:visible}
+  .no-print{display:none!important}
+}
+#printMesiArea{display:none}
 </style>
 </head>
 <body>
@@ -474,7 +499,42 @@ tr:hover td{background:#fafafa}
     <div class="tw"><table><thead><tr><th>Codice</th><th>Cliente</th><th>Ubicazione</th><th>Tipo</th><th>Matricola</th><th>Scadenza mann.</th><th>Revisione</th><th>Collaudo</th><th>Stato</th><th>⏰</th></tr></thead>
     <tbody id="dash-est"></tbody></table></div>
   </div>
+
+  <!-- ═══ CARD MANUTENZIONI MENSILI ═══ -->
+  <div class="card">
+    <div class="ch">
+      <span class="ct">📅 Pianificazione Manutenzioni Mensili</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="mesi-anno-sel" style="padding:5px 8px;font-size:12px;border:1.5px solid var(--border);border-radius:8px;font-weight:700" onchange="renderGrigliaMesi()"></select>
+        <button class="btn sm" onclick="renderGrigliaMesi()" title="Aggiorna">🔄</button>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">
+      Clicca su un mese per vedere i presidi in scadenza e stampare la lista di lavoro per i tuoi tecnici.
+    </div>
+    <div id="mesi-grid-dash" class="mesi-grid"></div>
+  </div>
 </div>
+
+<!-- ═══ MODAL MANUTENZIONI MENSILI ═══ -->
+<div class="mo" id="mMesi" style="align-items:flex-start;padding:16px;overflow-y:auto">
+  <div style="background:#fff;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.35);width:96%;max-width:780px;margin:auto;display:flex;flex-direction:column;max-height:92vh">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:2px solid #eee;flex-shrink:0">
+      <span id="mMesi-titolo" style="font-size:15px;font-weight:800">📅 Scadenze mese</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn grn no-print" style="font-size:12px" onclick="stampaMesiElenco()">🖨️ Stampa elenco</button>
+        <button onclick="closeM('mMesi')" style="background:#f5f5f5;border:none;border-radius:8px;width:32px;height:32px;font-size:16px;cursor:pointer" class="no-print">&#x2715;</button>
+      </div>
+    </div>
+    <div id="mMesi-body" style="padding:20px;overflow-y:auto;flex:1"></div>
+    <div style="padding:12px 20px;border-top:1px solid #eee;display:flex;justify-content:flex-end" class="no-print">
+      <button class="btn" onclick="closeM('mMesi')">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ AREA STAMPA NASCOSTA ═══ -->
+<div id="printMesiArea"></div>
 
 <!-- ═══ CLI_DATA ═══ -->
 <div id="clienti" class="sec">
@@ -12107,6 +12167,310 @@ function aggiornaTabPresidi(cliId){
   var tuttiBtn = tabsEl.querySelector('button[data-tutti]');
   if(tuttiBtn) tuttiBtn.addEventListener('click', function(){ filtroTipoPresidi(null); });
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// MANUTENZIONI MENSILI — Dashboard
+// ═══════════════════════════════════════════════════════════════════
+
+// Converte "DD/MM/YYYY" o "YYYY" in oggetto Date (null se non valido)
+function _parseDateMese(s) {
+  if (!s || s === '—' || s === '') return null;
+  // formato DD/MM/YYYY
+  var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]));
+  // formato YYYY (solo anno — usato per rev/coll)
+  var y = s.match(/^(\d{4})$/);
+  if (y) return new Date(parseInt(y[1]), 0, 1);
+  return null;
+}
+
+// Restituisce la data di scadenza più rilevante per un presidio
+// Priorità: scad (prossima manutenzione) → poi revisione se è un anno
+function _scadenzaPresidio(p) {
+  var d = _parseDateMese(p.scad);
+  if (d && !isNaN(d.getTime())) return d;
+  // fallback: anno revisione (se disponibile come YYYY)
+  var r = _parseDateMese(p.rev);
+  if (r && !isNaN(r.getTime())) return r;
+  return null;
+}
+
+// Inizializza il select anno e renderizza la griglia
+function initGrigliaMesi() {
+  var sel = document.getElementById('mesi-anno-sel');
+  if (!sel) return;
+  var annoAtt = new Date().getFullYear();
+  sel.innerHTML = '';
+  for (var a = annoAtt; a <= annoAtt + 2; a++) {
+    var opt = document.createElement('option');
+    opt.value = a;
+    opt.textContent = a;
+    if (a === annoAtt) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  renderGrigliaMesi();
+}
+
+function renderGrigliaMesi() {
+  var grid = document.getElementById('mesi-grid-dash');
+  if (!grid) return;
+  var sel = document.getElementById('mesi-anno-sel');
+  var anno = sel ? parseInt(sel.value) : new Date().getFullYear();
+  var meseAtt = new Date().getMonth(); // 0-based
+  var annoAtt = new Date().getFullYear();
+
+  var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+              'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+  // Conta presidi per mese
+  var conteggi = new Array(12).fill(0);
+  var urgenti  = new Array(12).fill(0); // scadenza entro 30gg da oggi
+
+  var oggi = new Date();
+  oggi.setHours(0,0,0,0);
+  var tra30 = new Date(oggi); tra30.setDate(oggi.getDate() + 30);
+
+  (window.PRESIDI_DATA || []).forEach(function(p) {
+    var d = _scadenzaPresidio(p);
+    if (!d || isNaN(d.getTime())) return;
+    if (d.getFullYear() !== anno) return;
+    var m = d.getMonth();
+    conteggi[m]++;
+    if (d <= tra30) urgenti[m]++;
+  });
+
+  var html = '';
+  MESI.forEach(function(nome, i) {
+    var cnt = conteggi[i];
+    var urg = urgenti[i];
+    var isPast = (anno < annoAtt) || (anno === annoAtt && i < meseAtt);
+    var isAtt  = (anno === annoAtt && i === meseAtt);
+    var cls = 'mese-card';
+    var badgeCls = 'mese-badge';
+    if (cnt === 0) { cls += ' mese-vuoto'; badgeCls += ' vuoto'; }
+    else if (urg > 0) { cls += ' mese-urgente'; badgeCls += ' urg'; }
+    else { badgeCls += ''; }
+    if (isAtt) cls += ' mese-attivo';
+
+    var onclick = cnt > 0 ? 'apriModaleMese(' + i + ',' + anno + ')' : '';
+    html += '<div class="' + cls + '"' + (onclick ? ' onclick="' + onclick + '"' : '') + ' title="' + nome + ' ' + anno + ': ' + cnt + ' presidi in scadenza">' +
+      '<div class="mese-nome">' + nome.substring(0,3).toUpperCase() + '</div>' +
+      '<div class="mese-anno">' + anno + (isPast && !isAtt ? ' ✓' : '') + '</div>' +
+      '<div><span class="' + badgeCls + '">' + (cnt || '—') + '</span></div>' +
+      (urg > 0 ? '<div style="font-size:9px;color:#856404;margin-top:3px;font-weight:700">⚡ ' + urg + ' urgenti</div>' : '') +
+      '</div>';
+  });
+  grid.innerHTML = html;
+}
+
+function apriModaleMese(mese, anno) {
+  var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+              'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  var nomeMese = MESI[mese];
+
+  // Filtra presidi per mese/anno
+  var presidiMese = (window.PRESIDI_DATA || []).filter(function(p) {
+    var d = _scadenzaPresidio(p);
+    if (!d || isNaN(d.getTime())) return false;
+    return d.getFullYear() === anno && d.getMonth() === mese;
+  });
+
+  // Raggruppa per cliente
+  var perCliente = {};
+  presidiMese.forEach(function(p) {
+    // Trova ragione sociale del cliente
+    var cli = (window.CLI_DATA || []).find(function(c) {
+      return cliMatch(p, c);
+    });
+    var cliKey   = cli ? cli.id   : (p.cli || 'Sconosciuto');
+    var cliLabel = cli ? cli.rs   : (p.cli || 'Cliente sconosciuto');
+    var cliInd   = cli ? ((cli.ind || '') + (cli.cap ? ', ' + cli.cap : '') + (cli.paese ? ' ' + cli.paese : '')) : '';
+    if (!perCliente[cliKey]) perCliente[cliKey] = { label: cliLabel, ind: cliInd, presidi: [] };
+    perCliente[cliKey].presidi.push(p);
+  });
+
+  var titoloEl = document.getElementById('mMesi-titolo');
+  if (titoloEl) titoloEl.textContent = '📅 ' + nomeMese + ' ' + anno + ' — ' + presidiMese.length + ' presid' + (presidiMese.length === 1 ? 'io' : 'i') + ' in scadenza';
+
+  var body = document.getElementById('mMesi-body');
+  if (!body) return;
+
+  if (presidiMese.length === 0) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:#999;font-size:14px">✅ Nessun presidio in scadenza per ' + nomeMese + ' ' + anno + '</div>';
+    document.getElementById('mMesi').classList.add('open');
+    return;
+  }
+
+  var oggi = new Date(); oggi.setHours(0,0,0,0);
+  var tra30 = new Date(oggi); tra30.setDate(oggi.getDate() + 30);
+
+  var html = '';
+  // Legenda
+  html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;font-size:11px">' +
+    '<span style="background:#fdecea;border:1px solid #f5c6cb;border-radius:6px;padding:3px 8px;color:#9b1c1c;font-weight:700">🔴 Urgente (&lt;30gg)</span>' +
+    '<span style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:3px 8px;color:#856404;font-weight:700">🟡 In scadenza</span>' +
+    '<span style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:3px 8px;color:#1b5e20;font-weight:700">🟢 Programmato</span>' +
+    '</div>';
+
+  var cliKeys = Object.keys(perCliente);
+  cliKeys.sort(function(a,b){ return perCliente[a].label.localeCompare(perCliente[b].label); });
+
+  cliKeys.forEach(function(key, idx) {
+    var gruppo = perCliente[key];
+    html += '<div style="margin-bottom:16px;border:1.5px solid #e0e8f5;border-radius:10px;overflow:hidden">' +
+      '<div style="background:#1A4F8A;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">' +
+      '<div>' +
+      '<span style="font-size:13px;font-weight:800">' + gruppo.label + '</span>' +
+      (gruppo.ind ? '<span style="font-size:10px;opacity:.8;margin-left:8px">' + gruppo.ind + '</span>' : '') +
+      '</div>' +
+      '<span style="font-size:11px;background:rgba(255,255,255,.2);border-radius:10px;padding:2px 8px">' + gruppo.presidi.length + ' presid' + (gruppo.presidi.length===1?'io':'i') + '</span>' +
+      '</div>';
+
+    html += '<table style="border-collapse:collapse;width:100%;font-size:12px">' +
+      '<thead><tr style="background:#f0f5ff">' +
+      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Codice</th>' +
+      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Tipo</th>' +
+      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Ubicazione</th>' +
+      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Matricola</th>' +
+      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:center;border-bottom:1px solid #d0dff5">Scadenza</th>' +
+      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:center;border-bottom:1px solid #d0dff5">Stato</th>' +
+      '</tr></thead><tbody>';
+
+    gruppo.presidi.forEach(function(p, pi) {
+      var d = _scadenzaPresidio(p);
+      var isUrg = d && d <= tra30;
+      var t = (window.TIPI || []).find(function(x){ return x.id === p.tipo; }) || { ic: '📋', n: p.tipo };
+      var scadStr = p.scad && p.scad !== '—' ? p.scad : '—';
+      var bgRow = isUrg ? '#fff8f8' : (pi % 2 ? '#fafbff' : '#fff');
+      var statoHtml = isUrg
+        ? '<span style="font-size:10px;font-weight:700;color:#C0392B;background:#fdecea;border-radius:5px;padding:2px 6px">🔴 Urgente</span>'
+        : '<span style="font-size:10px;font-weight:700;color:#856404;background:#fff3cd;border-radius:5px;padding:2px 6px">🟡 Pianifica</span>';
+
+      html += '<tr style="background:' + bgRow + ';border-bottom:1px solid #eef2fa">' +
+        '<td style="padding:7px 10px;font-weight:700;color:#1A4F8A">' + (p.cod || '—') + '</td>' +
+        '<td style="padding:7px 10px">' + t.ic + ' ' + t.n + '</td>' +
+        '<td style="padding:7px 10px;color:#555">' + (p.ubi || '—') + '</td>' +
+        '<td style="padding:7px 10px;font-family:monospace;font-size:11px">' + (p.matr || '—') + '</td>' +
+        '<td style="padding:7px 10px;text-align:center;font-weight:700;color:' + (isUrg ? '#C0392B' : '#856404') + '">' + scadStr + '</td>' +
+        '<td style="padding:7px 10px;text-align:center">' + statoHtml + '</td>' +
+        '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+  });
+
+  body.innerHTML = html;
+
+  // Salva dati per la stampa
+  window._mesiStampaDati = {
+    nomeMese: nomeMese,
+    anno: anno,
+    totale: presidiMese.length,
+    perCliente: perCliente,
+    oggi: oggi,
+    tra30: tra30
+  };
+
+  document.getElementById('mMesi').classList.add('open');
+}
+
+function stampaMesiElenco() {
+  var dati = window._mesiStampaDati;
+  if (!dati) { notifica('❌ Nessun dato da stampare'); return; }
+
+  var ditta = (typeof DITTA !== 'undefined') ? DITTA : {};
+  var oggi = new Date().toLocaleDateString('it-IT');
+
+  var html = '<div style="font-family:Arial,sans-serif;font-size:10pt;color:#000;padding:20px">';
+
+  // Intestazione ditta
+  html += '<table style="border-collapse:collapse;width:100%;margin-bottom:14px;border-bottom:3px solid #1A4F8A;padding-bottom:10px"><tr>' +
+    '<td style="width:70%">' +
+    '<div style="font-size:14pt;font-weight:bold;color:#1A4F8A">' + (ditta.rs || '3E Antincendio') + '</div>' +
+    '<div style="font-size:9pt;color:#555;margin-top:2px">' + (ditta.ind || '') + (ditta.tel ? ' — Tel. ' + ditta.tel : '') + '</div>' +
+    '</td>' +
+    '<td style="text-align:right;vertical-align:top">' +
+    '<div style="font-size:9pt;color:#888">Stampato il ' + oggi + '</div>' +
+    '</td>' +
+    '</tr></table>';
+
+  // Titolo
+  html += '<h2 style="color:#1A4F8A;margin:0 0 4px 0;font-size:14pt">📅 Elenco Manutenzioni — ' + dati.nomeMese + ' ' + dati.anno + '</h2>';
+  html += '<p style="margin:0 0 14px 0;font-size:9pt;color:#555">Totale presidi in scadenza: <b>' + dati.totale + '</b> — Lista di lavoro per i tecnici manutentori</p>';
+
+  var cliKeys = Object.keys(dati.perCliente);
+  cliKeys.sort(function(a,b){ return dati.perCliente[a].label.localeCompare(dati.perCliente[b].label); });
+
+  cliKeys.forEach(function(key) {
+    var g = dati.perCliente[key];
+    html += '<div style="margin-bottom:18px;page-break-inside:avoid">';
+    html += '<div style="background:#1A4F8A;color:#fff;padding:7px 12px;font-weight:bold;font-size:11pt;margin-bottom:0">' +
+      g.label + (g.ind ? ' — ' + g.ind : '') +
+      '<span style="float:right;font-size:9pt;font-weight:400">' + g.presidi.length + ' presid' + (g.presidi.length===1?'io':'i') + '</span></div>';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:9pt">' +
+      '<thead><tr style="background:#e6f0fa">' +
+      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:left">Codice</th>' +
+      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:left">Tipo</th>' +
+      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:left">Ubicazione</th>' +
+      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:left">Matricola</th>' +
+      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:center">Scadenza</th>' +
+      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:center">Eseguita ✓</th>' +
+      '</tr></thead><tbody>';
+
+    g.presidi.forEach(function(p, pi) {
+      var d = _scadenzaPresidio(p);
+      var isUrg = d && d <= dati.tra30;
+      var t = (window.TIPI || []).find(function(x){ return x.id === p.tipo; }) || { ic: '', n: p.tipo };
+      var bg = isUrg ? '#fff3f3' : (pi % 2 ? '#f9f9f9' : '#fff');
+      html += '<tr style="background:' + bg + '">' +
+        '<td style="padding:5px 8px;border:1px solid #ddd;font-weight:bold;color:#1A4F8A">' + (p.cod||'—') + '</td>' +
+        '<td style="padding:5px 8px;border:1px solid #ddd">' + t.ic + ' ' + t.n + '</td>' +
+        '<td style="padding:5px 8px;border:1px solid #ddd">' + (p.ubi||'—') + '</td>' +
+        '<td style="padding:5px 8px;border:1px solid #ddd;font-family:monospace">' + (p.matr||'—') + '</td>' +
+        '<td style="padding:5px 8px;border:1px solid #ddd;text-align:center;font-weight:bold;color:' + (isUrg?'#C0392B':'#333') + '">' + (p.scad||'—') + '</td>' +
+        '<td style="padding:5px 8px;border:1px solid #ddd;text-align:center;font-size:14pt">☐</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>' +
+      '<div style="font-size:8pt;color:#888;padding:4px 8px;border:1px solid #ddd;border-top:none;background:#fafafa">Note intervento: _______________________________________________</div>' +
+      '</div>';
+  });
+
+  // Firma tecnico
+  html += '<div style="margin-top:20px;border-top:1px solid #ccc;padding-top:14px;display:flex;justify-content:space-between;font-size:9pt">' +
+    '<div><b>Tecnico manutentore:</b> ' + (ditta.rs || '') + '<br><span style="font-size:8pt;color:#888">Firma: _______________________________</span></div>' +
+    '<div style="text-align:right"><b>Data intervento:</b> _______________<br><span style="font-size:8pt;color:#888">Ora inizio: ________ Ora fine: ________</span></div>' +
+    '</div>';
+
+  html += '<p style="font-size:7pt;color:#bbb;margin-top:12px;text-align:center">Generato da ' + (ditta.sw || '3E Antincendio') + ' — ' + oggi + ' — Lista di lavoro riservata ai tecnici manutentori</p>';
+  html += '</div>';
+
+  // Inserisci nell'area stampa e avvia print
+  var area = document.getElementById('printMesiArea');
+  if (area) {
+    area.innerHTML = html;
+    area.style.display = 'block';
+    setTimeout(function() {
+      window.print();
+      setTimeout(function() {
+        area.style.display = 'none';
+        area.innerHTML = '';
+      }, 1000);
+    }, 200);
+  }
+}
+
+// Inizializza la griglia quando il DOM è pronto e i dati sono caricati
+document.addEventListener('DOMContentLoaded', function() {
+  // Ritarda per attendere il caricamento dati da Firebase/localStorage
+  setTimeout(initGrigliaMesi, 2000);
+});
+// Hook: aggiorna griglia quando vengono caricati i dati
+var _origSalvaLS = window.salvaLS;
+window.salvaLS = function() {
+  if (_origSalvaLS) _origSalvaLS.apply(this, arguments);
+  renderGrigliaMesi();
+};
 
 </script>
 
