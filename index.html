@@ -12291,14 +12291,31 @@ function apriModaleMese(mese, anno) {
     return d.getFullYear() === anno && d.getMonth() === mese;
   });
 
+  // Raggruppa usando CLI_DATA come sorgente primaria per non perdere nessun cliente
   var perCliente = {};
+
+  // Prima passa: raggruppa presidi per cliente usando cliMatch
   presidiMese.forEach(function(p) {
     var cli = (window.CLI_DATA || []).find(function(c) { return cliMatch(p, c); });
-    var cliKey   = cli ? cli.id  : (p.cli || 'Sconosciuto');
+    var cliKey   = cli ? cli.id  : ('__'+( p.cliId || p.cli || 'sconosciuto'));
     var cliLabel = cli ? cli.rs  : (p.cli || 'Cliente sconosciuto');
     var cliInd   = cli ? ((cli.ind||'') + (cli.cap?', '+cli.cap:'') + (cli.paese?' '+cli.paese:'')) : '';
-    if (!perCliente[cliKey]) perCliente[cliKey] = { label: cliLabel, ind: cliInd, presidi: [] };
+    var cliRef   = cli ? (cli.ref||'') : '';
+    var cliTel   = cli ? (cli.tel||'') : '';
+    if (!perCliente[cliKey]) perCliente[cliKey] = { label: cliLabel, ind: cliInd, ref: cliRef, tel: cliTel, presidi: [] };
     perCliente[cliKey].presidi.push(p);
+  });
+
+  // Seconda passa: per i clienti in CLI_DATA che hanno presidi ma non sono stati trovati
+  // (failsafe: cerca per cliId direttamente)
+  (window.CLI_DATA || []).forEach(function(cli) {
+    var presidiCli = presidiMese.filter(function(p) {
+      return (p.cliId && p.cliId === cli.id);
+    });
+    if (presidiCli.length > 0 && !perCliente[cli.id]) {
+      var cliInd = (cli.ind||'') + (cli.cap?', '+cli.cap:'') + (cli.paese?' '+cli.paese:'');
+      perCliente[cli.id] = { label: cli.rs, ind: cliInd, ref: cli.ref||'', tel: cli.tel||'', presidi: presidiCli };
+    }
   });
 
   var titoloEl = document.getElementById('mMesi-titolo');
@@ -12317,14 +12334,16 @@ function apriModaleMese(mese, anno) {
   var tra30 = new Date(oggi); tra30.setDate(oggi.getDate() + 30);
 
   var html = '';
-  // Legenda
+
+  // Legenda + riepilogo diagnostico
+  var totGruppi = Object.keys(perCliente).length;
   html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:11px">' +
     '<span style="background:#fdecea;border:1px solid #f5c6cb;border-radius:6px;padding:3px 8px;color:#9b1c1c;font-weight:700">🔴 Urgente (&lt;30gg)</span>' +
     '<span style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:3px 8px;color:#856404;font-weight:700">🟡 In scadenza</span>' +
     '<span style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:3px 8px;color:#856404;font-weight:700">⚡ Rev/Coll/Vita coincide</span>' +
     '<span style="background:#fdecea;border:1px solid #f5c6cb;border-radius:6px;padding:3px 8px;color:#9b1c1c;font-weight:700">✗ Rev/Coll scaduto</span>' +
     '</div>';
-  html += '<div style="font-size:10px;color:#888;margin-bottom:12px">📝 Le celle <i>Note</i> dei presidi non-estintore sono editabili — puoi scrivere istruzioni per il manutentore prima di stampare.</div>';
+  html += '<div style="font-size:10px;color:#888;margin-bottom:12px">📝 Le celle <i>Note</i> dei presidi non-estintore sono editabili. — <b>' + totGruppi + ' clienti</b> con presidi in scadenza questo mese.</div>';
 
   var cliKeys = Object.keys(perCliente);
   cliKeys.sort(function(a,b){ return perCliente[a].label.localeCompare(perCliente[b].label); });
@@ -12335,10 +12354,15 @@ function apriModaleMese(mese, anno) {
     var gruppo = perCliente[key];
     html += '<div style="margin-bottom:16px;border:1.5px solid #e0e8f5;border-radius:10px;overflow:hidden">' +
       '<div style="background:#1A4F8A;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">' +
-      '<div><span style="font-size:13px;font-weight:800">' + gruppo.label + '</span>' +
-      (gruppo.ind ? '<span style="font-size:10px;opacity:.8;margin-left:8px">' + gruppo.ind + '</span>' : '') +
+      '<div>' +
+        '<span style="font-size:13px;font-weight:800">' + gruppo.label + '</span>' +
+        (gruppo.ind ? '<span style="font-size:10px;opacity:.75;margin-left:8px">📍 ' + gruppo.ind + '</span>' : '') +
+        '<div style="margin-top:3px;font-size:11px;opacity:.9">' +
+          (gruppo.ref ? '<span style="margin-right:12px">👤 ' + gruppo.ref + '</span>' : '') +
+          (gruppo.tel && gruppo.tel !== '—' ? '<span>📞 ' + gruppo.tel + '</span>' : '') +
+        '</div>' +
       '</div>' +
-      '<span style="font-size:11px;background:rgba(255,255,255,.2);border-radius:10px;padding:2px 8px">' + gruppo.presidi.length + ' presid' + (gruppo.presidi.length===1?'io':'i') + '</span>' +
+      '<span style="font-size:11px;background:rgba(255,255,255,.2);border-radius:10px;padding:2px 8px;flex-shrink:0;align-self:flex-start">' + gruppo.presidi.length + ' presid' + (gruppo.presidi.length===1?'io':'i') + '</span>' +
       '</div>';
 
     html += '<table style="border-collapse:collapse;width:100%;font-size:11px">' +
@@ -12459,6 +12483,9 @@ function stampaMesiElenco() {
     html += '<div style="margin-bottom:18px;page-break-inside:avoid">';
     html += '<div style="background:#1A4F8A;color:#fff;padding:7px 12px;font-weight:bold;font-size:11pt">' +
       g.label + (g.ind ? ' — ' + g.ind : '') +
+      (g.ref || (g.tel && g.tel!=='—') ? '<span style="font-size:8pt;font-weight:400;margin-left:8px;opacity:.9">' +
+        (g.ref ? '👤 '+g.ref : '') + (g.ref && g.tel && g.tel!=='—' ? '  ' : '') + (g.tel && g.tel!=='—' ? '📞 '+g.tel : '') +
+      '</span>' : '') +
       '<span style="float:right;font-size:9pt;font-weight:400">' + g.presidi.length + ' presid' + (g.presidi.length===1?'io':'i') + '</span></div>';
 
     html += '<table style="border-collapse:collapse;width:100%;font-size:8pt">' +
