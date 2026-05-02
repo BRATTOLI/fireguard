@@ -12263,34 +12263,46 @@ function renderGrigliaMesi() {
   grid.innerHTML = html;
 }
 
+// Helper: genera badge anno con evidenziazione se coincide con anno scadenza
+function _badgeAnno(val, annoScad, tipoPresidio) {
+  var isEST = tipoPresidio === 'EST';
+  if (!isEST) return ''; // non estintore: cella vuota (editabile)
+  if (!val || val === '—') return '<span style="color:#bbb">—</span>';
+  var vInt = parseInt(val);
+  var coincide = annoScad && vInt === annoScad;
+  if (coincide) {
+    return '<span style="background:#fff3cd;color:#856404;font-weight:800;border-radius:4px;padding:1px 5px;font-size:10px">⚡ ' + val + '</span>';
+  }
+  var passato = annoScad && vInt < annoScad;
+  if (passato) {
+    return '<span style="background:#fdecea;color:#C0392B;font-weight:700;border-radius:4px;padding:1px 5px;font-size:10px">✗ ' + val + '</span>';
+  }
+  return '<span style="color:#1b5e20;font-weight:600">' + val + '</span>';
+}
+
 function apriModaleMese(mese, anno) {
   var MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
               'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   var nomeMese = MESI[mese];
 
-  // Filtra presidi per mese/anno
   var presidiMese = (window.PRESIDI_DATA || []).filter(function(p) {
     var d = _scadenzaPresidio(p);
     if (!d || isNaN(d.getTime())) return false;
     return d.getFullYear() === anno && d.getMonth() === mese;
   });
 
-  // Raggruppa per cliente
   var perCliente = {};
   presidiMese.forEach(function(p) {
-    // Trova ragione sociale del cliente
-    var cli = (window.CLI_DATA || []).find(function(c) {
-      return cliMatch(p, c);
-    });
-    var cliKey   = cli ? cli.id   : (p.cli || 'Sconosciuto');
-    var cliLabel = cli ? cli.rs   : (p.cli || 'Cliente sconosciuto');
-    var cliInd   = cli ? ((cli.ind || '') + (cli.cap ? ', ' + cli.cap : '') + (cli.paese ? ' ' + cli.paese : '')) : '';
+    var cli = (window.CLI_DATA || []).find(function(c) { return cliMatch(p, c); });
+    var cliKey   = cli ? cli.id  : (p.cli || 'Sconosciuto');
+    var cliLabel = cli ? cli.rs  : (p.cli || 'Cliente sconosciuto');
+    var cliInd   = cli ? ((cli.ind||'') + (cli.cap?', '+cli.cap:'') + (cli.paese?' '+cli.paese:'')) : '';
     if (!perCliente[cliKey]) perCliente[cliKey] = { label: cliLabel, ind: cliInd, presidi: [] };
     perCliente[cliKey].presidi.push(p);
   });
 
   var titoloEl = document.getElementById('mMesi-titolo');
-  if (titoloEl) titoloEl.textContent = '📅 ' + nomeMese + ' ' + anno + ' — ' + presidiMese.length + ' presid' + (presidiMese.length === 1 ? 'io' : 'i') + ' in scadenza';
+  if (titoloEl) titoloEl.textContent = '📅 ' + nomeMese + ' ' + anno + ' — ' + presidiMese.length + ' presid' + (presidiMese.length===1?'io':'i') + ' in scadenza';
 
   var body = document.getElementById('mMesi-body');
   if (!body) return;
@@ -12306,53 +12318,86 @@ function apriModaleMese(mese, anno) {
 
   var html = '';
   // Legenda
-  html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;font-size:11px">' +
+  html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:11px">' +
     '<span style="background:#fdecea;border:1px solid #f5c6cb;border-radius:6px;padding:3px 8px;color:#9b1c1c;font-weight:700">🔴 Urgente (&lt;30gg)</span>' +
     '<span style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:3px 8px;color:#856404;font-weight:700">🟡 In scadenza</span>' +
-    '<span style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:3px 8px;color:#1b5e20;font-weight:700">🟢 Programmato</span>' +
+    '<span style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:3px 8px;color:#856404;font-weight:700">⚡ Rev/Coll/Vita coincide</span>' +
+    '<span style="background:#fdecea;border:1px solid #f5c6cb;border-radius:6px;padding:3px 8px;color:#9b1c1c;font-weight:700">✗ Rev/Coll scaduto</span>' +
     '</div>';
+  html += '<div style="font-size:10px;color:#888;margin-bottom:12px">📝 Le celle <i>Note</i> dei presidi non-estintore sono editabili — puoi scrivere istruzioni per il manutentore prima di stampare.</div>';
 
   var cliKeys = Object.keys(perCliente);
   cliKeys.sort(function(a,b){ return perCliente[a].label.localeCompare(perCliente[b].label); });
 
-  cliKeys.forEach(function(key, idx) {
+  var noteIdx = 0; // indice globale per id univoci degli input note
+
+  cliKeys.forEach(function(key) {
     var gruppo = perCliente[key];
     html += '<div style="margin-bottom:16px;border:1.5px solid #e0e8f5;border-radius:10px;overflow:hidden">' +
       '<div style="background:#1A4F8A;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">' +
-      '<div>' +
-      '<span style="font-size:13px;font-weight:800">' + gruppo.label + '</span>' +
+      '<div><span style="font-size:13px;font-weight:800">' + gruppo.label + '</span>' +
       (gruppo.ind ? '<span style="font-size:10px;opacity:.8;margin-left:8px">' + gruppo.ind + '</span>' : '') +
       '</div>' +
       '<span style="font-size:11px;background:rgba(255,255,255,.2);border-radius:10px;padding:2px 8px">' + gruppo.presidi.length + ' presid' + (gruppo.presidi.length===1?'io':'i') + '</span>' +
       '</div>';
 
-    html += '<table style="border-collapse:collapse;width:100%;font-size:12px">' +
+    html += '<table style="border-collapse:collapse;width:100%;font-size:11px">' +
       '<thead><tr style="background:#f0f5ff">' +
-      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Codice</th>' +
-      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Tipo</th>' +
-      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Ubicazione</th>' +
-      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Matricola</th>' +
-      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:center;border-bottom:1px solid #d0dff5">Scadenza</th>' +
-      '<th style="padding:7px 10px;font-size:10px;font-weight:700;color:#1A4F8A;text-align:center;border-bottom:1px solid #d0dff5">Stato</th>' +
+      '<th style="padding:6px 8px;font-size:9px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Codice</th>' +
+      '<th style="padding:6px 8px;font-size:9px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Tipo</th>' +
+      '<th style="padding:6px 8px;font-size:9px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Ubicazione</th>' +
+      '<th style="padding:6px 8px;font-size:9px;font-weight:700;color:#1A4F8A;text-align:left;border-bottom:1px solid #d0dff5">Matricola</th>' +
+      '<th style="padding:6px 8px;font-size:9px;font-weight:700;color:#1A4F8A;text-align:center;border-bottom:1px solid #d0dff5">Scadenza</th>' +
+      '<th style="padding:6px 8px;font-size:9px;font-weight:700;color:#856404;text-align:center;border-bottom:1px solid #d0dff5">Revisione</th>' +
+      '<th style="padding:6px 8px;font-size:9px;font-weight:700;color:#1b5e20;text-align:center;border-bottom:1px solid #d0dff5">Collaudo</th>' +
+      '<th style="padding:6px 8px;font-size:9px;font-weight:700;color:#C0392B;text-align:center;border-bottom:1px solid #d0dff5">Fine vita</th>' +
+      '<th style="padding:6px 8px;font-size:9px;font-weight:700;color:#555;text-align:left;border-bottom:1px solid #d0dff5">Note manutentore</th>' +
+      '<th style="padding:6px 8px;font-size:9px;font-weight:700;color:#1A4F8A;text-align:center;border-bottom:1px solid #d0dff5">Stato</th>' +
       '</tr></thead><tbody>';
 
     gruppo.presidi.forEach(function(p, pi) {
       var d = _scadenzaPresidio(p);
       var isUrg = d && d <= tra30;
+      var annoScad = d ? d.getFullYear() : null;
+      var isEST = p.tipo === 'EST';
       var t = (window.TIPI || []).find(function(x){ return x.id === p.tipo; }) || { ic: '📋', n: p.tipo };
       var scadStr = p.scad && p.scad !== '—' ? p.scad : '—';
       var bgRow = isUrg ? '#fff8f8' : (pi % 2 ? '#fafbff' : '#fff');
       var statoHtml = isUrg
-        ? '<span style="font-size:10px;font-weight:700;color:#C0392B;background:#fdecea;border-radius:5px;padding:2px 6px">🔴 Urgente</span>'
-        : '<span style="font-size:10px;font-weight:700;color:#856404;background:#fff3cd;border-radius:5px;padding:2px 6px">🟡 Pianifica</span>';
+        ? '<span style="font-size:9px;font-weight:700;color:#C0392B;background:#fdecea;border-radius:5px;padding:2px 5px">🔴 Urgente</span>'
+        : '<span style="font-size:9px;font-weight:700;color:#856404;background:#fff3cd;border-radius:5px;padding:2px 5px">🟡 Pianifica</span>';
+
+      // Colonne Rev / Coll / Vita: per EST mostra dato con badge, per altri input editabile
+      var revHtml, collHtml, vitaHtml;
+      var noteId = 'nota-mese-' + (noteIdx++);
+      if (isEST) {
+        revHtml  = _badgeAnno(p.rev,  annoScad, p.tipo);
+        collHtml = _badgeAnno(p.coll, annoScad, p.tipo);
+        vitaHtml = _badgeAnno(p.vita, annoScad, p.tipo);
+      } else {
+        // cella editabile per note tipo operazione
+        revHtml  = '<span style="color:#bbb;font-size:9px">—</span>';
+        collHtml = '<span style="color:#bbb;font-size:9px">—</span>';
+        vitaHtml = '<span style="color:#bbb;font-size:9px">—</span>';
+      }
+
+      var noteHtml = isEST
+        ? '<span style="color:#bbb;font-size:9px">—</span>'
+        : '<input id="' + noteId + '" type="text" placeholder="Appunto per tecnico..." ' +
+          'style="width:100%;border:1px solid #d0dff5;border-radius:4px;padding:3px 5px;font-size:10px;color:#333;background:#fffde7" ' +
+          'oninput="window._mesiNote=window._mesiNote||{};window._mesiNote[\'' + noteId + '\']=this.value">';
 
       html += '<tr style="background:' + bgRow + ';border-bottom:1px solid #eef2fa">' +
-        '<td style="padding:7px 10px;font-weight:700;color:#1A4F8A">' + (p.cod || '—') + '</td>' +
-        '<td style="padding:7px 10px">' + t.ic + ' ' + t.n + '</td>' +
-        '<td style="padding:7px 10px;color:#555">' + (p.ubi || '—') + '</td>' +
-        '<td style="padding:7px 10px;font-family:monospace;font-size:11px">' + (p.matr || '—') + '</td>' +
-        '<td style="padding:7px 10px;text-align:center;font-weight:700;color:' + (isUrg ? '#C0392B' : '#856404') + '">' + scadStr + '</td>' +
-        '<td style="padding:7px 10px;text-align:center">' + statoHtml + '</td>' +
+        '<td style="padding:6px 8px;font-weight:700;color:#1A4F8A;white-space:nowrap">' + (p.cod||'—') + '</td>' +
+        '<td style="padding:6px 8px;white-space:nowrap">' + t.ic + ' ' + t.n + '</td>' +
+        '<td style="padding:6px 8px;color:#555;font-size:10px">' + (p.ubi||'—') + '</td>' +
+        '<td style="padding:6px 8px;font-family:monospace;font-size:10px">' + (p.matr||'—') + '</td>' +
+        '<td style="padding:6px 8px;text-align:center;font-weight:700;color:' + (isUrg?'#C0392B':'#856404') + ';white-space:nowrap">' + scadStr + '</td>' +
+        '<td style="padding:6px 8px;text-align:center">' + revHtml + '</td>' +
+        '<td style="padding:6px 8px;text-align:center">' + collHtml + '</td>' +
+        '<td style="padding:6px 8px;text-align:center">' + vitaHtml + '</td>' +
+        '<td style="padding:4px 6px">' + noteHtml + '</td>' +
+        '<td style="padding:6px 8px;text-align:center">' + statoHtml + '</td>' +
         '</tr>';
     });
 
@@ -12361,7 +12406,7 @@ function apriModaleMese(mese, anno) {
 
   body.innerHTML = html;
 
-  // Salva dati per la stampa
+  // Salva dati per la stampa (inclusi i presidi con riferimento agli input note)
   window._mesiStampaDati = {
     nomeMese: nomeMese,
     anno: anno,
@@ -12370,6 +12415,7 @@ function apriModaleMese(mese, anno) {
     oggi: oggi,
     tra30: tra30
   };
+  window._mesiNote = {};
 
   document.getElementById('mMesi').classList.add('open');
 }
@@ -12377,6 +12423,12 @@ function apriModaleMese(mese, anno) {
 function stampaMesiElenco() {
   var dati = window._mesiStampaDati;
   if (!dati) { notifica('❌ Nessun dato da stampare'); return; }
+
+  // Raccoglie le note dagli input editabili prima di generare HTML stampa
+  var noteCorrente = {};
+  document.querySelectorAll('[id^="nota-mese-"]').forEach(function(inp) {
+    if (inp.value.trim()) noteCorrente[inp.id] = inp.value.trim();
+  });
 
   var ditta = (typeof DITTA !== 'undefined') ? DITTA : {};
   var oggi = new Date().toLocaleDateString('it-IT');
@@ -12386,66 +12438,95 @@ function stampaMesiElenco() {
   // Intestazione ditta
   html += '<table style="border-collapse:collapse;width:100%;margin-bottom:14px;border-bottom:3px solid #1A4F8A;padding-bottom:10px"><tr>' +
     '<td style="width:70%">' +
-    '<div style="font-size:14pt;font-weight:bold;color:#1A4F8A">' + (ditta.rs || '3E Antincendio') + '</div>' +
-    '<div style="font-size:9pt;color:#555;margin-top:2px">' + (ditta.ind || '') + (ditta.tel ? ' — Tel. ' + ditta.tel : '') + '</div>' +
+    '<div style="font-size:14pt;font-weight:bold;color:#1A4F8A">' + (ditta.rs||'3E Antincendio') + '</div>' +
+    '<div style="font-size:9pt;color:#555;margin-top:2px">' + (ditta.ind||'') + (ditta.tel?' — Tel. '+ditta.tel:'') + '</div>' +
     '</td>' +
     '<td style="text-align:right;vertical-align:top">' +
     '<div style="font-size:9pt;color:#888">Stampato il ' + oggi + '</div>' +
     '</td>' +
     '</tr></table>';
 
-  // Titolo
-  html += '<h2 style="color:#1A4F8A;margin:0 0 4px 0;font-size:14pt">📅 Elenco Manutenzioni — ' + dati.nomeMese + ' ' + dati.anno + '</h2>';
+  html += '<h2 style="color:#1A4F8A;margin:0 0 4px 0;font-size:14pt">📅 Lista Manutenzioni — ' + dati.nomeMese + ' ' + dati.anno + '</h2>';
   html += '<p style="margin:0 0 14px 0;font-size:9pt;color:#555">Totale presidi in scadenza: <b>' + dati.totale + '</b> — Lista di lavoro per i tecnici manutentori</p>';
 
   var cliKeys = Object.keys(dati.perCliente);
   cliKeys.sort(function(a,b){ return dati.perCliente[a].label.localeCompare(dati.perCliente[b].label); });
 
+  var noteIdxStampa = 0;
+
   cliKeys.forEach(function(key) {
     var g = dati.perCliente[key];
     html += '<div style="margin-bottom:18px;page-break-inside:avoid">';
-    html += '<div style="background:#1A4F8A;color:#fff;padding:7px 12px;font-weight:bold;font-size:11pt;margin-bottom:0">' +
+    html += '<div style="background:#1A4F8A;color:#fff;padding:7px 12px;font-weight:bold;font-size:11pt">' +
       g.label + (g.ind ? ' — ' + g.ind : '') +
       '<span style="float:right;font-size:9pt;font-weight:400">' + g.presidi.length + ' presid' + (g.presidi.length===1?'io':'i') + '</span></div>';
-    html += '<table style="border-collapse:collapse;width:100%;font-size:9pt">' +
+
+    html += '<table style="border-collapse:collapse;width:100%;font-size:8pt">' +
       '<thead><tr style="background:#e6f0fa">' +
-      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:left">Codice</th>' +
-      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:left">Tipo</th>' +
-      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:left">Ubicazione</th>' +
-      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:left">Matricola</th>' +
-      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:center">Scadenza</th>' +
-      '<th style="padding:5px 8px;border:1px solid #c0d4ee;text-align:center">Eseguita ✓</th>' +
+      '<th style="padding:4px 6px;border:1px solid #c0d4ee;text-align:left">Codice</th>' +
+      '<th style="padding:4px 6px;border:1px solid #c0d4ee;text-align:left">Tipo</th>' +
+      '<th style="padding:4px 6px;border:1px solid #c0d4ee;text-align:left">Ubicazione</th>' +
+      '<th style="padding:4px 6px;border:1px solid #c0d4ee;text-align:left">Matricola</th>' +
+      '<th style="padding:4px 6px;border:1px solid #c0d4ee;text-align:center">Scadenza</th>' +
+      '<th style="padding:4px 6px;border:1px solid #c0d4ee;text-align:center;color:#856404">Revisione</th>' +
+      '<th style="padding:4px 6px;border:1px solid #c0d4ee;text-align:center;color:#1b5e20">Collaudo</th>' +
+      '<th style="padding:4px 6px;border:1px solid #c0d4ee;text-align:center;color:#C0392B">Fine vita</th>' +
+      '<th style="padding:4px 6px;border:1px solid #c0d4ee;text-align:left">Note / Istruzioni</th>' +
+      '<th style="padding:4px 6px;border:1px solid #c0d4ee;text-align:center">Eseguita ✓</th>' +
       '</tr></thead><tbody>';
 
     g.presidi.forEach(function(p, pi) {
       var d = _scadenzaPresidio(p);
       var isUrg = d && d <= dati.tra30;
-      var t = (window.TIPI || []).find(function(x){ return x.id === p.tipo; }) || { ic: '', n: p.tipo };
-      var bg = isUrg ? '#fff3f3' : (pi % 2 ? '#f9f9f9' : '#fff');
+      var annoScad = d ? d.getFullYear() : null;
+      var isEST = p.tipo === 'EST';
+      var t = (window.TIPI||[]).find(function(x){ return x.id===p.tipo; })||{ic:'',n:p.tipo};
+      var bg = isUrg ? '#fff3f3' : (pi%2 ? '#f9f9f9' : '#fff');
+
+      // Revisione con segnalazione
+      var revTxt = '—', collTxt = '—', vitaTxt = '—';
+      if (isEST) {
+        var rv = parseInt(p.rev); var cl = parseInt(p.coll); var vi = parseInt(p.vita);
+        revTxt  = p.rev  && p.rev!=='—'  ? (rv===annoScad?'⚡ '+p.rev  : (rv<(annoScad||9999)?'✗ '+p.rev  : p.rev))  : '—';
+        collTxt = p.coll && p.coll!=='—' ? (cl===annoScad?'⚡ '+p.coll : (cl<(annoScad||9999)?'✗ '+p.coll : p.coll)) : '—';
+        vitaTxt = p.vita && p.vita!=='—' ? p.vita : '—';
+      }
+
+      // Nota eventualmente digitata nell'input prima della stampa
+      var noteId = 'nota-mese-' + noteIdxStampa;
+      var notaVal = noteCorrente[noteId] || '';
+      noteIdxStampa++;
+      // Per EST la nota è sempre vuota (riga tratteggiata)
+      var notaStampa = isEST ? '___________________________' : (notaVal || '___________________________');
+
       html += '<tr style="background:' + bg + '">' +
-        '<td style="padding:5px 8px;border:1px solid #ddd;font-weight:bold;color:#1A4F8A">' + (p.cod||'—') + '</td>' +
-        '<td style="padding:5px 8px;border:1px solid #ddd">' + t.ic + ' ' + t.n + '</td>' +
-        '<td style="padding:5px 8px;border:1px solid #ddd">' + (p.ubi||'—') + '</td>' +
-        '<td style="padding:5px 8px;border:1px solid #ddd;font-family:monospace">' + (p.matr||'—') + '</td>' +
-        '<td style="padding:5px 8px;border:1px solid #ddd;text-align:center;font-weight:bold;color:' + (isUrg?'#C0392B':'#333') + '">' + (p.scad||'—') + '</td>' +
-        '<td style="padding:5px 8px;border:1px solid #ddd;text-align:center;font-size:14pt">☐</td>' +
+        '<td style="padding:4px 6px;border:1px solid #ddd;font-weight:bold;color:#1A4F8A">' + (p.cod||'—') + '</td>' +
+        '<td style="padding:4px 6px;border:1px solid #ddd;white-space:nowrap">' + t.ic + ' ' + t.n + '</td>' +
+        '<td style="padding:4px 6px;border:1px solid #ddd">' + (p.ubi||'—') + '</td>' +
+        '<td style="padding:4px 6px;border:1px solid #ddd;font-family:monospace">' + (p.matr||'—') + '</td>' +
+        '<td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-weight:bold;color:' + (isUrg?'#C0392B':'#333') + '">' + (p.scad||'—') + '</td>' +
+        '<td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:7.5pt">' + revTxt + '</td>' +
+        '<td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:7.5pt">' + collTxt + '</td>' +
+        '<td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:7.5pt">' + vitaTxt + '</td>' +
+        '<td style="padding:4px 6px;border:1px solid #ddd;font-size:7.5pt;color:' + (notaVal?'#333':'#aaa') + '">' + notaStampa + '</td>' +
+        '<td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:13pt">☐</td>' +
         '</tr>';
     });
+
     html += '</tbody></table>' +
-      '<div style="font-size:8pt;color:#888;padding:4px 8px;border:1px solid #ddd;border-top:none;background:#fafafa">Note intervento: _______________________________________________</div>' +
+      '<div style="font-size:7.5pt;color:#888;padding:3px 8px;border:1px solid #ddd;border-top:none;background:#fafafa">Note generali intervento: _________________________________________________________________</div>' +
       '</div>';
   });
 
   // Firma tecnico
   html += '<div style="margin-top:20px;border-top:1px solid #ccc;padding-top:14px;display:flex;justify-content:space-between;font-size:9pt">' +
-    '<div><b>Tecnico manutentore:</b> ' + (ditta.rs || '') + '<br><span style="font-size:8pt;color:#888">Firma: _______________________________</span></div>' +
+    '<div><b>Tecnico manutentore:</b> ' + (ditta.rs||'') + '<br><span style="font-size:8pt;color:#888">Firma: _______________________________</span></div>' +
     '<div style="text-align:right"><b>Data intervento:</b> _______________<br><span style="font-size:8pt;color:#888">Ora inizio: ________ Ora fine: ________</span></div>' +
     '</div>';
 
-  html += '<p style="font-size:7pt;color:#bbb;margin-top:12px;text-align:center">Generato da ' + (ditta.sw || '3E Antincendio') + ' — ' + oggi + ' — Lista di lavoro riservata ai tecnici manutentori</p>';
+  html += '<p style="font-size:7pt;color:#bbb;margin-top:12px;text-align:center">Generato da ' + (ditta.sw||'3E Antincendio') + ' — ' + oggi + ' — Lista di lavoro riservata ai tecnici manutentori</p>';
   html += '</div>';
 
-  // Inserisci nell'area stampa e avvia print
   var area = document.getElementById('printMesiArea');
   if (area) {
     area.innerHTML = html;
