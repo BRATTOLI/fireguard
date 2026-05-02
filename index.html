@@ -11047,6 +11047,20 @@ function _parseDateMese(s) {
   // formato YYYY (solo anno — usato per rev/coll)
   var y = s.match(/^(\d{4})$/);
   if (y) return new Date(parseInt(y[1]), 0, 1);
+  // formato MMM-YY o MMM-YYYY (es. "Oct-26", "Jan-2027")
+  var MESI_EN = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  var me = s.match(/^([a-zA-Z]{3})-(\d{2,4})$/);
+  if (me) {
+    var meseIdx = MESI_EN[me[1].toLowerCase()];
+    if (meseIdx !== undefined) {
+      var annoStr = me[2];
+      var anno = annoStr.length === 2 ? 2000 + parseInt(annoStr) : parseInt(annoStr);
+      return new Date(anno, meseIdx, 1);
+    }
+  }
+  // formato MM/YYYY
+  var my = s.match(/^(\d{1,2})\/(\d{4})$/);
+  if (my) return new Date(parseInt(my[2]), parseInt(my[1]) - 1, 1);
   return null;
 }
 
